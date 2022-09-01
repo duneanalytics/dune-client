@@ -1,0 +1,114 @@
+import copy
+import os
+import time
+import unittest
+
+import dotenv
+from duneapi.types import QueryParameter
+
+from src.dune_client import (
+    DuneClient,
+    ExecutionResponse,
+    ExecutionStatusResponse,
+    ExecutionState,
+    DuneError,
+)
+from src.query import Query
+
+
+class TestDuneClient(unittest.TestCase):
+    def setUp(self) -> None:
+        self.query = Query(
+            name="Sample Query",
+            query_id=1215383,
+            params=[
+                QueryParameter.text_type(name="TextField", value="word"),
+                QueryParameter.number_type(name="NumberField", value=3.14),
+                QueryParameter.date_type(name="DateField", value="1985-03-10 00:00:00"),
+                # TODO - fix base implementation so not to require values.
+                QueryParameter.enum_type(
+                    name="ListField", value="Option 1", options=["Option 1", "Option 2"]
+                ),
+            ],
+        )
+        print(self.query)
+        dotenv.load_dotenv()
+        self.valid_api_key = os.environ["DUNE_API_KEY"]
+
+    def test_refresh(self):
+        dune = DuneClient(self.valid_api_key)
+        results = dune.refresh(self.query)
+        self.assertGreater(len(results), 0)
+
+    def test_endpoints(self):
+        dune = DuneClient(self.valid_api_key)
+        execution_response = dune.execute(self.query)
+        self.assertIsInstance(execution_response, ExecutionResponse)
+        job_id = execution_response.execution_id
+        status = dune.get_status(job_id)
+        self.assertIsInstance(status, ExecutionStatusResponse)
+        while dune.get_status(job_id).state != ExecutionState.COMPLETED:
+            time.sleep(1)
+        results = dune.get_result(job_id).result.rows
+        self.assertGreater(len(results), 0)
+
+    def test_invalid_api_key_error(self):
+        dune = DuneClient(api_key="Invalid Key")
+        with self.assertRaises(DuneError) as err:
+            dune.execute(self.query)
+        self.assertEqual(
+            str(err.exception),
+            "Can't build ExecutionResponse from {'error': 'invalid API Key'}",
+        )
+        with self.assertRaises(DuneError) as err:
+            dune.get_status("wonky job_id")
+        self.assertEqual(
+            str(err.exception),
+            "Can't build ExecutionStatusResponse from {'error': 'invalid API Key'}",
+        )
+        with self.assertRaises(DuneError) as err:
+            dune.get_result("wonky job_id")
+        self.assertEqual(
+            str(err.exception),
+            "Can't build ResultsResponse from {'error': 'invalid API Key'}",
+        )
+
+    def test_query_not_found_error(self):
+        dune = DuneClient(self.valid_api_key)
+        query = copy.copy(self.query)
+        query.query_id = 99999999  # Invalid Query Id.
+
+        with self.assertRaises(DuneError) as err:
+            dune.execute(query)
+        self.assertEqual(
+            str(err.exception),
+            "Can't build ExecutionResponse from {'error': 'Query not found'}",
+        )
+
+    def test_internal_error(self):
+        dune = DuneClient(self.valid_api_key)
+        query = copy.copy(self.query)
+        # This query ID is too large!
+        query.query_id = 9999999999999
+
+        with self.assertRaises(DuneError) as err:
+            dune.execute(query)
+        self.assertEqual(
+            str(err.exception),
+            "Can't build ExecutionResponse from {'error': 'An internal error occured'}",
+        )
+
+    def test_invalid_job_id_error(self):
+        dune = DuneClient(self.valid_api_key)
+
+        with self.assertRaises(DuneError) as err:
+            dune.get_status("Wonky Job ID")
+        self.assertEqual(
+            str(err.exception),
+            "Can't build ExecutionStatusResponse from "
+            "{'error': 'The requested execution ID (ID: Wonky Job ID) is invalid.'}",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
