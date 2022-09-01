@@ -1,0 +1,5 @@
+-r prod.txt
+black==22.6.0
+pylint==2.14.5
+pytest==7.1.2
+mypy==0.971
