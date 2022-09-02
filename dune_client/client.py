@@ -14,15 +14,15 @@ import requests
 from duneapi.types import DuneRecord
 from requests import Response
 
-from src.dune_interface import DuneInterface
-from src.models import (
+from dune_client.interface import DuneInterface
+from dune_client.models import (
     ExecutionResponse,
     DuneError,
     ExecutionStatusResponse,
     ResultsResponse,
     ExecutionState,
 )
-from src.query import Query
+from dune_client.query import Query
 
 log = logging.getLogger(__name__)
 logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)

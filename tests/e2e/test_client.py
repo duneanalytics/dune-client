@@ -6,14 +6,14 @@ import unittest
 import dotenv
 from duneapi.types import QueryParameter
 
-from src.dune_client import (
+from dune_client.client import (
     DuneClient,
     ExecutionResponse,
     ExecutionStatusResponse,
     ExecutionState,
     DuneError,
 )
-from src.query import Query
+from dune_client.query import Query
 
 
 class TestDuneClient(unittest.TestCase):

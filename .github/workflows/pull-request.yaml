@@ -15,11 +15,11 @@ jobs:
       - name: Install Requirements
         run: pip install -r requirements/dev.txt
       - name: Pylint
-        run: pylint src/
+        run: pylint dune_client/
       - name: Black
         run: black --check ./
       - name: Type Check (mypy)
-        run: mypy src --strict
+        run: mypy dune_client --strict
   unit-tests:
     runs-on: ubuntu-latest
     steps:
