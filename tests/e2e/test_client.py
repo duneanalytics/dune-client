@@ -22,6 +22,7 @@ class TestDuneClient(unittest.TestCase):
             name="Sample Query",
             query_id=1215383,
             params=[
+                # These are the queries default parameters.
                 QueryParameter.text_type(name="TextField", value="word"),
                 QueryParameter.number_type(name="NumberField", value=3.14),
                 QueryParameter.date_type(name="DateField", value="1985-03-10 00:00:00"),
@@ -31,7 +32,6 @@ class TestDuneClient(unittest.TestCase):
                 ),
             ],
         )
-        print(self.query)
         dotenv.load_dotenv()
         self.valid_api_key = os.environ["DUNE_API_KEY"]
 
@@ -39,6 +39,48 @@ class TestDuneClient(unittest.TestCase):
         dune = DuneClient(self.valid_api_key)
         results = dune.refresh(self.query)
         self.assertGreater(len(results), 0)
+
+    def test_parameters_recognized(self):
+        query = copy.copy(self.query)
+        new_params = [
+            # Using all different values for parameters.
+            QueryParameter.text_type(name="TextField", value="different word"),
+            QueryParameter.number_type(name="NumberField", value=22),
+            QueryParameter.date_type(name="DateField", value="1991-01-01 00:00:00"),
+            # TODO - fix base implementation so not to require values.
+            QueryParameter.enum_type(
+                name="ListField", value="Option 2", options=["Option 1", "Option 2"]
+            ),
+        ]
+        query.params = new_params
+        self.assertEqual(query.parameters(), new_params)
+
+        dune = DuneClient(self.valid_api_key)
+        results = dune.refresh(query)
+        # Should be this!
+        # self.assertEqual(
+        #     results,
+        #     [
+        #         {
+        #             "text_field": "different word",
+        #             "number_field": "22",
+        #             "date_field": "1991-01-01 00:00:00",
+        #             "list_field": "Option 2",
+        #         }
+        #     ],
+        # )
+        # But the parameters are not recognized!
+        self.assertEqual(
+            results,
+            [
+                {
+                    "text_field": "Plain Text",
+                    "number_field": "3.1415926535",
+                    "date_field": "2022-05-04 00:00:00",
+                    "list_field": "Option 1",
+                }
+            ],
+        )
 
     def test_endpoints(self):
         dune = DuneClient(self.valid_api_key)

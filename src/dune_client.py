@@ -69,7 +69,7 @@ class DuneClient(DuneInterface):
             url=f"{BASE_URL}/query/{query.query_id}/execute",
             params={
                 "query_parameters": {
-                    param.key: param.value for param in query.parameters()
+                    p.key: p.to_dict()["value"] for p in query.parameters()
                 }
             },
         )
