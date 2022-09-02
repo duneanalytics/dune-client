@@ -52,6 +52,17 @@ class TestDuneClient(unittest.TestCase):
         results = dune.get_result(job_id).result.rows
         self.assertGreater(len(results), 0)
 
+    def test_cancel_execution(self):
+        dune = DuneClient(self.valid_api_key)
+        query = Query(
+            name="Long Running Query",
+            query_id=1229120,
+        )
+        execution_response = dune.execute(query)
+        # POST Cancellation
+        success = dune.cancel_execution(execution_response.execution_id)
+        self.assertTrue(success)
+
     def test_invalid_api_key_error(self):
         dune = DuneClient(api_key="Invalid Key")
         with self.assertRaises(DuneError) as err:
