@@ -23,9 +23,9 @@ class TestDuneClient(unittest.TestCase):
             query_id=1215383,
             params=[
                 # These are the queries default parameters.
-                QueryParameter.text_type(name="TextField", value="word"),
-                QueryParameter.number_type(name="NumberField", value=3.14),
-                QueryParameter.date_type(name="DateField", value="1985-03-10 00:00:00"),
+                QueryParameter.text_type(name="TextField", value="Plain Text"),
+                QueryParameter.number_type(name="NumberField", value=3.1415926535),
+                QueryParameter.date_type(name="DateField", value="2022-05-04 00:00:00"),
                 # TODO - fix base implementation so not to require values.
                 QueryParameter.enum_type(
                     name="ListField", value="Option 1", options=["Option 1", "Option 2"]
@@ -57,27 +57,14 @@ class TestDuneClient(unittest.TestCase):
 
         dune = DuneClient(self.valid_api_key)
         results = dune.refresh(query)
-        # Should be this!
-        # self.assertEqual(
-        #     results,
-        #     [
-        #         {
-        #             "text_field": "different word",
-        #             "number_field": "22",
-        #             "date_field": "1991-01-01 00:00:00",
-        #             "list_field": "Option 2",
-        #         }
-        #     ],
-        # )
-        # But the parameters are not recognized!
         self.assertEqual(
             results,
             [
                 {
-                    "text_field": "Plain Text",
-                    "number_field": "3.1415926535",
-                    "date_field": "2022-05-04 00:00:00",
-                    "list_field": "Option 1",
+                    "text_field": "different word",
+                    "number_field": "22",
+                    "date_field": "1991-01-01 00:00:00",
+                    "list_field": "Option 2",
                 }
             ],
         )
