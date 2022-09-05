@@ -11,7 +11,6 @@ from json import JSONDecodeError
 from typing import Any
 
 import requests
-from duneapi.types import DuneRecord
 from requests import Response
 
 from dune_client.interface import DuneInterface
@@ -22,6 +21,7 @@ from dune_client.models import (
     ResultsResponse,
     ExecutionState,
 )
+from dune_client.types import DuneRecord
 from dune_client.query import Query
 
 log = logging.getLogger(__name__)

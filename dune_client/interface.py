@@ -3,9 +3,8 @@ Abstract class for a basic Dune Interface with refresh method used by Query Runn
 """
 from abc import ABC
 
-from duneapi.types import DuneRecord
-
 from dune_client.query import Query
+from dune_client.types import DuneRecord
 
 
 # pylint: disable=too-few-public-methods

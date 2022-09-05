@@ -4,7 +4,7 @@ import time
 import unittest
 
 import dotenv
-from duneapi.types import QueryParameter
+from dune_client.types import QueryParameter
 
 from dune_client.client import (
     DuneClient,
@@ -26,10 +26,7 @@ class TestDuneClient(unittest.TestCase):
                 QueryParameter.text_type(name="TextField", value="Plain Text"),
                 QueryParameter.number_type(name="NumberField", value=3.1415926535),
                 QueryParameter.date_type(name="DateField", value="2022-05-04 00:00:00"),
-                # TODO - fix base implementation so not to require values.
-                QueryParameter.enum_type(
-                    name="ListField", value="Option 1", options=["Option 1", "Option 2"]
-                ),
+                QueryParameter.enum_type(name="ListField", value="Option 1"),
             ],
         )
         dotenv.load_dotenv()
@@ -47,10 +44,7 @@ class TestDuneClient(unittest.TestCase):
             QueryParameter.text_type(name="TextField", value="different word"),
             QueryParameter.number_type(name="NumberField", value=22),
             QueryParameter.date_type(name="DateField", value="1991-01-01 00:00:00"),
-            # TODO - fix base implementation so not to require values.
-            QueryParameter.enum_type(
-                name="ListField", value="Option 2", options=["Option 1", "Option 2"]
-            ),
+            QueryParameter.enum_type(name="ListField", value="Option 2"),
         ]
         query.params = new_params
         self.assertEqual(query.parameters(), new_params)
