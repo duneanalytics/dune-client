@@ -5,7 +5,7 @@ from abc import ABC
 
 from duneapi.types import DuneRecord
 
-from src.query import Query
+from dune_client.query import Query
 
 
 # pylint: disable=too-few-public-methods

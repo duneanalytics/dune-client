@@ -3,7 +3,7 @@ from datetime import datetime
 
 from dateutil.tz import tzutc
 
-from src.models import (
+from dune_client.models import (
     ExecutionResponse,
     ExecutionStatusResponse,
     ExecutionState,
