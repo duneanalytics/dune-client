@@ -32,6 +32,13 @@ class TestDuneClient(unittest.TestCase):
         dotenv.load_dotenv()
         self.valid_api_key = os.environ["DUNE_API_KEY"]
 
+    def test_get_status(self):
+        query = Query(name="No Name", query_id=649345, params=[])
+        dune = DuneClient(self.valid_api_key)
+        job_id = dune.execute(query).execution_id
+        status = dune.get_status(job_id)
+        self.assertEqual(status.state, ExecutionState.EXECUTING)
+
     def test_refresh(self):
         dune = DuneClient(self.valid_api_key)
         results = dune.refresh(self.query)

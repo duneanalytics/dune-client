@@ -57,7 +57,8 @@ class TimeData:
     """A collection of all timestamp related values contained within Dune Response"""
 
     submitted_at: datetime
-    expires_at: datetime
+    # For some reason... this field isn't always returned.
+    expires_at: Optional[datetime]
     execution_started_at: datetime
     execution_ended_at: Optional[datetime]
 
@@ -65,9 +66,10 @@ class TimeData:
     def from_dict(cls, data: dict[str, Any]) -> TimeData:
         """Constructor from dictionary. See unit test for sample input."""
         end = data.get("execution_ended_at", None)
+        expires = data.get("expires_at", None)
         return cls(
             submitted_at=parse(data["submitted_at"]),
-            expires_at=parse(data["expires_at"]),
+            expires_at=None if expires is None else parse(expires),
             execution_started_at=parse(data["execution_started_at"]),
             execution_ended_at=None if end is None else parse(end),
         )
