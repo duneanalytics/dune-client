@@ -86,7 +86,6 @@ class MyTestCase(unittest.TestCase):
             expected_with_empty_optionals, TimeData.from_dict(self.status_response_data)
         )
 
-
     def test_parse_status_response(self):
         expected = ExecutionStatusResponse(
             execution_id="01GBM4W2N0NMCGPZYW8AYK4YF1",
