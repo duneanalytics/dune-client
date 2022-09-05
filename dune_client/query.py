@@ -4,7 +4,7 @@ Data Class Representing a Dune Query
 from dataclasses import dataclass
 from typing import Optional
 
-from duneapi.types import QueryParameter
+from dune_client.types import QueryParameter
 
 
 @dataclass

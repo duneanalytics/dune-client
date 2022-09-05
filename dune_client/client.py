@@ -11,7 +11,6 @@ from json import JSONDecodeError
 from typing import Any
 
 import requests
-from duneapi.types import DuneRecord
 from requests import Response
 
 from dune_client.interface import DuneInterface
@@ -22,6 +21,7 @@ from dune_client.models import (
     ResultsResponse,
     ExecutionState,
 )
+from dune_client.types import DuneRecord
 from dune_client.query import Query
 
 log = logging.getLogger(__name__)
@@ -55,13 +55,15 @@ class DuneClient(DuneInterface):
 
     def _get(self, url: str) -> Any:
         log.debug(f"GET received input url={url}")
-        response = requests.get(url, headers={"x-dune-api-key": self.token})
+        response = requests.get(
+            url, headers={"x-dune-api-key": self.token}, timeout=120
+        )
         return self._handle_response(response)
 
     def _post(self, url: str, params: Any) -> Any:
         log.debug(f"POST received input url={url}, params={params}")
         response = requests.post(
-            url=url, json=params, headers={"x-dune-api-key": self.token}
+            url=url, json=params, headers={"x-dune-api-key": self.token}, timeout=120
         )
         return self._handle_response(response)
 

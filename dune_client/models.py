@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Optional, Any, Union
 
 from dateutil.parser import parse
-from duneapi.types import DuneRecord
+from dune_client.types import DuneRecord
 
 
 class DuneError(Exception):
@@ -32,6 +32,7 @@ class ExecutionState(Enum):
     COMPLETED = "QUERY_STATE_COMPLETED"
     EXECUTING = "QUERY_STATE_EXECUTING"
     PENDING = "QUERY_STATE_PENDING"
+    CANCELLED = "QUERY_STATE_CANCELLED"
 
 
 @dataclass
