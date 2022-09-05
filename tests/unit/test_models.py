@@ -28,7 +28,6 @@ class MyTestCase(unittest.TestCase):
             "query_id": self.query_id,
             "state": "QUERY_STATE_EXECUTING",
             "submitted_at": "2022-08-29T06:33:24.913138Z",
-            "expires_at": "1970-01-01T00:00:00Z",
             "execution_started_at": "2022-08-29T06:33:24.916543331Z",
         }
         self.results_response_data = {
@@ -75,17 +74,18 @@ class MyTestCase(unittest.TestCase):
             expected_with_end, TimeData.from_dict(self.results_response_data)
         )
 
-        expected_without_end = TimeData(
+        expected_with_empty_optionals = TimeData(
             submitted_at=datetime(2022, 8, 29, 6, 33, 24, 913138, tzinfo=tzutc()),
-            expires_at=datetime(1970, 1, 1, 0, 0, tzinfo=tzutc()),
+            expires_at=None,
             execution_started_at=datetime(
                 2022, 8, 29, 6, 33, 24, 916543, tzinfo=tzutc()
             ),
             execution_ended_at=None,
         )
         self.assertEqual(
-            expected_without_end, TimeData.from_dict(self.status_response_data)
+            expected_with_empty_optionals, TimeData.from_dict(self.status_response_data)
         )
+
 
     def test_parse_status_response(self):
         expected = ExecutionStatusResponse(
