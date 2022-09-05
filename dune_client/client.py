@@ -55,13 +55,15 @@ class DuneClient(DuneInterface):
 
     def _get(self, url: str) -> Any:
         log.debug(f"GET received input url={url}")
-        response = requests.get(url, headers={"x-dune-api-key": self.token})
+        response = requests.get(
+            url, headers={"x-dune-api-key": self.token}, timeout=120
+        )
         return self._handle_response(response)
 
     def _post(self, url: str, params: Any) -> Any:
         log.debug(f"POST received input url={url}, params={params}")
         response = requests.post(
-            url=url, json=params, headers={"x-dune-api-key": self.token}
+            url=url, json=params, headers={"x-dune-api-key": self.token}, timeout=120
         )
         return self._handle_response(response)
 
