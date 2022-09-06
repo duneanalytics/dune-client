@@ -112,16 +112,15 @@ class DuneClient(DuneInterface):
         except KeyError as err:
             raise DuneError(response_json, "CancellationResponse") from err
 
-    def refresh(self, query: Query) -> list[DuneRecord]:
+    def refresh(self, query: Query, ping_frequency: int = 5) -> list[DuneRecord]:
         """
-        Executes a Dune query, waits till query execution completes,
+        Executes a Dune `query`, waits until execution completes,
         fetches and returns the results.
-        *Sleeps 3 seconds between each request*.
+        Sleeps `ping_frequency` seconds between each status request.
         """
         job_id = self.execute(query).execution_id
         while self.get_status(job_id).state != ExecutionState.COMPLETED:
             log.info(f"waiting for query execution {job_id} to complete")
-            # TODO - use a better model for status pings.
-            time.sleep(5)
+            time.sleep(ping_frequency)
 
         return self.get_result(job_id).result.rows

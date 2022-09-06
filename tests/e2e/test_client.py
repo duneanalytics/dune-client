@@ -5,7 +5,6 @@ import unittest
 
 import dotenv
 from dune_client.types import QueryParameter
-
 from dune_client.client import (
     DuneClient,
     ExecutionResponse,
