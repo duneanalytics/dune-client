@@ -24,7 +24,7 @@ class TestQueryMonitor(unittest.TestCase):
             self.query.url(),
             "https://dune.com/queries/0?Enum=option1&Text=plain+text&Number=12&Date=2021-01-01+12%3A34%3A56",
         )
-
+        self.assertEqual(Query("", 0, []).url(), "https://dune.com/queries/0")
     def test_parameters(self):
         self.assertEqual(self.query.parameters(), self.query_params)
 

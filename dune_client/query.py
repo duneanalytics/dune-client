@@ -27,5 +27,9 @@ class Query:
     def url(self) -> str:
         """Returns a parameterized link to the query"""
         # Include variable parameters in the URL so they are set
-        query = "&".join([f"{p.key}={p.value}" for p in self.parameters()])
-        return "?".join([self.base_url(), urllib.parse.quote_plus(query, safe="=&?")])
+        params = "&".join([f"{p.key}={p.value}" for p in self.parameters()])
+        if params:
+            return "?".join(
+                [self.base_url(), urllib.parse.quote_plus(params, safe="=&?")]
+            )
+        return self.base_url()
