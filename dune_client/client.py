@@ -25,7 +25,9 @@ from dune_client.types import DuneRecord
 from dune_client.query import Query
 
 log = logging.getLogger(__name__)
-logging.config.fileConfig(fname="logging.conf", disable_existing_loggers=False)
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.INFO
+)
 
 BASE_URL = "https://api.dune.com/api/v1"
 
