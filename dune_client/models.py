@@ -57,11 +57,13 @@ class TimeData:
     """A collection of all timestamp related values contained within Dune Response"""
 
     submitted_at: datetime
-    # For some reason... this field isn't always returned.
-    expires_at: Optional[datetime]
     execution_started_at: datetime
     execution_ended_at: Optional[datetime]
-
+    # Expires only exists when we have result data
+    expires_at: Optional[datetime]
+    # only exists for cancelled executions
+    cancelled_at: Optional[datetime]
+    
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TimeData:
         """Constructor from dictionary. See unit test for sample input."""
@@ -85,14 +87,19 @@ class ExecutionStatusResponse:
     query_id: int
     state: ExecutionState
     times: TimeData
+    # this will be present when the query execution completes
+    result_metadata: Optional[ResultMetadata]
 
     @classmethod
     def from_dict(cls, data: dict[str, str]) -> ExecutionStatusResponse:
         """Constructor from dictionary. See unit test for sample input."""
+        dct =  data.get("result_metadata")
+        result_metadata = ResultMetadata.from_dict(dct) if dct else None
         return cls(
             execution_id=data["execution_id"],
             query_id=int(data["query_id"]),
             state=ExecutionState(data["state"]),
+            result_metadata=result_metadata,
             times=TimeData.from_dict(data),  # Sending the entire data dict
         )
 
@@ -106,6 +113,9 @@ class ResultMetadata:
     column_names: list[str]
     result_set_bytes: int
     total_row_count: int
+    datapoint_count: int
+    pending_time_millis: int
+    execution_time_millis: int
 
     @classmethod
     def from_dict(cls, data: dict[str, int | list[str]]) -> ResultMetadata:
@@ -113,10 +123,16 @@ class ResultMetadata:
         assert isinstance(data["column_names"], list)
         assert isinstance(data["result_set_bytes"], int)
         assert isinstance(data["total_row_count"], int)
+        assert isinstance(data["datapoint_count"], int)
+        assert isinstance(data["pending_time_millis"], int)
+        assert isinstance(data["execution_time_millis"], int)    
         return cls(
             column_names=data["column_names"],
-            result_set_bytes=int(data["result_set_bytes"]),
-            total_row_count=int(data["total_row_count"]),
+            result_set_bytes=data["result_set_bytes"],
+            total_row_count=data["total_row_count"],
+            datapoint_count=data["datapoint_count"],
+            pending_time_millis=data["pending_time_millis"],
+            execution_time_millis=data["pending_time_millis"],
         )
 
 
@@ -155,7 +171,8 @@ class ResultsResponse:
     query_id: int
     state: ExecutionState
     times: TimeData
-    result: ExecutionResult
+    # optional because it will only be present when the query execution completes
+    result: Optional[ExecutionResult]
 
     @classmethod
     def from_dict(cls, data: dict[str, str | int | ResultData]) -> ResultsResponse:
