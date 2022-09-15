@@ -30,6 +30,23 @@ class MyTestCase(unittest.TestCase):
             "submitted_at": "2022-08-29T06:33:24.913138Z",
             "execution_started_at": "2022-08-29T06:33:24.916543331Z",
         }
+        self.result_metadata_data = {
+            "column_names": ["ct", "TableName"],
+            "result_set_bytes": 194,
+            "total_row_count": 8,
+            "datapoint_count": 2,
+            "pending_time_millis": 54,
+            "execution_time_millis": 900,
+        }
+        self.status_response_data_completed = {
+            "execution_id": self.execution_id,
+            "query_id": self.query_id,
+            "state": "QUERY_STATE_EXECUTING",
+            "submitted_at": "2022-08-29T06:33:24.913138Z",
+            "execution_started_at": "2022-08-29T06:33:24.916543331Z",
+            "execution_ended_at": "2022-08-29T06:33:25.816543331Z",
+            "result_metadata": self.result_metadata_data,
+        }
         self.results_response_data = {
             "execution_id": self.execution_id,
             "query_id": self.query_id,
@@ -43,11 +60,7 @@ class MyTestCase(unittest.TestCase):
                     {"TableName": "eth_blocks", "ct": 6296},
                     {"TableName": "eth_traces", "ct": 4474223},
                 ],
-                "metadata": {
-                    "column_names": ["ct", "TableName"],
-                    "result_set_bytes": 194,
-                    "total_row_count": 8,
-                },
+                "metadata": self.result_metadata_data,
             },
         }
 
@@ -97,15 +110,36 @@ class MyTestCase(unittest.TestCase):
             expected, ExecutionStatusResponse.from_dict(self.status_response_data)
         )
 
+    def test_parse_status_response_completed(self):
+        self.assertEqual(
+            ExecutionStatusResponse(
+                execution_id="01GBM4W2N0NMCGPZYW8AYK4YF1",
+                query_id=980708,
+                state=ExecutionState.COMPLETED,
+                times=TimeData.from_dict(self.status_response_data),
+                result_metadata=ResultMetadata.from_dict(self.result_metadata_data),
+            ),
+            ExecutionStatusResponse.from_dict(self.status_response_data_completed),
+        )
+
     def test_parse_result_metadata(self):
         expected = ResultMetadata(
             column_names=["ct", "TableName"],
             result_set_bytes=194,
             total_row_count=8,
+            datapoint_count=2,
+            pending_time_millis=54,
+            execution_time_millis=900,
         )
         self.assertEqual(
             expected,
             ResultMetadata.from_dict(self.results_response_data["result"]["metadata"]),
+        )
+        self.assertEqual(
+            expected,
+            ResultMetadata.from_dict(
+                self.status_response_data_completed["result_metadata"]
+            ),
         )
 
     def test_parse_execution_result(self):

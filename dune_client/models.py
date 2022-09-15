@@ -63,17 +63,19 @@ class TimeData:
     expires_at: Optional[datetime]
     # only exists for cancelled executions
     cancelled_at: Optional[datetime]
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TimeData:
         """Constructor from dictionary. See unit test for sample input."""
-        end = data.get("execution_ended_at", None)
-        expires = data.get("expires_at", None)
+        end = data.get("execution_ended_at")
+        expires = data.get("expires_at")
+        cancelled = data.get("cancelled_at")
         return cls(
             submitted_at=parse(data["submitted_at"]),
             expires_at=None if expires is None else parse(expires),
             execution_started_at=parse(data["execution_started_at"]),
             execution_ended_at=None if end is None else parse(end),
+            cancelled_at=None if cancelled is None else parse(cancelled),
         )
 
 
@@ -93,7 +95,7 @@ class ExecutionStatusResponse:
     @classmethod
     def from_dict(cls, data: dict[str, str]) -> ExecutionStatusResponse:
         """Constructor from dictionary. See unit test for sample input."""
-        dct =  data.get("result_metadata")
+        dct = data.get("result_metadata")
         result_metadata = ResultMetadata.from_dict(dct) if dct else None
         return cls(
             execution_id=data["execution_id"],
@@ -125,7 +127,7 @@ class ResultMetadata:
         assert isinstance(data["total_row_count"], int)
         assert isinstance(data["datapoint_count"], int)
         assert isinstance(data["pending_time_millis"], int)
-        assert isinstance(data["execution_time_millis"], int)    
+        assert isinstance(data["execution_time_millis"], int)
         return cls(
             column_names=data["column_names"],
             result_set_bytes=data["result_set_bytes"],
