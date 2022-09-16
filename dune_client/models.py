@@ -93,9 +93,9 @@ class ExecutionStatusResponse:
     result_metadata: Optional[ResultMetadata]
 
     @classmethod
-    def from_dict(cls, data: dict[str, str]) -> ExecutionStatusResponse:
+    def from_dict(cls, data: dict[str, Any]) -> ExecutionStatusResponse:
         """Constructor from dictionary. See unit test for sample input."""
-        dct = data.get("result_metadata")
+        dct: Optional[MetaData] = data.get("result_metadata")
         result_metadata = ResultMetadata.from_dict(dct) if dct else None
         return cls(
             execution_id=data["execution_id"],

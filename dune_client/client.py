@@ -125,4 +125,8 @@ class DuneClient(DuneInterface):
             log.info(f"waiting for query execution {job_id} to complete")
             time.sleep(ping_frequency)
 
-        return self.get_result(job_id).result.rows
+        full_response = self.get_result(job_id)
+        assert (
+            full_response.result is not None
+        ), f"Expected Results on completed execution status {full_response}"
+        return full_response.result.rows
