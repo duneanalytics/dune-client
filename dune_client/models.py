@@ -96,12 +96,11 @@ class ExecutionStatusResponse:
     def from_dict(cls, data: dict[str, Any]) -> ExecutionStatusResponse:
         """Constructor from dictionary. See unit test for sample input."""
         dct: Optional[MetaData] = data.get("result_metadata")
-        result_metadata = ResultMetadata.from_dict(dct) if dct else None
         return cls(
             execution_id=data["execution_id"],
             query_id=int(data["query_id"]),
             state=ExecutionState(data["state"]),
-            result_metadata=result_metadata,
+            result_metadata=ResultMetadata.from_dict(dct) if dct else None,
             times=TimeData.from_dict(data),  # Sending the entire data dict
         )
 
@@ -134,7 +133,7 @@ class ResultMetadata:
             total_row_count=data["total_row_count"],
             datapoint_count=data["datapoint_count"],
             pending_time_millis=data["pending_time_millis"],
-            execution_time_millis=data["pending_time_millis"],
+            execution_time_millis=data["execution_time_millis"],
         )
 
 

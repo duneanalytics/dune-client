@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime
 
+from dateutil.parser import parse
 from dateutil.tz import tzutc
 
 from dune_client.models import (
@@ -18,6 +19,9 @@ class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.execution_id = "01GBM4W2N0NMCGPZYW8AYK4YF1"
         self.query_id = 980708
+        self.submission_time_str = "2022-08-29T06:33:24.913138Z"
+        self.execution_start_str = "2022-08-29T06:33:24.916543331Z"
+        self.execution_end_str = "2022-08-29T06:33:25.816543331Z"
 
         self.execution_response_data = {
             "execution_id": self.execution_id,
@@ -27,8 +31,9 @@ class MyTestCase(unittest.TestCase):
             "execution_id": self.execution_id,
             "query_id": self.query_id,
             "state": "QUERY_STATE_EXECUTING",
-            "submitted_at": "2022-08-29T06:33:24.913138Z",
-            "execution_started_at": "2022-08-29T06:33:24.916543331Z",
+            "submitted_at": self.submission_time_str,
+            "execution_started_at": self.execution_start_str,
+            "execution_ended_at": self.execution_end_str,
         }
         self.result_metadata_data = {
             "column_names": ["ct", "TableName"],
@@ -41,20 +46,20 @@ class MyTestCase(unittest.TestCase):
         self.status_response_data_completed = {
             "execution_id": self.execution_id,
             "query_id": self.query_id,
-            "state": "QUERY_STATE_EXECUTING",
-            "submitted_at": "2022-08-29T06:33:24.913138Z",
-            "execution_started_at": "2022-08-29T06:33:24.916543331Z",
-            "execution_ended_at": "2022-08-29T06:33:25.816543331Z",
+            "state": "QUERY_STATE_COMPLETED",
+            "submitted_at": self.submission_time_str,
+            "execution_started_at": self.execution_start_str,
+            "execution_ended_at": self.execution_end_str,
             "result_metadata": self.result_metadata_data,
         }
         self.results_response_data = {
             "execution_id": self.execution_id,
             "query_id": self.query_id,
             "state": "QUERY_STATE_COMPLETED",
-            "submitted_at": "2022-08-29T06:33:24.913138Z",
+            "submitted_at": self.submission_time_str,
             "expires_at": "2024-08-28T06:36:41.58847Z",
-            "execution_started_at": "2022-08-29T06:33:24.916543Z",
-            "execution_ended_at": "2022-08-29T06:36:41.588467Z",
+            "execution_started_at": self.execution_start_str,
+            "execution_ended_at": self.execution_end_str,
             "result": {
                 "rows": [
                     {"TableName": "eth_blocks", "ct": 6296},
@@ -76,24 +81,22 @@ class MyTestCase(unittest.TestCase):
 
     def test_parse_time_data(self):
         expected_with_end = TimeData(
-            submitted_at=datetime(2022, 8, 29, 6, 33, 24, 913138, tzinfo=tzutc()),
+            submitted_at=parse(self.submission_time_str),
             expires_at=datetime(2024, 8, 28, 6, 36, 41, 588470, tzinfo=tzutc()),
-            execution_started_at=datetime(
-                2022, 8, 29, 6, 33, 24, 916543, tzinfo=tzutc()
-            ),
-            execution_ended_at=datetime(2022, 8, 29, 6, 36, 41, 588467, tzinfo=tzutc()),
+            execution_started_at=parse(self.execution_start_str),
+            execution_ended_at=parse(self.execution_end_str),
+            cancelled_at=None
         )
         self.assertEqual(
             expected_with_end, TimeData.from_dict(self.results_response_data)
         )
 
         expected_with_empty_optionals = TimeData(
-            submitted_at=datetime(2022, 8, 29, 6, 33, 24, 913138, tzinfo=tzutc()),
+            submitted_at=parse(self.submission_time_str),
             expires_at=None,
-            execution_started_at=datetime(
-                2022, 8, 29, 6, 33, 24, 916543, tzinfo=tzutc()
-            ),
-            execution_ended_at=None,
+            execution_started_at=parse(self.execution_start_str),
+            execution_ended_at=parse(self.execution_end_str),
+            cancelled_at=None
         )
         self.assertEqual(
             expected_with_empty_optionals, TimeData.from_dict(self.status_response_data)
@@ -105,6 +108,7 @@ class MyTestCase(unittest.TestCase):
             query_id=980708,
             state=ExecutionState.EXECUTING,
             times=TimeData.from_dict(self.status_response_data),
+            result_metadata=None
         )
         self.assertEqual(
             expected, ExecutionStatusResponse.from_dict(self.status_response_data)
