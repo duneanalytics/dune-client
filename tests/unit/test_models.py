@@ -85,7 +85,7 @@ class MyTestCase(unittest.TestCase):
             expires_at=datetime(2024, 8, 28, 6, 36, 41, 588470, tzinfo=tzutc()),
             execution_started_at=parse(self.execution_start_str),
             execution_ended_at=parse(self.execution_end_str),
-            cancelled_at=None
+            cancelled_at=None,
         )
         self.assertEqual(
             expected_with_end, TimeData.from_dict(self.results_response_data)
@@ -96,7 +96,7 @@ class MyTestCase(unittest.TestCase):
             expires_at=None,
             execution_started_at=parse(self.execution_start_str),
             execution_ended_at=parse(self.execution_end_str),
-            cancelled_at=None
+            cancelled_at=None,
         )
         self.assertEqual(
             expected_with_empty_optionals, TimeData.from_dict(self.status_response_data)
@@ -108,7 +108,7 @@ class MyTestCase(unittest.TestCase):
             query_id=980708,
             state=ExecutionState.EXECUTING,
             times=TimeData.from_dict(self.status_response_data),
-            result_metadata=None
+            result_metadata=None,
         )
         self.assertEqual(
             expected, ExecutionStatusResponse.from_dict(self.status_response_data)
