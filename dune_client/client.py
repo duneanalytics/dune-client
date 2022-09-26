@@ -26,7 +26,7 @@ from dune_client.query import Query
 
 log = logging.getLogger(__name__)
 logging.basicConfig(
-    format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.INFO
+    format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.DEBUG
 )
 
 BASE_URL = "https://api.dune.com/api/v1"
@@ -57,15 +57,13 @@ class DuneClient(DuneInterface):
 
     def _get(self, url: str) -> Any:
         log.debug(f"GET received input url={url}")
-        response = requests.get(
-            url, headers={"x-dune-api-key": self.token}, timeout=120
-        )
+        response = requests.get(url, headers={"x-dune-api-key": self.token}, timeout=10)
         return self._handle_response(response)
 
     def _post(self, url: str, params: Any) -> Any:
         log.debug(f"POST received input url={url}, params={params}")
         response = requests.post(
-            url=url, json=params, headers={"x-dune-api-key": self.token}, timeout=120
+            url=url, json=params, headers={"x-dune-api-key": self.token}, timeout=10
         )
         return self._handle_response(response)
 
@@ -82,7 +80,7 @@ class DuneClient(DuneInterface):
         try:
             return ExecutionResponse.from_dict(response_json)
         except KeyError as err:
-            raise DuneError(response_json, "ExecutionResponse") from err
+            raise DuneError(response_json, "ExecutionResponse", err) from err
 
     def get_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""
@@ -92,7 +90,7 @@ class DuneClient(DuneInterface):
         try:
             return ExecutionStatusResponse.from_dict(response_json)
         except KeyError as err:
-            raise DuneError(response_json, "ExecutionStatusResponse") from err
+            raise DuneError(response_json, "ExecutionStatusResponse", err) from err
 
     def get_result(self, job_id: str) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
@@ -100,7 +98,7 @@ class DuneClient(DuneInterface):
         try:
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
-            raise DuneError(response_json, "ResultsResponse") from err
+            raise DuneError(response_json, "ResultsResponse", err) from err
 
     def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
@@ -112,7 +110,7 @@ class DuneClient(DuneInterface):
             success: bool = response_json["success"]
             return success
         except KeyError as err:
-            raise DuneError(response_json, "CancellationResponse") from err
+            raise DuneError(response_json, "CancellationResponse", err) from err
 
     def refresh(self, query: Query, ping_frequency: int = 5) -> list[DuneRecord]:
         """
@@ -121,9 +119,13 @@ class DuneClient(DuneInterface):
         Sleeps `ping_frequency` seconds between each status request.
         """
         job_id = self.execute(query).execution_id
-        while self.get_status(job_id).state != ExecutionState.COMPLETED:
-            log.info(f"waiting for query execution {job_id} to complete")
+        state = self.get_status(job_id).state
+        while state != ExecutionState.COMPLETED:
+            log.info(
+                f"waiting for query execution {job_id} to complete: current state {state}"
+            )
             time.sleep(ping_frequency)
+            state = self.get_status(job_id).state
 
         full_response = self.get_result(job_id)
         assert (

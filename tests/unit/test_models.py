@@ -109,6 +109,7 @@ class MyTestCase(unittest.TestCase):
             state=ExecutionState.EXECUTING,
             times=TimeData.from_dict(self.status_response_data),
             result_metadata=None,
+            queue_position=None,
         )
         self.assertEqual(
             expected, ExecutionStatusResponse.from_dict(self.status_response_data)
@@ -122,6 +123,7 @@ class MyTestCase(unittest.TestCase):
                 state=ExecutionState.COMPLETED,
                 times=TimeData.from_dict(self.status_response_data),
                 result_metadata=ResultMetadata.from_dict(self.result_metadata_data),
+                queue_position=None,
             ),
             ExecutionStatusResponse.from_dict(self.status_response_data_completed),
         )
