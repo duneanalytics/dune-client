@@ -57,15 +57,13 @@ class DuneClient(DuneInterface):
 
     def _get(self, url: str) -> Any:
         log.debug(f"GET received input url={url}")
-        response = requests.get(
-            url, headers={"x-dune-api-key": self.token}, timeout=120
-        )
+        response = requests.get(url, headers={"x-dune-api-key": self.token}, timeout=10)
         return self._handle_response(response)
 
     def _post(self, url: str, params: Any) -> Any:
         log.debug(f"POST received input url={url}, params={params}")
         response = requests.post(
-            url=url, json=params, headers={"x-dune-api-key": self.token}, timeout=120
+            url=url, json=params, headers={"x-dune-api-key": self.token}, timeout=5
         )
         return self._handle_response(response)
 
@@ -121,9 +119,16 @@ class DuneClient(DuneInterface):
         Sleeps `ping_frequency` seconds between each status request.
         """
         job_id = self.execute(query).execution_id
-        while self.get_status(job_id).state != ExecutionState.COMPLETED:
-            log.info(f"waiting for query execution {job_id} to complete")
+        state = self.get_status(job_id).state
+        while state != ExecutionState.COMPLETED:
+            print(
+                f"waiting for query execution {job_id} to complete: current state {state}"
+            )
+            log.info(
+                f"waiting for query execution {job_id} to complete: current state {state}"
+            )
             time.sleep(ping_frequency)
+            state = self.get_status(job_id).state
 
         full_response = self.get_result(job_id)
         assert (
