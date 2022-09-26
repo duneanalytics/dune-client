@@ -26,7 +26,7 @@ from dune_client.query import Query
 
 log = logging.getLogger(__name__)
 logging.basicConfig(
-    format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.INFO
+    format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.DEBUG
 )
 
 BASE_URL = "https://api.dune.com/api/v1"
@@ -82,7 +82,7 @@ class DuneClient(DuneInterface):
         try:
             return ExecutionResponse.from_dict(response_json)
         except KeyError as err:
-            raise DuneError(response_json, "ExecutionResponse") from err
+            raise DuneError(response_json, "ExecutionResponse", err) from err
 
     def get_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""
@@ -92,7 +92,7 @@ class DuneClient(DuneInterface):
         try:
             return ExecutionStatusResponse.from_dict(response_json)
         except KeyError as err:
-            raise DuneError(response_json, "ExecutionStatusResponse") from err
+            raise DuneError(response_json, "ExecutionStatusResponse", err) from err
 
     def get_result(self, job_id: str) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
@@ -100,7 +100,7 @@ class DuneClient(DuneInterface):
         try:
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
-            raise DuneError(response_json, "ResultsResponse") from err
+            raise DuneError(response_json, "ResultsResponse", err) from err
 
     def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
@@ -112,7 +112,7 @@ class DuneClient(DuneInterface):
             success: bool = response_json["success"]
             return success
         except KeyError as err:
-            raise DuneError(response_json, "CancellationResponse") from err
+            raise DuneError(response_json, "CancellationResponse", err) from err
 
     def refresh(self, query: Query, ping_frequency: int = 5) -> list[DuneRecord]:
         """

@@ -3,6 +3,7 @@ Dataclasses encoding response data from Dune API.
 """
 from __future__ import annotations
 
+import logging.config
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -10,6 +11,12 @@ from typing import Optional, Any, Union
 
 from dateutil.parser import parse
 from dune_client.types import DuneRecord
+
+
+log = logging.getLogger(__name__)
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.INFO
+)
 
 
 class DuneError(Exception):
@@ -20,8 +27,10 @@ class DuneError(Exception):
     {'error': 'The requested execution ID (ID: Wonky Job ID) is invalid.'}
     """
 
-    def __init__(self, data: dict[str, str], response_class: str):
-        super().__init__(f"Can't build {response_class} from {data}")
+    def __init__(self, data: dict[str, str], response_class: str, err: KeyError):
+        error_message = f"Can't build {response_class} from {data}"
+        log.error(f"{error_message} due to KeyError: {err}")
+        super().__init__(error_message)
 
 
 class ExecutionState(Enum):
@@ -57,7 +66,7 @@ class TimeData:
     """A collection of all timestamp related values contained within Dune Response"""
 
     submitted_at: datetime
-    execution_started_at: datetime
+    execution_started_at: Optional[datetime]
     execution_ended_at: Optional[datetime]
     # Expires only exists when we have result data
     expires_at: Optional[datetime]
@@ -67,13 +76,14 @@ class TimeData:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TimeData:
         """Constructor from dictionary. See unit test for sample input."""
+        start = data.get("execution_started_at")
         end = data.get("execution_ended_at")
         expires = data.get("expires_at")
         cancelled = data.get("cancelled_at")
         return cls(
             submitted_at=parse(data["submitted_at"]),
             expires_at=None if expires is None else parse(expires),
-            execution_started_at=parse(data["execution_started_at"]),
+            execution_started_at=None if start is None else parse(start),
             execution_ended_at=None if end is None else parse(end),
             cancelled_at=None if cancelled is None else parse(cancelled),
         )
@@ -89,6 +99,7 @@ class ExecutionStatusResponse:
     query_id: int
     state: ExecutionState
     times: TimeData
+    queue_position: Optional[int]
     # this will be present when the query execution completes
     result_metadata: Optional[ResultMetadata]
 
@@ -99,6 +110,7 @@ class ExecutionStatusResponse:
         return cls(
             execution_id=data["execution_id"],
             query_id=int(data["query_id"]),
+            queue_position=data.get("queue_position"),
             state=ExecutionState(data["state"]),
             result_metadata=ResultMetadata.from_dict(dct) if dct else None,
             times=TimeData.from_dict(data),  # Sending the entire data dict
