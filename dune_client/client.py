@@ -121,9 +121,6 @@ class DuneClient(DuneInterface):
         job_id = self.execute(query).execution_id
         state = self.get_status(job_id).state
         while state != ExecutionState.COMPLETED:
-            print(
-                f"waiting for query execution {job_id} to complete: current state {state}"
-            )
             log.info(
                 f"waiting for query execution {job_id} to complete: current state {state}"
             )
