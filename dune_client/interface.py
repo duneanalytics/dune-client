@@ -5,6 +5,7 @@ from abc import ABC
 
 from dune_client.query import Query
 from dune_client.types import DuneRecord
+from typing import List
 
 
 # pylint: disable=too-few-public-methods
@@ -13,7 +14,7 @@ class DuneInterface(ABC):
     User Facing Methods for a Dune Client
     """
 
-    def refresh(self, query: Query) -> list[DuneRecord]:
+    def refresh(self, query: Query) -> List[DuneRecord]:
         """
         Executes a Dune query, waits till query execution completes,
         fetches and returns the results.

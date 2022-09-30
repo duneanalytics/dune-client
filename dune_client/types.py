@@ -8,13 +8,13 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Dict
 
 from web3 import Web3
 
 from dune_client.util import postgres_date
 
-DuneRecord = dict[str, str]
+DuneRecord = Dict[str, str]
 
 # pylint: disable=too-few-public-methods
 class Address:

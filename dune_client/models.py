@@ -7,7 +7,7 @@ import logging.config
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, List, Dict
 
 from dateutil.parser import parse
 from dune_client.types import DuneRecord
@@ -149,8 +149,8 @@ class ResultMetadata:
         )
 
 
-RowData = list[dict[str, str]]
-MetaData = dict[str, Union[int, list[str]]]
+RowData = List[Dict[str, str]]
+MetaData = Dict[str, Union[int, List[str]]]
 
 
 @dataclass
@@ -171,7 +171,7 @@ class ExecutionResult:
         )
 
 
-ResultData = dict[str, Union[RowData, MetaData]]
+ResultData = Dict[str, Union[RowData, MetaData]]
 
 
 @dataclass
