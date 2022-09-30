@@ -2,10 +2,10 @@
 Abstract class for a basic Dune Interface with refresh method used by Query Runner.
 """
 from abc import ABC
+from typing import List
 
 from dune_client.query import Query
 from dune_client.types import DuneRecord
-from typing import List
 
 
 # pylint: disable=too-few-public-methods
