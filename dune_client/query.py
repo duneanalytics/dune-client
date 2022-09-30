@@ -3,7 +3,7 @@ Data Class Representing a Dune Query
 """
 import urllib.parse
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 from dune_client.types import QueryParameter
 
@@ -14,13 +14,13 @@ class Query:
 
     name: str
     query_id: int
-    params: Optional[list[QueryParameter]] = None
+    params: Optional[List[QueryParameter]] = None
 
     def base_url(self) -> str:
         """Returns a link to query results excluding fixed parameters"""
         return f"https://dune.com/queries/{self.query_id}"
 
-    def parameters(self) -> list[QueryParameter]:
+    def parameters(self) -> List[QueryParameter]:
         """Non-null version of self.params"""
         return self.params or []
 
