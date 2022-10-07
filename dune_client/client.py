@@ -119,16 +119,22 @@ class DuneClient(DuneInterface):
         Sleeps `ping_frequency` seconds between each status request.
         """
         job_id = self.execute(query).execution_id
-        state = self.get_status(job_id).state
-        while state != ExecutionState.COMPLETED:
-            log.info(
-                f"waiting for query execution {job_id} to complete: current state {state}"
-            )
+        status = self.get_status(job_id)
+        while status.state not in ExecutionState.terminal_states():
+            log.info(f"waiting for query execution {job_id} to complete: {status}")
             time.sleep(ping_frequency)
-            state = self.get_status(job_id).state
+            status = self.get_status(job_id)
 
-        full_response = self.get_result(job_id)
-        assert (
-            full_response.result is not None
-        ), f"Expected Results on completed execution status {full_response}"
-        return full_response.result.rows
+        if status.state == ExecutionState.COMPLETED:
+            full_response = self.get_result(job_id)
+            assert (
+                full_response.result is not None
+            ), f"Expected Results on completed execution status {full_response}"
+            return full_response.result.rows
+
+        if status.state == ExecutionState.CANCELLED:
+            log.info("Execution Cancelled, returning empty record set")
+            return []
+
+        log.error(status)
+        raise Exception(f"{status}. Perhaps your query took too long to run!")

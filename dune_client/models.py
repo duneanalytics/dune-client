@@ -42,6 +42,14 @@ class ExecutionState(Enum):
     EXECUTING = "QUERY_STATE_EXECUTING"
     PENDING = "QUERY_STATE_PENDING"
     CANCELLED = "QUERY_STATE_CANCELLED"
+    FAILED = "QUERY_STATE_FAILED"
+
+    @classmethod
+    def terminal_states(cls) -> set[ExecutionState]:
+        """
+        Returns the terminal states (i.e. when a query execution is no longer executing
+        """
+        return {cls.COMPLETED, cls.CANCELLED, cls.FAILED}
 
 
 @dataclass
@@ -115,6 +123,17 @@ class ExecutionStatusResponse:
             result_metadata=ResultMetadata.from_dict(dct) if dct else None,
             times=TimeData.from_dict(data),  # Sending the entire data dict
         )
+
+    def __str__(self) -> str:
+        if self.state == ExecutionState.PENDING:
+            return f"{self.state} (queue position: {self.queue_position})"
+        if self.state == ExecutionState.FAILED:
+            return (
+                f"{self.state}: execution_id={self.execution_id}, "
+                f"query_id={self.query_id}, times={self.times}"
+            )
+
+        return f"{self.state}"
 
 
 @dataclass
