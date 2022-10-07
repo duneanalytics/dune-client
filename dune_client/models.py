@@ -131,7 +131,7 @@ class ResultMetadata:
     execution_time_millis: int
 
     @classmethod
-    def from_dict(cls, data: dict[str, int | list[str]]) -> ResultMetadata:
+    def from_dict(cls, data: dict[str, Any]) -> ResultMetadata:
         """Constructor from dictionary. See unit test for sample input."""
         assert isinstance(data["column_names"], list)
         pending_time = data.get("pending_time_millis", None)

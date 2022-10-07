@@ -11,7 +11,8 @@ from dune_client.models import (
     ResultsResponse,
     TimeData,
     ExecutionResult,
-    ResultMetadata, DuneError,
+    ResultMetadata,
+    DuneError,
 )
 
 
