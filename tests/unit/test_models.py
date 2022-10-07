@@ -12,6 +12,7 @@ from dune_client.models import (
     TimeData,
     ExecutionResult,
     ResultMetadata,
+    DuneError,
 )
 
 
@@ -114,6 +115,29 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(
             expected, ExecutionStatusResponse.from_dict(self.status_response_data)
         )
+
+    def test_parse_known_status_response(self):
+        # For context: https://github.com/cowprotocol/dune-client/issues/22
+        response = {
+            "execution_id": "01GES18035K5C4GDTY12Q79GBD",
+            "query_id": 1317323,
+            "state": "QUERY_STATE_COMPLETED",
+            "submitted_at": "2022-10-07T10:53:18.822127Z",
+            "expires_at": "2024-10-06T10:53:20.729373Z",
+            "execution_started_at": "2022-10-07T10:53:18.823105936Z",
+            "execution_ended_at": "2022-10-07T10:53:20.729372559Z",
+            "result_metadata": {
+                "column_names": ["token"],
+                "result_set_bytes": 815,
+                "total_row_count": 18,
+                "datapoint_count": 18,
+                "execution_time_millis": 1906,
+            },
+        }
+        try:
+            ExecutionStatusResponse.from_dict(response)
+        except DuneError as err:
+            self.fail(f"Unexpected error {err}")
 
     def test_parse_status_response_completed(self):
         self.assertEqual(

@@ -127,25 +127,21 @@ class ResultMetadata:
     result_set_bytes: int
     total_row_count: int
     datapoint_count: int
-    pending_time_millis: int
+    pending_time_millis: Optional[int]
     execution_time_millis: int
 
     @classmethod
-    def from_dict(cls, data: dict[str, int | list[str]]) -> ResultMetadata:
+    def from_dict(cls, data: dict[str, Any]) -> ResultMetadata:
         """Constructor from dictionary. See unit test for sample input."""
         assert isinstance(data["column_names"], list)
-        assert isinstance(data["result_set_bytes"], int)
-        assert isinstance(data["total_row_count"], int)
-        assert isinstance(data["datapoint_count"], int)
-        assert isinstance(data["pending_time_millis"], int)
-        assert isinstance(data["execution_time_millis"], int)
+        pending_time = data.get("pending_time_millis", None)
         return cls(
             column_names=data["column_names"],
-            result_set_bytes=data["result_set_bytes"],
-            total_row_count=data["total_row_count"],
-            datapoint_count=data["datapoint_count"],
-            pending_time_millis=data["pending_time_millis"],
-            execution_time_millis=data["execution_time_millis"],
+            result_set_bytes=int(data["result_set_bytes"]),
+            total_row_count=int(data["total_row_count"]),
+            datapoint_count=int(data["datapoint_count"]),
+            pending_time_millis=int(pending_time) if pending_time else None,
+            execution_time_millis=int(data["execution_time_millis"]),
         )
 
 
