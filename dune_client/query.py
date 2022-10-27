@@ -12,8 +12,8 @@ from dune_client.types import QueryParameter
 class Query:
     """Basic data structure constituting a Dune Analytics Query."""
 
-    name: str
     query_id: int
+    name: Optional[str] = "unnamed"
     params: Optional[List[QueryParameter]] = None
 
     def base_url(self) -> str:
@@ -33,3 +33,10 @@ class Query:
                 [self.base_url(), urllib.parse.quote_plus(params, safe="=&?")]
             )
         return self.base_url()
+
+    def __hash__(self) -> int:
+        """
+        This contains the query ID and the values of relevant parameters.
+        Thus, it is unique for caching purposes
+        """
+        return self.url().__hash__()
