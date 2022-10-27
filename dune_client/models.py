@@ -208,11 +208,25 @@ class ResultsResponse:
         assert isinstance(data["execution_id"], str)
         assert isinstance(data["query_id"], int)
         assert isinstance(data["state"], str)
-        assert isinstance(data["result"], dict)
+        result = data.get("result", {})
+        assert isinstance(result, dict)
         return cls(
             execution_id=data["execution_id"],
             query_id=int(data["query_id"]),
             state=ExecutionState(data["state"]),
             times=TimeData.from_dict(data),
-            result=ExecutionResult.from_dict(data["result"]),
+            result=ExecutionResult.from_dict(result) if result else None,
         )
+
+    def get_rows(self) -> list[DuneRecord]:
+        """
+        Absorbs the Optional check and returns the result rows.
+        When execution is a non-complete terminal state, returns empty list.
+        """
+
+        if self.state == ExecutionState.COMPLETED:
+            assert self.result is not None, f"No Results on completed execution {self}"
+            return self.result.rows
+
+        log.info(f"execution {self.state} returning empty list")
+        return []

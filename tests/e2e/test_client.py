@@ -36,11 +36,13 @@ class TestDuneClient(unittest.TestCase):
         dune = DuneClient(self.valid_api_key)
         job_id = dune.execute(query).execution_id
         status = dune.get_status(job_id)
-        self.assertEqual(status.state, ExecutionState.EXECUTING)
+        self.assertTrue(
+            status.state in [ExecutionState.EXECUTING, ExecutionState.PENDING]
+        )
 
     def test_refresh(self):
         dune = DuneClient(self.valid_api_key)
-        results = dune.refresh(self.query)
+        results = dune.refresh(self.query).get_rows()
         self.assertGreater(len(results), 0)
 
     def test_parameters_recognized(self):
@@ -58,7 +60,7 @@ class TestDuneClient(unittest.TestCase):
         dune = DuneClient(self.valid_api_key)
         results = dune.refresh(query)
         self.assertEqual(
-            results,
+            results.get_rows(),
             [
                 {
                     "text_field": "different word",
@@ -88,9 +90,13 @@ class TestDuneClient(unittest.TestCase):
             query_id=1229120,
         )
         execution_response = dune.execute(query)
+        job_id = execution_response.execution_id
         # POST Cancellation
-        success = dune.cancel_execution(execution_response.execution_id)
+        success = dune.cancel_execution(job_id)
         self.assertTrue(success)
+
+        results = dune.get_result(job_id)
+        self.assertEqual(results.state, ExecutionState.CANCELLED)
 
     def test_invalid_api_key_error(self):
         dune = DuneClient(api_key="Invalid Key")

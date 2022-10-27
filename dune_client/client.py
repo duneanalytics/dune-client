@@ -21,7 +21,7 @@ from dune_client.models import (
     ResultsResponse,
     ExecutionState,
 )
-from dune_client.types import DuneRecord
+
 from dune_client.query import Query
 
 log = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ class DuneClient(DuneInterface):
         except KeyError as err:
             raise DuneError(response_json, "CancellationResponse", err) from err
 
-    def refresh(self, query: Query, ping_frequency: int = 5) -> list[DuneRecord]:
+    def refresh(self, query: Query, ping_frequency: int = 5) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
         fetches and returns the results.
@@ -125,16 +125,8 @@ class DuneClient(DuneInterface):
             time.sleep(ping_frequency)
             status = self.get_status(job_id)
 
-        if status.state == ExecutionState.COMPLETED:
-            full_response = self.get_result(job_id)
-            assert (
-                full_response.result is not None
-            ), f"Expected Results on completed execution status {full_response}"
-            return full_response.result.rows
-
-        if status.state == ExecutionState.CANCELLED:
-            log.info("Execution Cancelled, returning empty record set")
-            return []
-
-        log.error(status)
-        raise Exception(f"{status}. Perhaps your query took too long to run!")
+        full_response = self.get_result(job_id)
+        if status.state == ExecutionState.FAILED:
+            log.error(status)
+            raise Exception(f"{status}. Perhaps your query took too long to run!")
+        return full_response
