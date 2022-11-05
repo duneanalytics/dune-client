@@ -81,15 +81,15 @@ class AsyncDuneClient(BaseDuneClient):
     async def _get(self, url: str) -> Any:
         self.logger.debug(f"GET received input url={url}")
         response = await self._session.get(
-            url,
+            url=f"{self.API_PATH}{url}",
             headers=self.default_headers(),
         )
         return await self._handle_response(response)
 
     async def _post(self, url: str, params: Any) -> Any:
         self.logger.debug(f"POST received input url={url}, params={params}")
-        response = await self._session.get(
-            url,
+        response = await self._session.post(
+            url=f"{self.API_PATH}{url}",
             headers=self.default_headers(),
         )
         return await self._handle_response(response)
