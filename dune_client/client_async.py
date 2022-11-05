@@ -90,6 +90,7 @@ class AsyncDuneClient(BaseDuneClient):
         self.logger.debug(f"POST received input url={url}, params={params}")
         response = await self._session.post(
             url=f"{self.API_PATH}{url}",
+            json=params,
             headers=self.default_headers(),
         )
         return await self._handle_response(response)
