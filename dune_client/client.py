@@ -31,8 +31,8 @@ class DuneClient(DuneInterface, BaseDuneClient):
     """
 
     def _handle_response(
-            self,
-            response: Response,
+        self,
+        response: Response,
     ) -> Any:
         try:
             # Some responses can be decoded and converted to DuneErrors
@@ -117,7 +117,9 @@ class DuneClient(DuneInterface, BaseDuneClient):
         job_id = self.execute(query).execution_id
         status = self.get_status(job_id)
         while status.state not in ExecutionState.terminal_states():
-            self.logger.info(f"waiting for query execution {job_id} to complete: {status}")
+            self.logger.info(
+                f"waiting for query execution {job_id} to complete: {status}"
+            )
             time.sleep(ping_frequency)
             status = self.get_status(job_id)
 

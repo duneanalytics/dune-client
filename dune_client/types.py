@@ -159,9 +159,9 @@ class QueryParameter:
             return str(self.value.strftime("%Y-%m-%d %H:%M:%S"))
         raise TypeError(f"Type {self.type} not recognized!")
 
-    def to_dict(self) -> dict[str, str | list[str]]:
+    def to_dict(self) -> dict[str, str]:
         """Converts QueryParameter into string json format accepted by Dune API"""
-        results: dict[str, str | list[str]] = {
+        results: dict[str, str] = {
             "key": self.key,
             "type": self.type.value,
             "value": self.value_str(),
