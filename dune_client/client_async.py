@@ -33,7 +33,6 @@ class AsyncDuneClient(BaseDuneClient):
     combining the use of endpoints (e.g. refresh)
     """
 
-    # _session = None
     _connection_limit = 3
 
     def __init__(self, api_key: str, connection_limit: int = 3):
