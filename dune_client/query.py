@@ -13,7 +13,7 @@ class Query:
     """Basic data structure constituting a Dune Analytics Query."""
 
     query_id: int
-    name: Optional[str] = "unnamed"
+    name: str = "unnamed"
     params: Optional[List[QueryParameter]] = None
 
     def base_url(self) -> str:

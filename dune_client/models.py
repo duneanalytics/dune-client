@@ -51,6 +51,10 @@ class ExecutionState(Enum):
         """
         return {cls.COMPLETED, cls.CANCELLED, cls.FAILED}
 
+    def is_complete(self) -> bool:
+        """Returns True is state is completed, otherwise False."""
+        return self == ExecutionState.COMPLETED
+
 
 @dataclass
 class ExecutionResponse:
