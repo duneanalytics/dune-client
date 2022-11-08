@@ -8,8 +8,6 @@ from __future__ import annotations
 import logging.config
 from typing import Dict
 
-from dune_client.query import Query
-
 
 class BaseDuneClient:
     """
@@ -30,10 +28,3 @@ class BaseDuneClient:
         """Return default headers containing Dune Api token"""
         return {"x-dune-api-key": self.token}
 
-    def query_to_params(self, query: Query) -> Dict[str, Dict[str, str]]:
-        """Transforms Query objects to params to pass in API"""
-        return {
-            "query_parameters": {
-                p.key: p.to_dict()["value"] for p in query.parameters()
-            }
-        }

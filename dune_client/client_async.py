@@ -98,7 +98,7 @@ class AsyncDuneClient(BaseDuneClient):
         """Post's to Dune API for execute `query`"""
         response_json = await self._post(
             url=f"/query/{query.query_id}/execute",
-            params=self.query_to_params(query),
+            params=query.request_format(),
         )
         try:
             return ExecutionResponse.from_dict(response_json)
