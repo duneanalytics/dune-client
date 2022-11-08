@@ -5,14 +5,13 @@ https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e
 """
 from __future__ import annotations
 
-import logging.config
 import time
-from json import JSONDecodeError
 from typing import Any
 
 import requests
-from requests import Response
+from requests import Response, JSONDecodeError
 
+from dune_client.base_client import BaseDuneClient
 from dune_client.interface import DuneInterface
 from dune_client.models import (
     ExecutionResponse,
@@ -24,53 +23,55 @@ from dune_client.models import (
 
 from dune_client.query import Query
 
-log = logging.getLogger(__name__)
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.DEBUG
-)
 
-BASE_URL = "https://api.dune.com/api/v1"
-
-
-class DuneClient(DuneInterface):
+class DuneClient(DuneInterface, BaseDuneClient):
     """
     An interface for Dune API with a few convenience methods
     combining the use of endpoints (e.g. refresh)
     """
 
-    def __init__(self, api_key: str):
-        self.token = api_key
-
-    @staticmethod
     def _handle_response(
+        self,
         response: Response,
     ) -> Any:
         try:
             # Some responses can be decoded and converted to DuneErrors
             response_json = response.json()
-            log.debug(f"received response {response_json}")
+            self.logger.debug(f"received response {response_json}")
             return response_json
         except JSONDecodeError as err:
             # Others can't. Only raise HTTP error for not decodable errors
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
 
-    def _get(self, url: str) -> Any:
-        log.debug(f"GET received input url={url}")
-        response = requests.get(url, headers={"x-dune-api-key": self.token}, timeout=10)
+    def _route_url(self, route: str) -> str:
+        return f"{self.BASE_URL}{self.API_PATH}/{route}"
+
+    def _get(self, route: str) -> Any:
+        url = self._route_url(route)
+        self.logger.debug(f"GET received input url={url}")
+        response = requests.get(
+            url,
+            headers={"x-dune-api-key": self.token},
+            timeout=self.DEFAULT_TIMEOUT,
+        )
         return self._handle_response(response)
 
-    def _post(self, url: str, params: Any) -> Any:
-        log.debug(f"POST received input url={url}, params={params}")
+    def _post(self, route: str, params: Any) -> Any:
+        url = self._route_url(route)
+        self.logger.debug(f"POST received input url={url}, params={params}")
         response = requests.post(
-            url=url, json=params, headers={"x-dune-api-key": self.token}, timeout=10
+            url=url,
+            json=params,
+            headers={"x-dune-api-key": self.token},
+            timeout=self.DEFAULT_TIMEOUT,
         )
         return self._handle_response(response)
 
     def execute(self, query: Query) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         response_json = self._post(
-            url=f"{BASE_URL}/query/{query.query_id}/execute",
+            route=f"query/{query.query_id}/execute",
             params={
                 "query_parameters": {
                     p.key: p.to_dict()["value"] for p in query.parameters()
@@ -85,7 +86,7 @@ class DuneClient(DuneInterface):
     def get_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""
         response_json = self._get(
-            url=f"{BASE_URL}/execution/{job_id}/status",
+            route=f"execution/{job_id}/status",
         )
         try:
             return ExecutionStatusResponse.from_dict(response_json)
@@ -94,7 +95,7 @@ class DuneClient(DuneInterface):
 
     def get_result(self, job_id: str) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._get(url=f"{BASE_URL}/execution/{job_id}/results")
+        response_json = self._get(route=f"execution/{job_id}/results")
         try:
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
@@ -102,9 +103,7 @@ class DuneClient(DuneInterface):
 
     def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._post(
-            url=f"{BASE_URL}/execution/{job_id}/cancel", params=None
-        )
+        response_json = self._post(route=f"execution/{job_id}/cancel", params=None)
         try:
             # No need to make a dataclass for this since it's just a boolean.
             success: bool = response_json["success"]
@@ -121,12 +120,14 @@ class DuneClient(DuneInterface):
         job_id = self.execute(query).execution_id
         status = self.get_status(job_id)
         while status.state not in ExecutionState.terminal_states():
-            log.info(f"waiting for query execution {job_id} to complete: {status}")
+            self.logger.info(
+                f"waiting for query execution {job_id} to complete: {status}"
+            )
             time.sleep(ping_frequency)
             status = self.get_status(job_id)
 
         full_response = self.get_result(job_id)
         if status.state == ExecutionState.FAILED:
-            log.error(status)
+            self.logger.error(status)
             raise Exception(f"{status}. Perhaps your query took too long to run!")
         return full_response

@@ -29,6 +29,17 @@ class TestQueryMonitor(unittest.TestCase):
     def test_parameters(self):
         self.assertEqual(self.query.parameters(), self.query_params)
 
+    def test_request_format(self):
+        expected_answer = {
+            "query_parameters": {
+                "Enum": "option1",
+                "Text": "plain text",
+                "Number": "12",
+                "Date": "2021-01-01 12:34:56",
+            }
+        }
+        self.assertEqual(self.query.request_format(), expected_answer)
+
     def test_hash(self):
         # Same ID, different params
         query1 = Query(query_id=0, params=[QueryParameter.text_type("Text", "word1")])
