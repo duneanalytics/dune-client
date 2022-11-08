@@ -44,7 +44,5 @@ class Query:
     def request_format(self) -> Dict[str, Dict[str, str]]:
         """Transforms Query objects to params to pass in API"""
         return {
-            "query_parameters": {
-                p.key: p.to_dict()["value"] for p in self.parameters()
-            }
+            "query_parameters": {p.key: p.to_dict()["value"] for p in self.parameters()}
         }

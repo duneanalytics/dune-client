@@ -9,6 +9,7 @@ import logging.config
 from typing import Dict
 
 
+# pylint: disable=too-few-public-methods
 class BaseDuneClient:
     """
     A Base Client for Dune which sets up default values
@@ -27,4 +28,3 @@ class BaseDuneClient:
     def default_headers(self) -> Dict[str, str]:
         """Return default headers containing Dune Api token"""
         return {"x-dune-api-key": self.token}
-
