@@ -51,6 +51,9 @@ class TestFileIO(unittest.TestCase):
                 file_manager.load(TEST_FILE)
 
     def test_file_type(self):
-        self.assertEqual(FileType.CSV, FileType.from_str("csv"))
-        self.assertEqual(FileType.JSON, FileType.from_str("json"))
-        self.assertEqual(FileType.JSON, FileType.from_str("ndjson"))
+        for enum_instance in FileType:
+            self.assertEqual(enum_instance, FileType.from_str(str(enum_instance)))
+        # The above is equivalent to, but also covers new items when added.
+        # self.assertEqual(FileType.CSV, FileType.from_str("csv"))
+        # self.assertEqual(FileType.JSON, FileType.from_str("json"))
+        # self.assertEqual(FileType.NDJSON, FileType.from_str("ndjson"))
