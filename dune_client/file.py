@@ -34,7 +34,11 @@ class FileType(Enum):
 
     @classmethod
     def from_str(cls, value: str) -> FileType:
-        """Constructs and instance of FileType from string"""
+        """
+        Constructs and instance of FileType from string
+        This method is used by FileIO constructor,
+        so that users don't have to import this class
+        """
         lowered_value = value.lower()
         if "ndjson" in lowered_value:
             return cls.NDJSON
@@ -74,8 +78,8 @@ class FileType(Enum):
             writer = ndjson.writer(out_file, ensure_ascii=False)
             for row in data:
                 writer.writerow(row)
-
-        raise ValueError(f"Unrecognized FileType {self} for {out_file.name}")
+        else:
+            raise ValueError(f"Unrecognized FileType {self} for {out_file.name}")
 
 
 class FileIO:
@@ -115,7 +119,7 @@ class FileIO:
         if len(data) == 0:
             # TODO - should be able to write empty file,
             #  but without data, we don't know the csv headers for the type!
-            logger.debug(f"Nothing to write to {name}... skipping")
+            logger.info(f"Nothing to write to {name}... skipping")
             return
 
         with open(self._filepath(name), "w", encoding=self.encoding) as out_file:
