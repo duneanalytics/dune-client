@@ -3,6 +3,7 @@ Async Dune Client Class responsible for refreshing Dune Queries
 Framework built on Dune's API Documentation
 https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e003a
 """
+from __future__ import annotations
 import asyncio
 from typing import Any, Optional
 
@@ -62,8 +63,9 @@ class AsyncDuneClient(BaseDuneClient):
         if self._session:
             await self._session.close()
 
-    async def __aenter__(self) -> None:
+    async def __aenter__(self) -> AsyncDuneClient:
         self._session = await self._create_session()
+        return self
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         await self.disconnect()
