@@ -94,16 +94,8 @@ class FileIO:
     def __init__(
         self,
         path: Path | str,
-        # ftype: FileType | str = FileType.CSV,
         encoding: str = "utf-8",
     ):
-        # if isinstance(ftype, str):
-        #     try:
-        #         ftype = FileType.from_str(ftype)
-        #     except Exception as err:
-        #         raise err
-        #
-        # self.ftype: FileType = ftype
         if not os.path.exists(path):
             logger.info(f"creating write path {path}")
             os.makedirs(path)
@@ -115,12 +107,10 @@ class FileIO:
         return os.path.join(self.path, name + str(ftype))
 
     def _write(self, data: list[DuneRecord], name: str, ftype: FileType) -> None:
+        # TODO - use @skip_empty decorator here. Couldn't get the types to work.
         if len(data) == 0:
-            # TODO - should be able to write empty file,
-            #  but without data, we don't know the csv headers for the type!
             logger.info(f"Nothing to write to {name}... skipping")
             return
-
         with open(self._filepath(name, ftype), "w", encoding=self.encoding) as out_file:
             ftype.write(out_file, data)
 
@@ -152,3 +142,15 @@ class FileIO:
     def load_ndjson(self, name: str) -> list[DuneRecord]:
         """Loads DuneRecords from ndjson file `name`"""
         return self._load(name, FileType.NDJSON)
+
+    @staticmethod
+    def _parse_ftype(ftype: FileType | str) -> FileType:
+        if isinstance(ftype, str):
+            ftype = FileType.from_str(ftype)
+        return ftype
+
+    def load_singleton(
+        self, name: str, ftype: FileType | str, index: int = 0
+    ) -> DuneRecord:
+        """Loads and returns single entry by index (default 0)"""
+        return self._load(name, self._parse_ftype(ftype))[index]
