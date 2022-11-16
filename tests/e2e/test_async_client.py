@@ -42,14 +42,14 @@ class TestDuneClient(aiounittest.AsyncTestCase):
         self.assertTrue(
             status.state in [ExecutionState.EXECUTING, ExecutionState.PENDING]
         )
-        await dune.close_session()
+        await dune.disconnect()
 
     async def test_refresh(self):
         dune = AsyncDuneClient(self.valid_api_key)
         await dune.connect()
         results = (await dune.refresh(self.query)).get_rows()
         self.assertGreater(len(results), 0)
-        await dune.close_session()
+        await dune.disconnect()
 
     async def test_parameters_recognized(self):
         query = copy.copy(self.query)
@@ -77,7 +77,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
                 }
             ],
         )
-        await dune.close_session()
+        await dune.disconnect()
 
     async def test_endpoints(self):
         dune = AsyncDuneClient(self.valid_api_key)
@@ -93,7 +93,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             time.sleep(1)
         results = (await dune.get_result(job_id)).result.rows
         self.assertGreater(len(results), 0)
-        await dune.close_session()
+        await dune.disconnect()
 
     async def test_cancel_execution(self):
         dune = AsyncDuneClient(self.valid_api_key)
@@ -110,7 +110,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
 
         results = await dune.get_result(job_id)
         self.assertEqual(results.state, ExecutionState.CANCELLED)
-        await dune.close_session()
+        await dune.disconnect()
 
     async def test_invalid_api_key_error(self):
         dune = AsyncDuneClient(api_key="Invalid Key")
@@ -133,7 +133,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             str(err.exception),
             "Can't build ResultsResponse from {'error': 'invalid API Key'}",
         )
-        await dune.close_session()
+        await dune.disconnect()
 
     async def test_query_not_found_error(self):
         dune = AsyncDuneClient(self.valid_api_key)
@@ -147,7 +147,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             str(err.exception),
             "Can't build ExecutionResponse from {'error': 'Query not found'}",
         )
-        await dune.close_session()
+        await dune.disconnect()
 
     async def test_internal_error(self):
         dune = AsyncDuneClient(self.valid_api_key)
@@ -162,7 +162,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             str(err.exception),
             "Can't build ExecutionResponse from {'error': 'An internal error occured'}",
         )
-        await dune.close_session()
+        await dune.disconnect()
 
     async def test_invalid_job_id_error(self):
         dune = AsyncDuneClient(self.valid_api_key)
@@ -175,14 +175,14 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             "Can't build ExecutionStatusResponse from "
             "{'error': 'The requested execution ID (ID: Wonky Job ID) is invalid.'}",
         )
-        await dune.close_session()
+        await dune.disconnect()
 
     async def test_disconnect(self):
         dune = AsyncDuneClient(self.valid_api_key)
         await dune.connect()
         results = (await dune.refresh(self.query)).get_rows()
         self.assertGreater(len(results), 0)
-        await dune.close_session()
+        await dune.disconnect()
         self.assertTrue(cl._session.closed)
 
     async def test_refresh_context_manager_singleton(self):
