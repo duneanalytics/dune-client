@@ -94,38 +94,61 @@ class FileIO:
     def __init__(
         self,
         path: Path | str,
-        ftype: FileType | str = FileType.CSV,
+        # ftype: FileType | str = FileType.CSV,
         encoding: str = "utf-8",
     ):
-        if isinstance(ftype, str):
-            try:
-                ftype = FileType.from_str(ftype)
-            except Exception as err:
-                raise err
-
-        self.ftype: FileType = ftype
+        # if isinstance(ftype, str):
+        #     try:
+        #         ftype = FileType.from_str(ftype)
+        #     except Exception as err:
+        #         raise err
+        #
+        # self.ftype: FileType = ftype
         if not os.path.exists(path):
             logger.info(f"creating write path {path}")
             os.makedirs(path)
         self.path = path
         self.encoding: str = encoding
 
-    def _filepath(self, name: str) -> str:
+    def _filepath(self, name: str, ftype: FileType) -> str:
         """Internal method for building absolute path."""
-        return os.path.join(self.path, name + str(self.ftype))
+        return os.path.join(self.path, name + str(ftype))
 
-    def write(self, data: list[DuneRecord], name: str) -> None:
-        """Writes `data` to file `name`"""
+    def _write(self, data: list[DuneRecord], name: str, ftype: FileType) -> None:
         if len(data) == 0:
             # TODO - should be able to write empty file,
             #  but without data, we don't know the csv headers for the type!
             logger.info(f"Nothing to write to {name}... skipping")
             return
 
-        with open(self._filepath(name), "w", encoding=self.encoding) as out_file:
-            self.ftype.write(out_file, data)
+        with open(self._filepath(name, ftype), "w", encoding=self.encoding) as out_file:
+            ftype.write(out_file, data)
 
-    def load(self, name: str) -> list[DuneRecord]:
+    def write_csv(self, data: list[DuneRecord], name: str) -> None:
+        """Writes `data` to csv file `name`"""
+        self._write(data, name, FileType.CSV)
+
+    def write_json(self, data: list[DuneRecord], name: str) -> None:
+        """Writes `data` to json file `name`"""
+        self._write(data, name, FileType.JSON)
+
+    def write_ndjson(self, data: list[DuneRecord], name: str) -> None:
+        """Writes `data` to ndjson file `name`"""
+        self._write(data, name, FileType.NDJSON)
+
+    def _load(self, name: str, ftype: FileType) -> list[DuneRecord]:
         """Loads DuneRecords from file `name`"""
-        with open(self._filepath(name), "r", encoding="utf-8") as file:
-            return self.ftype.load(file)
+        with open(self._filepath(name, ftype), "r", encoding=self.encoding) as file:
+            return ftype.load(file)
+
+    def load_csv(self, name: str) -> list[DuneRecord]:
+        """Loads DuneRecords from csv file `name`"""
+        return self._load(name, FileType.CSV)
+
+    def load_json(self, name: str) -> list[DuneRecord]:
+        """Loads DuneRecords from json file `name`"""
+        return self._load(name, FileType.JSON)
+
+    def load_ndjson(self, name: str) -> list[DuneRecord]:
+        """Loads DuneRecords from ndjson file `name`"""
+        return self._load(name, FileType.NDJSON)

@@ -27,28 +27,22 @@ class TestFileIO(unittest.TestCase):
             {"col1": "value01", "col2": "value02"},
             {"col1": "value11", "col2": "value12"},
         ]
-        self.csv_manager = FileIO(TEST_PATH, FileType.CSV)
-        self.json_manager = FileIO(TEST_PATH, FileType.JSON)
-        self.ndjson_type = FileIO(TEST_PATH, FileType.NDJSON)
-        self.file_managers = [
-            self.csv_manager,
-            self.json_manager,
-            self.ndjson_type,
-        ]
 
     @cleanup_files
     def test_write_and_load(self):
-        for file_manager in self.file_managers:
-            file_manager.write(self.dune_records, TEST_FILE)
-            loaded_records = file_manager.load(TEST_FILE)
-            self.assertEqual(self.dune_records, loaded_records)
+        file_manager = FileIO(TEST_PATH)
+        for file_type in FileType:
+            file_manager._write(self.dune_records, TEST_FILE, file_type)
+            loaded_records = file_manager._load(TEST_FILE, file_type)
+            self.assertEqual(self.dune_records, loaded_records, file_type)
 
     def test_skip_empty_write(self):
-        for file_manager in self.file_managers:
+        file_manager = FileIO(TEST_PATH)
+        for file_type in FileType:
             with self.assertLogs():
-                file_manager.write([], TEST_FILE)
+                file_manager._write([], TEST_FILE, file_type)
             with self.assertRaises(FileNotFoundError):
-                file_manager.load(TEST_FILE)
+                file_manager._load(TEST_FILE, file_type)
 
     def test_file_type(self):
         for enum_instance in FileType:
