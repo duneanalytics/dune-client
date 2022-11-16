@@ -36,6 +36,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
     async def test_get_status(self):
         query = Query(name="No Name", query_id=1276442, params=[])
         dune = AsyncDuneClient(self.valid_api_key)
+        await dune.connect()
         job_id = (await dune.execute(query)).execution_id
         status = await dune.get_status(job_id)
         self.assertTrue(
@@ -45,6 +46,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
 
     async def test_refresh(self):
         dune = AsyncDuneClient(self.valid_api_key)
+        await dune.connect()
         results = (await dune.refresh(self.query)).get_rows()
         self.assertGreater(len(results), 0)
         await dune.close_session()
@@ -62,6 +64,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
         self.assertEqual(query.parameters(), new_params)
 
         dune = AsyncDuneClient(self.valid_api_key)
+        await dune.connect()
         results = await dune.refresh(query)
         self.assertEqual(
             results.get_rows(),
@@ -78,6 +81,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
 
     async def test_endpoints(self):
         dune = AsyncDuneClient(self.valid_api_key)
+        await dune.connect()
         execution_response = await dune.execute(self.query)
         self.assertIsInstance(execution_response, ExecutionResponse)
         job_id = execution_response.execution_id
@@ -93,6 +97,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
 
     async def test_cancel_execution(self):
         dune = AsyncDuneClient(self.valid_api_key)
+        await dune.connect()
         query = Query(
             name="Long Running Query",
             query_id=1229120,
@@ -109,6 +114,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
 
     async def test_invalid_api_key_error(self):
         dune = AsyncDuneClient(api_key="Invalid Key")
+        await dune.connect()
         with self.assertRaises(DuneError) as err:
             await dune.execute(self.query)
         self.assertEqual(
@@ -131,6 +137,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
 
     async def test_query_not_found_error(self):
         dune = AsyncDuneClient(self.valid_api_key)
+        await dune.connect()
         query = copy.copy(self.query)
         query.query_id = 99999999  # Invalid Query Id.
 
@@ -144,6 +151,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
 
     async def test_internal_error(self):
         dune = AsyncDuneClient(self.valid_api_key)
+        await dune.connect()
         query = copy.copy(self.query)
         # This query ID is too large!
         query.query_id = 9999999999999
@@ -158,6 +166,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
 
     async def test_invalid_job_id_error(self):
         dune = AsyncDuneClient(self.valid_api_key)
+        await dune.connect()
 
         with self.assertRaises(DuneError) as err:
             await dune.get_status("Wonky Job ID")
@@ -167,6 +176,25 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             "{'error': 'The requested execution ID (ID: Wonky Job ID) is invalid.'}",
         )
         await dune.close_session()
+
+    async def test_disconnect(self):
+        dune = AsyncDuneClient(self.valid_api_key)
+        await dune.connect()
+        results = (await dune.refresh(self.query)).get_rows()
+        self.assertGreater(len(results), 0)
+        await dune.close_session()
+        self.assertTrue(cl._session.closed)
+
+    async def test_refresh_context_manager_singleton(self):
+        dune = AsyncDuneClient(self.valid_api_key)
+        async with dune as cl:
+            results = (await cl.refresh(self.query)).get_rows()
+        self.assertGreater(len(results), 0)
+
+    async def test_refresh_context_manager(self):
+        async with AsyncDuneClient(self.valid_api_key) as cl:
+            results = (await cl.refresh(self.query)).get_rows()
+        self.assertGreater(len(results), 0)
 
 
 if __name__ == "__main__":
