@@ -33,14 +33,30 @@ jobs:
           pip install -r requirements/dev.txt
       - name: Unit Tests
         run: python -m pytest tests/unit
-  e2e-tests:
+  e2e-tests-3.9:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Setup Python 3.8
+      - name: Setup Python 3.9
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.9'
+      - name: Install Requirements
+        run:
+          pip install -r requirements/dev.txt
+      - name: End to End Tests
+        env:
+          DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
+        run:
+          python -m pytest tests/e2e
+  e2e-tests-3.10:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
       - name: Install Requirements
         run:
           pip install -r requirements/dev.txt
