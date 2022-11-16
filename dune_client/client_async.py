@@ -4,7 +4,7 @@ Framework built on Dune's API Documentation
 https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e003a
 """
 import asyncio
-from typing import Any
+from typing import Any, Optional
 
 from aiohttp import (
     ClientSession,
@@ -43,9 +43,9 @@ class AsyncDuneClient(BaseDuneClient):
         """
         super().__init__(api_key=api_key)
         self._connection_limit = connection_limit
-        self._session = self._create_session()
+        self._session: Optional[ClientSession] = None
 
-    def _create_session(self) -> ClientSession:
+    async def _create_session(self) -> ClientSession:
         conn = TCPConnector(limit=self._connection_limit)
         return ClientSession(
             connector=conn,
@@ -53,15 +53,20 @@ class AsyncDuneClient(BaseDuneClient):
             timeout=ClientTimeout(total=self.DEFAULT_TIMEOUT),
         )
 
-    async def close_session(self) -> None:
+    async def connect(self) -> None:
+        """Opens a client session (can be used instead of async with)"""
+        self._session = await self._create_session()
+
+    async def disconnect(self) -> None:
         """Closes client session"""
-        await self._session.close()
+        if self._session:
+            await self._session.close()
 
     async def __aenter__(self) -> None:
-        self._session = self._create_session()
+        self._session = await self._create_session()
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        await self.close_session()
+        await self.disconnect()
 
     async def _handle_response(
         self,
@@ -78,6 +83,8 @@ class AsyncDuneClient(BaseDuneClient):
             raise ValueError("Unreachable since previous line raises") from err
 
     async def _get(self, url: str) -> Any:
+        if self._session is None:
+            raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"GET received input url={url}")
         response = await self._session.get(
             url=f"{self.API_PATH}{url}",
@@ -86,6 +93,8 @@ class AsyncDuneClient(BaseDuneClient):
         return await self._handle_response(response)
 
     async def _post(self, url: str, params: Any) -> Any:
+        if self._session is None:
+            raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"POST received input url={url}, params={params}")
         response = await self._session.post(
             url=f"{self.API_PATH}{url}",
