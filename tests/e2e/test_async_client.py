@@ -183,7 +183,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
         results = (await dune.refresh(self.query)).get_rows()
         self.assertGreater(len(results), 0)
         await dune.disconnect()
-        self.assertTrue(cl._session.closed)
+        self.assertTrue(dune._session.closed)
 
     async def test_refresh_context_manager_singleton(self):
         dune = AsyncDuneClient(self.valid_api_key)
