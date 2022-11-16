@@ -190,9 +190,13 @@ class QueryParameter:
         raise ValueError(f"Could not parse Query parameter from {obj}")
 
     def __str__(self) -> str:
+        # For less cryptic logging.
         return (
-            f"QueryParameter("
-            f"name: {self.key}, "
-            f"value: {self.value}, "
-            f"type: {self.type.value})"
+            f"Parameter("
+            f"name={self.key}, "
+            f"value={self.value}, "
+            f"type={self.type.value})"
         )
+
+    def __repr__(self) -> str:
+        return str(self)

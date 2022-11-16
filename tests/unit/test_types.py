@@ -1,6 +1,7 @@
 import datetime
 import unittest
 
+from dune_client.query import Query
 from dune_client.types import QueryParameter, Address
 
 
@@ -47,20 +48,41 @@ class TestAddress(unittest.TestCase):
 
 
 class TestQueryParameter(unittest.TestCase):
+    def setUp(self) -> None:
+        self.number_type = QueryParameter.number_type("Number", 1)
+        self.text_type = QueryParameter.text_type("Text", "hello")
+        self.date_type = QueryParameter.date_type(
+            "Date", datetime.datetime(2022, 3, 10)
+        )
+
     def test_constructors_and_to_dict(self):
-        number_type = QueryParameter.number_type("Number", 1)
-        text_type = QueryParameter.text_type("Text", "hello")
-        date_type = QueryParameter.date_type("Date", datetime.datetime(2022, 3, 10))
 
         self.assertEqual(
-            number_type.to_dict(), {"key": "Number", "type": "number", "value": "1"}
+            self.number_type.to_dict(),
+            {"key": "Number", "type": "number", "value": "1"},
         )
         self.assertEqual(
-            text_type.to_dict(), {"key": "Text", "type": "text", "value": "hello"}
+            self.text_type.to_dict(), {"key": "Text", "type": "text", "value": "hello"}
         )
         self.assertEqual(
-            date_type.to_dict(),
+            self.date_type.to_dict(),
             {"key": "Date", "type": "datetime", "value": "2022-03-10 00:00:00"},
+        )
+
+    def test_repr_method(self):
+        query = Query(
+            query_id=1,
+            name="Test Query",
+            params=[self.number_type, self.text_type],
+        )
+
+        self.assertEqual(
+            "Query(query_id=1, name='Test Query', "
+            "params=["
+            "Parameter(name=Number, value=1, type=number), "
+            "Parameter(name=Text, value=hello, type=text)"
+            "])",
+            str(query),
         )
 
 
