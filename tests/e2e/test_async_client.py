@@ -10,10 +10,7 @@ from dune_client.query import Query
 
 class TestDuneClient(aiounittest.AsyncTestCase):
     def setUp(self) -> None:
-        self.query = Query(
-            name="Sample Query",
-            query_id=1215383
-        )
+        self.query = Query(name="Sample Query", query_id=1215383)
         dotenv.load_dotenv()
         self.valid_api_key = os.environ["DUNE_API_KEY"]
 
