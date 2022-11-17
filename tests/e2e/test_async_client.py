@@ -47,7 +47,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
     async def test_refresh(self):
         dune = AsyncDuneClient(self.valid_api_key)
         await dune.connect()
-        results = (await dune.refresh(self.query)).get_rows()
+        results = (await dune.refresh(self.query, ping_frequency=10)).get_rows()
         self.assertGreater(len(results), 0)
         await dune.disconnect()
 
