@@ -5,3 +5,4 @@ dist
 _version.py
 .idea/
 venv/
+tmp/

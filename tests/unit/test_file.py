@@ -16,7 +16,7 @@ def cleanup():
 
 
 def cleanup_files(func):
-    """This decorator can be used for testing methods outside of this class"""
+    """This decorator can be used for testing methods outside this class"""
 
     def wrapped_func(self):
         func(self)
@@ -46,6 +46,18 @@ class TestFileIO(unittest.TestCase):
                 self.dune_records,
                 loaded_records,
                 f"Assert invertible failed on {ftype}",
+            )
+
+    def test_append(self):
+        for ftype in FileType:
+            self.file_manager._write(self.dune_records, TEST_FILE, ftype)
+            self.file_manager._append(self.dune_records, TEST_FILE, ftype)
+            loaded_records = self.file_manager._load(TEST_FILE, ftype)
+            expected = self.dune_records + self.dune_records
+            self.assertEqual(
+                expected,
+                loaded_records,
+                f"test_append failed on {ftype}",
             )
 
     def test_load_singleton(self):
