@@ -140,15 +140,16 @@ class FileIO:
             if ftype == FileType.CSV:
                 # Check matching headers.
                 headers = file.readline()
-                # The skip empty decorator ensures existence of data[0]
-                existing_keys = tuple(headers.strip().split(","))
+                existing_keys = headers.strip().split(",")
             elif ftype == FileType.JSON:
                 single_object = json.loads(file.readline())[0]
-                existing_keys = tuple(single_object.keys())
+                existing_keys = single_object.keys()
             elif ftype == FileType.NDJSON:
                 single_object = json.loads(file.readline())
-                existing_keys = tuple(single_object.keys())
-            assert keys == existing_keys, f"{keys} != {existing_keys}"
+                existing_keys = single_object.keys()
+
+            key_tuple = tuple(existing_keys)
+            assert keys == key_tuple, f"{keys} != {key_tuple}"
 
     def _append(self, data: List[DuneRecord], name: str, ftype: FileType) -> None:
         if len(data) == 0:
@@ -162,9 +163,11 @@ class FileIO:
             return self._write(data, name, ftype)
 
         # validate that the incoming content to be appended has the same schema
-        # The skip empty decorator ensures existence of data[0]
+        # The skip empty decorator ensures existence of data[0]!
         self._assert_matching_keys(tuple(data[0].keys()), fname, ftype)
+
         if ftype == FileType.JSON:
+            # These are JSON lists, so we have to concatenate the data.
             with open(fname, "r", encoding=self.encoding) as existing_file:
                 existing_data = ftype.load(existing_file)
             return self._write(existing_data + data, name, ftype)
@@ -179,7 +182,12 @@ class FileIO:
         self._append(data, name, FileType.CSV)
 
     def append_json(self, data: list[DuneRecord], name: str) -> None:
-        """Appends `data` to json file `name`"""
+        """
+        Appends `data` to json file `name`
+        This is the least efficient of all, since we have to load the entire file,
+        concatenate the lists and then overwrite the file!
+        Other filetypes such as CSV and NDJSON can be directly appended to!
+        """
         self._append(data, name, FileType.JSON)
 
     def append_ndjson(self, data: list[DuneRecord], name: str) -> None:
