@@ -86,18 +86,6 @@ class FileType(Enum):
             raise ValueError(f"Unrecognized FileType {self} for {out_file.name}")
 
 
-# def skip_empty(func):
-#     """Decorator used on write methods"""
-#
-#     def write_wrapper(self, data, name, ftype):
-#         if len(data) == 0:
-#             logger.info(f"Nothing to write to {name}... skipping")
-#             return
-#         func(self, data, name, ftype)
-#
-#     return write_wrapper
-
-
 class FileIO:
     """
     CSV is a more compact file type,
@@ -124,7 +112,7 @@ class FileIO:
 
     def _write(self, data: List[DuneRecord], name: str, ftype: FileType) -> None:
         # The following three lines are duplicated in _append, due to python version compatibility
-        # https://github.com/cowprotocol/dune-client/issues/37#issuecomment-1319901120
+        # https://github.com/cowprotocol/dune-client/issues/45
         # We will continue to support python < 3.10 until ~3.13, this issue will remain open.
         if len(data) == 0:
             logger.info(f"Nothing to write to {name}... skipping")
