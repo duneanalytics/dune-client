@@ -48,7 +48,7 @@ class TestFileIO(unittest.TestCase):
                 f"Assert invertible failed on {ftype}",
             )
 
-    def test_append(self):
+    def test_append_ok(self):
         for ftype in FileType:
             self.file_manager._write(self.dune_records, TEST_FILE, ftype)
             self.file_manager._append(self.dune_records, TEST_FILE, ftype)
@@ -59,6 +59,18 @@ class TestFileIO(unittest.TestCase):
                 loaded_records,
                 f"test_append failed on {ftype}",
             )
+
+    def test_append_calls_write_on_new_file(self):
+        for ftype in FileType:
+            with self.assertLogs(level="WARNING"):
+                self.file_manager._append(self.dune_records, TEST_FILE, ftype)
+
+    def test_append_error(self):
+        invalid_records = [{}]  # Empty dict has different keys than self.dune_records
+        for ftype in FileType:
+            self.file_manager._write(self.dune_records, TEST_FILE, ftype)
+            with self.assertRaises(AssertionError):
+                self.file_manager._append(invalid_records, TEST_FILE, ftype)
 
     def test_load_singleton(self):
         for file_type in FileType:
