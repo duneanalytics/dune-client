@@ -5,7 +5,7 @@ import csv
 import json
 import logging
 import os.path
-from enum import Enum
+from abc import ABC, abstractmethod
 from os.path import exists
 from pathlib import Path
 from typing import TextIO, Callable, List, Tuple
@@ -19,22 +19,23 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 
-class FileType(Enum):
-    """
-    Enum variants for supported file types
-    CSV is the most space efficient (least redundant) file format,
-    but some people like others.
-    """
+class FileRWInterface(ABC):
+    """Interface for File Read, Write and Append functionality (specific to Dune Query Results)"""
 
-    CSV = ".csv"
-    JSON = ".json"
-    NDJSON = ".ndjson"
+    def __init__(self, path: Path | str, name: str, encoding: str = "utf-8"):
+        self.path = path
+        self.filename = name
+        self.encoding = encoding
 
-    def __str__(self) -> str:
-        return str(self.value)
+    @property
+    def filepath(self) -> str:
+        """Internal method for building absolute path."""
+        return os.path.join(self.path, self.filename)
 
     @classmethod
-    def from_str(cls, value: str) -> FileType:
+    def from_str(
+        cls, value: str, path: Path | str, name: str, encoding: str = "utf-8"
+    ) -> FileRWInterface:
         """
         Constructs and instance of FileType from string
         This method is used by FileIO constructor,
@@ -42,48 +43,124 @@ class FileType(Enum):
         """
         lowered_value = value.lower()
         if "ndjson" in lowered_value:
-            return cls.NDJSON
+            return NDJSONFile(path, name, encoding)
         if "json" in lowered_value:
-            return cls.JSON
+            return JSONFile(path, name, encoding)
         if "csv" in lowered_value:
-            return cls.CSV
-        raise ValueError(f"Unrecognized FileType {value}")
+            return CSVFile(path, name, encoding)
+        raise ValueError(f"Could not determine file type from {value}!")
+
+    @abstractmethod
+    def _assert_matching_keys(self, keys: Tuple[str, ...]) -> None:
+        """Used as validation for append"""
+
+    @abstractmethod
+    def load(self, file: TextIO) -> list[DuneRecord]:
+        """Loads DuneRecords from `file`"""
+
+    @abstractmethod
+    def write(
+        self, out_file: TextIO, data: list[DuneRecord], skip_headers: bool = False
+    ) -> None:
+        """Writes `data` to `out_file`"""
+
+    def append(self, data: List[DuneRecord]) -> None:
+        """Appends `data` to file with `name`"""
+        if len(data) > 0:
+            self._assert_matching_keys(tuple(data[0].keys()))
+        with open(self.filepath, "a+", encoding=self.encoding) as out_file:
+            return self.write(out_file, data, skip_headers=True)
+
+
+class JSONFile(FileRWInterface):
+    """File Read/Writer for JSON format"""
+
+    def _assert_matching_keys(self, keys: Tuple[str, ...]) -> None:
+        with open(self.filepath, "r", encoding=self.encoding) as file:
+            single_object = json.loads(file.readline())[0]
+            existing_keys = single_object.keys()
+
+        key_tuple = tuple(existing_keys)
+        assert keys == key_tuple, f"{keys} != {key_tuple}"
 
     def load(self, file: TextIO) -> list[DuneRecord]:
-        """Loads DuneRecords from file"""
-        logger.debug(f"Attempting to loading results from file {file.name}")
-        if self == FileType.JSON:
-            loaded_file: list[DuneRecord] = json.loads(file.read())
-            return loaded_file
-        if self == FileType.CSV:
-            return list(csv.DictReader(file))
-        if self == FileType.NDJSON:
-            return list(ndjson.reader(file))
-        raise ValueError(f"Unrecognized FileType {self} for {file.name}")
+        """Loads DuneRecords from `file`"""
+        loaded_file: list[DuneRecord] = json.loads(file.read())
+        return loaded_file
 
     def write(
         self, out_file: TextIO, data: list[DuneRecord], skip_headers: bool = False
     ) -> None:
         """Writes `data` to `out_file`"""
-        logger.debug(f"writing results to file {out_file.name}")
-        if self == FileType.CSV:
-            headers = data[0].keys()
-            data_tuple = [tuple(rec.values()) for rec in data]
-            dict_writer = csv.DictWriter(out_file, headers, lineterminator="\n")
-            if not skip_headers:
-                dict_writer.writeheader()
-            writer = csv.writer(out_file, lineterminator="\n")
-            writer.writerows(data_tuple)
+        out_file.write(json.dumps(data))
 
-        elif self == FileType.JSON:
-            out_file.write(json.dumps(data))
+    def append(self, data: List[DuneRecord]) -> None:
+        """Appends `data` to file with `name`"""
+        if len(data) > 0:
+            self._assert_matching_keys(tuple(data[0].keys()))
+        with open(self.filepath, "r", encoding=self.encoding) as existing_file:
+            existing_data = self.load(existing_file)
+        with open(self.filepath, "w", encoding=self.encoding) as existing_file:
+            self.write(existing_file, existing_data + data)
 
-        elif self == FileType.NDJSON:
-            writer = ndjson.writer(out_file, ensure_ascii=False)
-            for row in data:
-                writer.writerow(row)
-        else:
-            raise ValueError(f"Unrecognized FileType {self} for {out_file.name}")
+
+class NDJSONFile(FileRWInterface):
+    """File Read/Writer for NDJSON format"""
+
+    def _assert_matching_keys(self, keys: Tuple[str, ...]) -> None:
+
+        with open(self.filepath, "r", encoding=self.encoding) as file:
+            single_object = json.loads(file.readline())
+            existing_keys = single_object.keys()
+
+        key_tuple = tuple(existing_keys)
+        assert keys == key_tuple, f"{keys} != {key_tuple}"
+
+    def load(self, file: TextIO) -> list[DuneRecord]:
+        """Loads DuneRecords from `file`"""
+        return list(ndjson.reader(file))
+
+    def write(
+        self, out_file: TextIO, data: list[DuneRecord], skip_headers: bool = False
+    ) -> None:
+        """Writes `data` to `out_file`"""
+        writer = ndjson.writer(out_file, ensure_ascii=False)
+        for row in data:
+            writer.writerow(row)
+
+
+class CSVFile(FileRWInterface):
+    """File Read/Writer for CSV format"""
+
+    def _assert_matching_keys(self, keys: Tuple[str, ...]) -> None:
+        with open(self.filepath, "r", encoding=self.encoding) as file:
+            # Check matching headers.
+            headers = file.readline()
+            existing_keys = headers.strip().split(",")
+
+        key_tuple = tuple(existing_keys)
+        assert keys == key_tuple, f"{keys} != {key_tuple}"
+
+    def load(self, file: TextIO) -> list[DuneRecord]:
+        """Loads DuneRecords from `file`"""
+        return list(csv.DictReader(file))
+
+    def write(
+        self, out_file: TextIO, data: list[DuneRecord], skip_headers: bool = False
+    ) -> None:
+        """Writes `data` to `out_file`"""
+        if len(data) == 0:
+            logger.warning(
+                "Writing an empty CSV file with headers -- will not work with append later."
+            )
+            return
+        headers = data[0].keys()
+        data_tuple = [tuple(rec.values()) for rec in data]
+        dict_writer = csv.DictWriter(out_file, headers, lineterminator="\n")
+        if not skip_headers:
+            dict_writer.writeheader()
+        writer = csv.writer(out_file, lineterminator="\n")
+        writer.writerows(data_tuple)
 
 
 class FileIO:
@@ -106,122 +183,114 @@ class FileIO:
         self.path = path
         self.encoding: str = encoding
 
-    def _filepath(self, name: str, ftype: FileType) -> str:
-        """Internal method for building absolute path."""
-        return os.path.join(self.path, name + str(ftype))
-
-    def _write(self, data: List[DuneRecord], name: str, ftype: FileType) -> None:
+    def _write(
+        self,
+        data: List[DuneRecord],
+        writer: FileRWInterface,
+        skip_empty: bool,
+    ) -> None:
         # The following three lines are duplicated in _append, due to python version compatibility
         # https://github.com/cowprotocol/dune-client/issues/45
         # We will continue to support python < 3.10 until ~3.13, this issue will remain open.
-        if len(data) == 0:
-            logger.info(f"Nothing to write to {name}... skipping")
+        if skip_empty and len(data) == 0:
+            logger.info(f"Nothing to write to {writer.filename}... skipping")
             return None
-        with open(self._filepath(name, ftype), "w", encoding=self.encoding) as out_file:
-            ftype.write(out_file, data)
+        with open(writer.filepath, "w", encoding=self.encoding) as out_file:
+            writer.write(out_file, data)
         return None
 
-    def _assert_matching_keys(
-        self, keys: Tuple[str, ...], fname: str, ftype: FileType
+    def _append(
+        self,
+        data: List[DuneRecord],
+        writer: FileRWInterface,
+        skip_empty: bool,
     ) -> None:
-        with open(fname, "r", encoding=self.encoding) as file:
-            if ftype == FileType.CSV:
-                # Check matching headers.
-                headers = file.readline()
-                existing_keys = headers.strip().split(",")
-            elif ftype == FileType.JSON:
-                single_object = json.loads(file.readline())[0]
-                existing_keys = single_object.keys()
-            elif ftype == FileType.NDJSON:
-                single_object = json.loads(file.readline())
-                existing_keys = single_object.keys()
-
-            key_tuple = tuple(existing_keys)
-            assert keys == key_tuple, f"{keys} != {key_tuple}"
-
-    def _append(self, data: List[DuneRecord], name: str, ftype: FileType) -> None:
-        if len(data) == 0:
-            logger.info(f"Nothing to write to {name}... skipping")
+        fname = writer.filename
+        if skip_empty and len(data) == 0:
+            logger.info(f"Nothing to write to {fname}... skipping")
             return None
-        fname = self._filepath(name, ftype)
-        if not exists(fname):
+        if not exists(writer.filepath):
             logger.warning(
                 f"File {fname} does not exist, using write instead of append!"
             )
-            return self._write(data, name, ftype)
+            return self._write(data, writer, skip_empty)
 
-        # validate that the incoming content to be appended has the same schema
-        # The skip empty decorator ensures existence of data[0]!
-        self._assert_matching_keys(tuple(data[0].keys()), fname, ftype)
+        return writer.append(data)
 
-        if ftype == FileType.JSON:
-            # These are JSON lists, so we have to concatenate the data.
-            with open(fname, "r", encoding=self.encoding) as existing_file:
-                existing_data = ftype.load(existing_file)
-            return self._write(existing_data + data, name, ftype)
-
-        with open(fname, "a+", encoding=self.encoding) as out_file:
-            return ftype.write(out_file, data, skip_headers=True)
-
-    def append_csv(self, data: list[DuneRecord], name: str) -> None:
+    def append_csv(
+        self,
+        data: list[DuneRecord],
+        name: str,
+        skip_empty: bool = True,
+    ) -> None:
         """Appends `data` to csv file `name`"""
         # This is a special case because we want to skip headers when the file already exists
         # Additionally, we may want to validate that the headers actually coincide.
-        self._append(data, name, FileType.CSV)
+        self._append(data, CSVFile(self.path, name, self.encoding), skip_empty)
 
-    def append_json(self, data: list[DuneRecord], name: str) -> None:
+    def append_json(
+        self, data: list[DuneRecord], name: str, skip_empty: bool = True
+    ) -> None:
         """
         Appends `data` to json file `name`
         This is the least efficient of all, since we have to load the entire file,
         concatenate the lists and then overwrite the file!
         Other filetypes such as CSV and NDJSON can be directly appended to!
         """
-        self._append(data, name, FileType.JSON)
+        self._append(data, JSONFile(self.path, name, self.encoding), skip_empty)
 
-    def append_ndjson(self, data: list[DuneRecord], name: str) -> None:
+    def append_ndjson(
+        self, data: list[DuneRecord], name: str, skip_empty: bool = True
+    ) -> None:
         """Appends `data` to ndjson file `name`"""
-        self._append(data, name, FileType.NDJSON)
+        self._append(data, NDJSONFile(self.path, name, self.encoding), skip_empty)
 
-    def write_csv(self, data: list[DuneRecord], name: str) -> None:
+    def write_csv(
+        self, data: list[DuneRecord], name: str, skip_empty: bool = True
+    ) -> None:
         """Writes `data` to csv file `name`"""
-        self._write(data, name, FileType.CSV)
+        self._write(data, CSVFile(self.path, name, self.encoding), skip_empty)
 
-    def write_json(self, data: list[DuneRecord], name: str) -> None:
+    def write_json(
+        self, data: list[DuneRecord], name: str, skip_empty: bool = True
+    ) -> None:
         """Writes `data` to json file `name`"""
-        self._write(data, name, FileType.JSON)
+        self._write(data, JSONFile(self.path, name, self.encoding), skip_empty)
 
-    def write_ndjson(self, data: list[DuneRecord], name: str) -> None:
+    def write_ndjson(
+        self, data: list[DuneRecord], name: str, skip_empty: bool = True
+    ) -> None:
         """Writes `data` to ndjson file `name`"""
-        self._write(data, name, FileType.NDJSON)
+        self._write(data, NDJSONFile(self.path, name, self.encoding), skip_empty)
 
-    def _load(self, name: str, ftype: FileType) -> list[DuneRecord]:
+    def _load(self, reader: FileRWInterface) -> list[DuneRecord]:
         """Loads DuneRecords from file `name`"""
-        with open(self._filepath(name, ftype), "r", encoding=self.encoding) as file:
-            return ftype.load(file)
+        with open(reader.filepath, "r", encoding=self.encoding) as file:
+            return reader.load(file)
 
     def load_csv(self, name: str) -> list[DuneRecord]:
         """Loads DuneRecords from csv file `name`"""
-        return self._load(name, FileType.CSV)
+        return self._load(CSVFile(self.path, name, self.encoding))
 
     def load_json(self, name: str) -> list[DuneRecord]:
         """Loads DuneRecords from json file `name`"""
-        return self._load(name, FileType.JSON)
+        return self._load(JSONFile(self.path, name, self.encoding))
 
     def load_ndjson(self, name: str) -> list[DuneRecord]:
         """Loads DuneRecords from ndjson file `name`"""
-        return self._load(name, FileType.NDJSON)
+        return self._load(NDJSONFile(self.path, name, self.encoding))
 
-    @staticmethod
-    def _parse_ftype(ftype: FileType | str) -> FileType:
+    def _parse_ftype(self, name: str, ftype: FileRWInterface | str) -> FileRWInterface:
         if isinstance(ftype, str):
-            ftype = FileType.from_str(ftype)
+            ftype = FileRWInterface.from_str(ftype, self.path, name, self.encoding)
         return ftype
 
     def load_singleton(
-        self, name: str, ftype: FileType | str, index: int = 0
+        self, name: str, ftype: FileRWInterface | str, index: int = 0
     ) -> DuneRecord:
         """Loads and returns single entry by index (default 0)"""
-        return self._load(name, self._parse_ftype(ftype))[index]
+        reader = self._parse_ftype(name, ftype)
+        return self._load(reader)[index]
 
 
-WriteLikeSignature = Callable[[FileIO, List[DuneRecord], str, FileType], None]
+WriteLikeSignature = Callable[[FileIO, List[DuneRecord], str, FileRWInterface], None]
