@@ -106,6 +106,31 @@ class TestFileIO(unittest.TestCase):
                 f"failed on {extension} (extension) at index 1",
             )
 
+    def test_write_any_format_with_arbitrary_extension(self):
+        weird_name = "weird_file.ext"
+        weird_files = [
+            NDJSONFile(TEST_PATH, weird_name),
+            JSONFile(TEST_PATH, weird_name),
+            CSVFile(TEST_PATH, weird_name),
+        ]
+        for weird_file in weird_files:
+            self.file_manager._write(self.dune_records, weird_file, True)
+            self.file_manager._load(weird_file)
+            entry_0 = self.file_manager.load_singleton(weird_name, "ndjson")
+            entry_1 = self.file_manager.load_singleton(
+                "meaningless string", weird_file, 1
+            )
+            self.assertEqual(
+                self.dune_records[0],
+                entry_0,
+                f"failed on {weird_file} at index 0",
+            )
+            self.assertEqual(
+                self.dune_records[1],
+                entry_1,
+                f"failed on {weird_file} at index 1",
+            )
+
     def test_skip_empty_write(self):
         for writer in self.file_writers:
             with self.assertLogs():
