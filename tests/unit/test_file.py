@@ -1,4 +1,5 @@
 import os
+import sys
 import unittest
 
 from dune_client.file.base import CSVFile, NDJSONFile, JSONFile
@@ -151,8 +152,17 @@ class TestFileIO(unittest.TestCase):
                     # CSV empty files won't have any headers!
                     self.file_manager._write([], writer, False)
             else:
-                with self.assertNoLogs():
+                if sys.version_info < (3, 10):
+                    with self.assertRaises(FileNotFoundError):
+                        self.file_manager._load(writer)
+                    # assertNoLogs didn't exist till python 3.10, but we still support lower versions.
+                    # This is a bit of a hack, we write and then load to ensure the empty file was written.
                     self.file_manager._write([], writer, False)
+                    # _load would return FileNotFoundError if it hadn't been written
+                    self.assertEqual(0, len(self.file_manager._load(writer)))
+                else:
+                    with self.assertNoLogs():
+                        self.file_manager._write([], writer, False)
 
             self.file_manager._load(writer)
 
