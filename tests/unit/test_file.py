@@ -1,7 +1,8 @@
 import os
 import unittest
 
-from dune_client.file import FileIO, JSONFile, NDJSONFile, CSVFile
+from dune_client.file.base import CSVFile, NDJSONFile, JSONFile
+from dune_client.file.interface import FileIO
 
 TEST_FILE = "test"
 TEST_PATH = "tmp"
@@ -113,10 +114,15 @@ class TestFileIO(unittest.TestCase):
             JSONFile(TEST_PATH, weird_name),
             CSVFile(TEST_PATH, weird_name),
         ]
-        for weird_file in weird_files:
+        extensions = [
+            "ndjson",
+            "json",
+            "csv",
+        ]
+        for weird_file, ext in zip(weird_files, extensions):
             self.file_manager._write(self.dune_records, weird_file, True)
             self.file_manager._load(weird_file)
-            entry_0 = self.file_manager.load_singleton(weird_name, "ndjson")
+            entry_0 = self.file_manager.load_singleton(weird_name, ext)
             entry_1 = self.file_manager.load_singleton(
                 "meaningless string", weird_file, 1
             )
