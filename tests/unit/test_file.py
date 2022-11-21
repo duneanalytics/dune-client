@@ -1,16 +1,24 @@
 import os
+import sys
 import unittest
 
-from dune_client.file import FileIO, FileType
+from dune_client.file.base import CSVFile, NDJSONFile, JSONFile
+from dune_client.file.interface import FileIO
 
 TEST_FILE = "test"
 TEST_PATH = "tmp"
 
+FILE_WRITERS = [
+    CSVFile(TEST_PATH, TEST_FILE + ".csv"),
+    NDJSONFile(TEST_PATH, TEST_FILE + ".ndjson"),
+    JSONFile(TEST_PATH, TEST_FILE + ".json"),
+]
+
 
 def cleanup():
-    for extension in [e.value for e in FileType]:
+    for writer in FILE_WRITERS:
         try:
-            os.remove(os.path.join(TEST_PATH, TEST_FILE + str(extension)))
+            os.remove(writer.filepath)
         except FileNotFoundError:
             pass
 
@@ -34,79 +42,136 @@ class TestFileIO(unittest.TestCase):
             {"col1": "value11", "col2": "value12"},
         ]
         self.file_manager = FileIO(TEST_PATH)
+        self.file_writers = FILE_WRITERS
 
     def tearDown(self) -> None:
         cleanup()
 
     def test_invertible_write_and_load(self):
-        for ftype in FileType:
-            self.file_manager._write(self.dune_records, TEST_FILE, ftype)
-            loaded_records = self.file_manager._load(TEST_FILE, ftype)
+        for writer in self.file_writers:
+            self.file_manager._write(self.dune_records, writer, True)
+            loaded_records = self.file_manager._load(writer)
             self.assertEqual(
-                self.dune_records,
-                loaded_records,
-                f"Assert invertible failed on {ftype}",
+                self.dune_records, loaded_records, f"test invertible failed on {writer}"
             )
 
     def test_append_ok(self):
-        for ftype in FileType:
-            self.file_manager._write(self.dune_records, TEST_FILE, ftype)
-            self.file_manager._append(self.dune_records, TEST_FILE, ftype)
-            loaded_records = self.file_manager._load(TEST_FILE, ftype)
+        for writer in self.file_writers:
+            self.file_manager._write(self.dune_records, writer, True)
+            self.file_manager._append(self.dune_records, writer, True)
+            loaded_records = self.file_manager._load(writer)
             expected = self.dune_records + self.dune_records
-            self.assertEqual(
-                expected,
-                loaded_records,
-                f"test_append failed on {ftype}",
-            )
+            self.assertEqual(expected, loaded_records, f"append failed on {writer}")
 
     def test_append_calls_write_on_new_file(self):
-        for ftype in FileType:
+        for writer in self.file_writers:
             with self.assertLogs(level="WARNING"):
-                self.file_manager._append(self.dune_records, TEST_FILE, ftype)
+                self.file_manager._append(self.dune_records, writer, True)
 
     def test_append_error(self):
         invalid_records = [{}]  # Empty dict has different keys than self.dune_records
-        for ftype in FileType:
-            self.file_manager._write(self.dune_records, TEST_FILE, ftype)
+        for writer in self.file_writers:
+            self.file_manager._write(self.dune_records, writer, True)
             with self.assertRaises(AssertionError):
-                self.file_manager._append(invalid_records, TEST_FILE, ftype)
+                self.file_manager._append(invalid_records, writer, True)
 
     def test_load_singleton(self):
-        for file_type in FileType:
-            self.file_manager._write(self.dune_records, TEST_FILE, file_type)
-            entry_0 = self.file_manager.load_singleton(TEST_FILE, file_type)
-            entry_1 = self.file_manager.load_singleton(TEST_FILE, file_type, 1)
+        for writer in self.file_writers:
+            self.file_manager._write(self.dune_records, writer, True)
+            entry_0 = self.file_manager.load_singleton(
+                name="Doesn't matter is in the writer", ftype=writer
+            )
+            entry_1 = self.file_manager.load_singleton(
+                "Doesn't matter is in the writer", writer, 1
+            )
+            self.assertEqual(
+                self.dune_records[0], entry_0, f"failed on {writer} at index 0"
+            )
+            self.assertEqual(
+                self.dune_records[1], entry_1, f"failed on {writer} at index 1"
+            )
+
+        for extension in [".csv", ".json", ".ndjson"]:
+            # Files were already written above.
+            entry_0 = self.file_manager.load_singleton(TEST_FILE + extension, extension)
+            entry_1 = self.file_manager.load_singleton(
+                TEST_FILE + extension, extension, 1
+            )
             self.assertEqual(
                 self.dune_records[0],
                 entry_0,
-                f"load_singletons failed on {file_type} at index 0",
+                f"failed on {extension} (extension) at index 0",
             )
             self.assertEqual(
                 self.dune_records[1],
                 entry_1,
-                f"load_singletons failed on {file_type} at index 1",
+                f"failed on {extension} (extension) at index 1",
+            )
+
+    def test_write_any_format_with_arbitrary_extension(self):
+        weird_name = "weird_file.ext"
+        weird_files = [
+            NDJSONFile(TEST_PATH, weird_name),
+            JSONFile(TEST_PATH, weird_name),
+            CSVFile(TEST_PATH, weird_name),
+        ]
+        extensions = [
+            "ndjson",
+            "json",
+            "csv",
+        ]
+        for weird_file, ext in zip(weird_files, extensions):
+            self.file_manager._write(self.dune_records, weird_file, True)
+            self.file_manager._load(weird_file)
+            entry_0 = self.file_manager.load_singleton(weird_name, ext)
+            entry_1 = self.file_manager.load_singleton(
+                "meaningless string", weird_file, 1
+            )
+            self.assertEqual(
+                self.dune_records[0],
+                entry_0,
+                f"failed on {weird_file} at index 0",
+            )
+            self.assertEqual(
+                self.dune_records[1],
+                entry_1,
+                f"failed on {weird_file} at index 1",
             )
 
     def test_skip_empty_write(self):
-        for file_type in FileType:
+        for writer in self.file_writers:
             with self.assertLogs():
-                self.file_manager._write([], TEST_FILE, file_type)
+                self.file_manager._write([], writer, True)
             with self.assertRaises(FileNotFoundError):
-                self.file_manager._load(TEST_FILE, file_type)
+                self.file_manager._load(writer)
+
+    def test_not_skip_empty_when_specified(self):
+        for writer in self.file_writers:
+            if isinstance(writer, CSVFile):
+                with self.assertLogs(level="WARNING"):
+                    # CSV empty files won't have any headers!
+                    self.file_manager._write([], writer, False)
+            else:
+                if sys.version_info < (3, 10):
+                    with self.assertRaises(FileNotFoundError):
+                        self.file_manager._load(writer)
+                    # assertNoLogs didn't exist till python 3.10, but we still support lower versions.
+                    # This is a bit of a hack, we write and then load to ensure the empty file was written.
+                    self.file_manager._write([], writer, False)
+                    # _load would return FileNotFoundError if it hadn't been written
+                    self.assertEqual(0, len(self.file_manager._load(writer)))
+                else:
+                    with self.assertNoLogs():
+                        self.file_manager._write([], writer, False)
+
+            self.file_manager._load(writer)
 
     def test_idempotent_write(self):
-        for file_type in FileType:
-            self.file_manager._write(self.dune_records, TEST_FILE, file_type)
-            self.file_manager._write(self.dune_records, TEST_FILE, file_type)
+        for writer in self.file_writers:
+            self.file_manager._write(self.dune_records, writer, True)
+            self.file_manager._write(self.dune_records, writer, True)
             self.assertEqual(
                 self.dune_records,
-                self.file_manager._load(TEST_FILE, file_type),
-                f"idempotent write failed on {file_type}",
-            )
-
-    def test_file_type(self):
-        for file_type in FileType:
-            self.assertEqual(
-                file_type, FileType.from_str(str(file_type)), "failed on {file_type}"
+                self.file_manager._load(writer),
+                f"idempotent write failed on {writer}",
             )
