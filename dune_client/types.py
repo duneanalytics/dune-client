@@ -14,6 +14,7 @@ from dune_client.util import postgres_date
 
 DuneRecord = Dict[str, str]
 
+
 # pylint: disable=too-few-public-methods
 class Address:
     """

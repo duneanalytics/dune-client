@@ -56,7 +56,6 @@ class TestQueryParameter(unittest.TestCase):
         )
 
     def test_constructors_and_to_dict(self):
-
         self.assertEqual(
             self.number_type.to_dict(),
             {"key": "Number", "type": "number", "value": "1"},

@@ -19,6 +19,10 @@ logging.basicConfig(
 )
 
 
+class QueryFailed(Exception):
+    """Special Error for failed Queries"""
+
+
 class DuneError(Exception):
     """Possibilities seen so far
     {'error': 'invalid API Key'}
