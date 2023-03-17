@@ -19,6 +19,7 @@ from dune_client.base_client import BaseDuneClient
 from dune_client.models import (
     ExecutionResponse,
     DuneError,
+    QueryFailed,
     ExecutionStatusResponse,
     ResultsResponse,
     ExecutionState,
@@ -162,5 +163,5 @@ class AsyncDuneClient(BaseDuneClient):
         full_response = await self.get_result(job_id)
         if status.state == ExecutionState.FAILED:
             self.logger.error(status)
-            raise Exception(f"{status}. Perhaps your query took too long to run!")
+            raise QueryFailed(f"{status}. Perhaps your query took too long to run!")
         return full_response

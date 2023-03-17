@@ -64,8 +64,8 @@ class TestDuneClient(unittest.TestCase):
             [
                 {
                     "text_field": "different word",
-                    "number_field": "22",
-                    "date_field": "1991-01-01 00:00:00",
+                    "number_field": 22,
+                    "date_field": "1991-01-01T00:00:00",
                     "list_field": "Option 2",
                 }
             ],
