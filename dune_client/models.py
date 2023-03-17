@@ -7,6 +7,7 @@ import logging.config
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from io import BytesIO
 from typing import Optional, Any, Union, List, Dict
 
 from dateutil.parser import parse
@@ -174,6 +175,18 @@ class ResultMetadata:
 
 RowData = List[Dict[str, str]]
 MetaData = Dict[str, Union[int, List[str]]]
+
+
+@dataclass
+class ExecutionResultCSV:
+    """
+    Representation of a raw `result` in CSV format
+    this payload can be passed directly to
+        csv.reader(data) or
+        pandas.from_csv(data)
+    """
+
+    data: BytesIO  # includes all CSV rows, including the header row.
 
 
 @dataclass
