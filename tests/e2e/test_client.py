@@ -45,6 +45,11 @@ class TestDuneClient(unittest.TestCase):
         results = dune.refresh(self.query).get_rows()
         self.assertGreater(len(results), 0)
 
+    def test_refresh_into_dataframe(self):
+        dune = DuneClient(self.valid_api_key)
+        pd = dune.refresh_into_dataframe(self.query)
+        self.assertGreater(len(pd), 0)
+
     def test_parameters_recognized(self):
         query = copy.copy(self.query)
         new_params = [

@@ -1,11 +1,14 @@
 import unittest
+import csv
 from datetime import datetime
+from io import BytesIO, TextIOWrapper
 
 from dateutil.parser import parse
 from dateutil.tz import tzutc
 
 from dune_client.models import (
     ExecutionResponse,
+    ExecutionResultCSV,
     ExecutionStatusResponse,
     ExecutionState,
     ResultsResponse,
@@ -69,6 +72,12 @@ class MyTestCase(unittest.TestCase):
                 "metadata": self.result_metadata_data,
             },
         }
+        self.execution_result_csv_data = BytesIO(
+            b"""TableName,ct
+eth_blocks,6296
+eth_traces,4474223
+""",
+        )
 
     def test_execution_response_parsing(self):
         expected = ExecutionResponse(
@@ -201,6 +210,20 @@ class MyTestCase(unittest.TestCase):
         )
         self.assertEqual(
             expected, ResultsResponse.from_dict(self.results_response_data)
+        )
+
+    def test_execution_result_csv(self):
+        # document the expected output data from DuneAPI result/csv endpoint
+        csv_response = ExecutionResultCSV(data=self.execution_result_csv_data)
+        result = csv.reader(TextIOWrapper(csv_response.data))
+        # note that CSV is non-typed, up to the reader to do type inference
+        self.assertEqual(
+            [
+                ["TableName", "ct"],
+                ["eth_blocks", "6296"],
+                ["eth_traces", "4474223"],
+            ],
+            [r for r in result],
         )
 
 
