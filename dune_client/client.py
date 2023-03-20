@@ -120,7 +120,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
             timeout=self.DEFAULT_TIMEOUT,
         )
         response.raise_for_status()
-        return ExecutionResultCSV(data=BytesIO(response.raw))
+        return ExecutionResultCSV(data=BytesIO(response.content))
 
     def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
