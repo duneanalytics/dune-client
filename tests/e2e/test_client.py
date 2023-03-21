@@ -45,6 +45,11 @@ class TestDuneClient(unittest.TestCase):
         results = dune.refresh(self.query).get_rows()
         self.assertGreater(len(results), 0)
 
+    def test_refresh_into_dataframe(self):
+        dune = DuneClient(self.valid_api_key)
+        pd = dune.refresh_into_dataframe(self.query)
+        self.assertGreater(len(pd), 0)
+
     def test_parameters_recognized(self):
         query = copy.copy(self.query)
         new_params = [
@@ -64,8 +69,8 @@ class TestDuneClient(unittest.TestCase):
             [
                 {
                     "text_field": "different word",
-                    "number_field": "22",
-                    "date_field": "1991-01-01 00:00:00",
+                    "number_field": 22,
+                    "date_field": "1991-01-01T00:00:00",
                     "list_field": "Option 2",
                 }
             ],
@@ -141,7 +146,7 @@ class TestDuneClient(unittest.TestCase):
             dune.execute(query)
         self.assertEqual(
             str(err.exception),
-            "Can't build ExecutionResponse from {'error': 'An internal error occured'}",
+            "Can't build ExecutionResponse from {'error': 'Query not found'}",
         )
 
     def test_invalid_job_id_error(self):

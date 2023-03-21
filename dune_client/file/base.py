@@ -123,7 +123,6 @@ class NDJSONFile(FileRWInterface):
     """File Read/Writer for NDJSON format"""
 
     def _assert_matching_keys(self, keys: Tuple[str, ...]) -> None:
-
         with open(self.filepath, "r", encoding=self.encoding) as file:
             single_object = json.loads(file.readline())
             existing_keys = single_object.keys()

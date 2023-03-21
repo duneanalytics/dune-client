@@ -22,15 +22,15 @@ class TestAddress(unittest.TestCase):
     def test_valid(self):
         self.assertEqual(
             Address(address=self.lower_case_address).address,
-            "0xdE1c59Bc25D806aD9DdCbe246c4B5e5505645718",
+            "0xde1c59bc25d806ad9ddcbe246c4b5e5505645718",
         )
         self.assertEqual(
             Address(address=self.check_sum_address).address,
-            "0xDEf1CA1fb7FBcDC777520aa7f396b4E015F497aB",
+            "0xdef1ca1fb7fbcdc777520aa7f396b4e015f497ab",
         )
         self.assertEqual(
             Address(address=self.dune_format).address,
-            "0x5d4020b9261F01B6f8a45db929704b0Ad6F5e9E6",
+            "0x5d4020b9261f01b6f8a45db929704b0ad6f5e9e6",
         )
 
     def test_inequality(self):
@@ -56,7 +56,6 @@ class TestQueryParameter(unittest.TestCase):
         )
 
     def test_constructors_and_to_dict(self):
-
         self.assertEqual(
             self.number_type.to_dict(),
             {"key": "Number", "type": "number", "value": "1"},

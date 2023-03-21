@@ -6,6 +6,7 @@ https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e
 from __future__ import annotations
 
 import time
+from io import BytesIO
 from typing import Any
 
 import requests
@@ -15,7 +16,9 @@ from dune_client.base_client import BaseDuneClient
 from dune_client.interface import DuneInterface
 from dune_client.models import (
     ExecutionResponse,
+    ExecutionResultCSV,
     DuneError,
+    QueryFailed,
     ExecutionStatusResponse,
     ResultsResponse,
     ExecutionState,
@@ -101,6 +104,24 @@ class DuneClient(DuneInterface, BaseDuneClient):
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
+    def get_result_csv(self, job_id: str) -> ExecutionResultCSV:
+        """
+        GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
+
+        this API only returns the raw data in CSV format, it is faster & lighterweight
+        use this method for large results where you want lower CPU and memory overhead
+        if you need metadata information use get_results() or get_status()
+        """
+        url = self._route_url(f"execution/{job_id}/results/csv")
+        self.logger.debug(f"GET CSV received input url={url}")
+        response = requests.get(
+            url,
+            headers={"x-dune-api-key": self.token},
+            timeout=self.DEFAULT_TIMEOUT,
+        )
+        response.raise_for_status()
+        return ExecutionResultCSV(data=BytesIO(response.content))
+
     def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
         response_json = self._post(route=f"execution/{job_id}/cancel", params=None)
@@ -111,12 +132,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         except KeyError as err:
             raise DuneError(response_json, "CancellationResponse", err) from err
 
-    def refresh(self, query: Query, ping_frequency: int = 5) -> ResultsResponse:
-        """
-        Executes a Dune `query`, waits until execution completes,
-        fetches and returns the results.
-        Sleeps `ping_frequency` seconds between each status request.
-        """
+    def _refresh(self, query: Query, ping_frequency: int = 5) -> str:
         job_id = self.execute(query).execution_id
         status = self.get_status(job_id)
         while status.state not in ExecutionState.terminal_states():
@@ -125,9 +141,42 @@ class DuneClient(DuneInterface, BaseDuneClient):
             )
             time.sleep(ping_frequency)
             status = self.get_status(job_id)
-
-        full_response = self.get_result(job_id)
         if status.state == ExecutionState.FAILED:
             self.logger.error(status)
-            raise Exception(f"{status}. Perhaps your query took too long to run!")
-        return full_response
+            raise QueryFailed(f"{status}. Perhaps your query took too long to run!")
+
+        return job_id
+
+    def refresh(self, query: Query, ping_frequency: int = 5) -> ResultsResponse:
+        """
+        Executes a Dune `query`, waits until execution completes,
+        fetches and returns the results.
+        Sleeps `ping_frequency` seconds between each status request.
+        """
+        job_id = self._refresh(query, ping_frequency=ping_frequency)
+        return self.get_result(job_id)
+
+    def refresh_csv(self, query: Query, ping_frequency: int = 5) -> ExecutionResultCSV:
+        """
+        Executes a Dune query, waits till execution completes,
+        fetches and the results in CSV format
+        (use it load the data directly in pandas.from_csv() or similar frameworks)
+        """
+        job_id = self._refresh(query, ping_frequency=ping_frequency)
+        return self.get_result_csv(job_id)
+
+    def refresh_into_dataframe(self, query: Query) -> Any:
+        """
+        Execute a Dune Query, waits till execution completes,
+        fetched and returns the result as a Pandas DataFrame
+
+        This is a convenience method that uses refresh_csv underneath
+        """
+        try:
+            import pandas  # type: ignore # pylint: disable=import-outside-toplevel
+        except ImportError as exc:
+            raise ImportError(
+                "dependency failure, pandas is required but missing"
+            ) from exc
+        data = self.refresh_csv(query).data
+        return pandas.read_csv(data)

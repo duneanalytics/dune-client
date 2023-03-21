@@ -10,11 +10,10 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict
 
-from web3 import Web3
-
 from dune_client.util import postgres_date
 
 DuneRecord = Dict[str, str]
+
 
 # pylint: disable=too-few-public-methods
 class Address:
@@ -31,7 +30,7 @@ class Address:
         # so they don't have to convert all addresses to hex strings manually
         address = address.replace("\\x", "0x")
         if Address._is_valid(address):
-            self.address: str = Web3.toChecksumAddress(address)
+            self.address: str = address.lower()
         else:
             raise ValueError(f"Invalid Ethereum Address {address}")
 
