@@ -141,6 +141,14 @@ class AsyncDuneClient(BaseDuneClient):
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
+        
+    async def get_latest_result(self, query: Query) -> ResultsResponse:
+        """GET results from Dune API for `query_id`"""
+        response_json = await self._get(url=f"query/{query.query_id}/results")
+        try:
+            return ResultsResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "ResultsResponse", err) from err
 
     async def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""

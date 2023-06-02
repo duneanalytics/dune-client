@@ -124,6 +124,14 @@ class DuneClient(DuneInterface, BaseDuneClient):
         )
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(response.content))
+    
+    def get_latest_result(self, query: Query) -> ResultsResponse:
+        """GET latest results from Dune API for `query`"""
+        response_json = self._get(route=f"query/{query.query_id}/results")
+        try:
+            return ResultsResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "ResultsResponse", err) from err
 
     def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
