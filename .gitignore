@@ -6,4 +6,4 @@ _version.py
 .idea/
 venv/
 tmp/
-.vscode/settings.json
+.vscode/
