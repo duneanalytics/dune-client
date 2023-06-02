@@ -115,6 +115,9 @@ class AsyncDuneClient(BaseDuneClient):
         params = query.request_format()
         params["performance"] = performance or self.performance
 
+        self.logger.info(
+            f"executing {query.query_id} on {performance or self.performance} cluster"
+        )
         response_json = await self._post(
             url=f"/query/{query.query_id}/execute",
             params=params,
@@ -141,9 +144,9 @@ class AsyncDuneClient(BaseDuneClient):
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
-        
+
     async def get_latest_result(self, query: Query) -> ResultsResponse:
-        """GET results from Dune API for `query_id`"""
+        """GET latest results from Dune API for `query_id`"""
         response_json = await self._get(url=f"query/{query.query_id}/results")
         try:
             return ResultsResponse.from_dict(response_json)

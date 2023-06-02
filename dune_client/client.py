@@ -75,6 +75,9 @@ class DuneClient(DuneInterface, BaseDuneClient):
         self, query: Query, performance: Union[str, None] = None
     ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
+        self.logger.info(
+            f"executing {query.query_id} on {performance or self.performance} cluster"
+        )
         response_json = self._post(
             route=f"query/{query.query_id}/execute",
             params={
@@ -124,9 +127,9 @@ class DuneClient(DuneInterface, BaseDuneClient):
         )
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(response.content))
-    
+
     def get_latest_result(self, query: Query) -> ResultsResponse:
-        """GET latest results from Dune API for `query`"""
+        """GET latest results from Dune API for `query_id`"""
         response_json = self._get(route=f"query/{query.query_id}/results")
         try:
             return ResultsResponse.from_dict(response_json)
