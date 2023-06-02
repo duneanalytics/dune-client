@@ -106,11 +106,14 @@ class AsyncDuneClient(BaseDuneClient):
         )
         return await self._handle_response(response)
 
-    async def execute(self, query: Query) -> ExecutionResponse:
+    async def execute(self, query: Query, performance: str = "medium") -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
+        params = query.request_format()
+        params["performance"] = performance
+        
         response_json = await self._post(
             url=f"/query/{query.query_id}/execute",
-            params=query.request_format(),
+            params=params,
         )
         try:
             return ExecutionResponse.from_dict(response_json)
@@ -145,13 +148,15 @@ class AsyncDuneClient(BaseDuneClient):
         except KeyError as err:
             raise DuneError(response_json, "CancellationResponse", err) from err
 
-    async def refresh(self, query: Query, ping_frequency: int = 5) -> ResultsResponse:
+    async def refresh(
+        self, query: Query, ping_frequency: int = 5, performance: str = "medium"
+    ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
-        job_id = (await self.execute(query)).execution_id
+        job_id = (await self.execute(query=query, performance=performance)).execution_id
         status = await self.get_status(job_id)
         while status.state not in ExecutionState.terminal_states():
             self.logger.info(

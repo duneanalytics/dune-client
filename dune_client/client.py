@@ -71,14 +71,15 @@ class DuneClient(DuneInterface, BaseDuneClient):
         )
         return self._handle_response(response)
 
-    def execute(self, query: Query) -> ExecutionResponse:
+    def execute(self, query: Query, performance: str = "medium") -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         response_json = self._post(
             route=f"query/{query.query_id}/execute",
             params={
                 "query_parameters": {
                     p.key: p.to_dict()["value"] for p in query.parameters()
-                }
+                },
+                "performance": performance,
             },
         )
         try:
@@ -132,8 +133,10 @@ class DuneClient(DuneInterface, BaseDuneClient):
         except KeyError as err:
             raise DuneError(response_json, "CancellationResponse", err) from err
 
-    def _refresh(self, query: Query, ping_frequency: int = 5) -> str:
-        job_id = self.execute(query).execution_id
+    def _refresh(
+        self, query: Query, ping_frequency: int = 5, performance: str = "medium"
+    ) -> str:
+        job_id = self.execute(query=query, performance=performance).execution_id
         status = self.get_status(job_id)
         while status.state not in ExecutionState.terminal_states():
             self.logger.info(
@@ -147,25 +150,33 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
         return job_id
 
-    def refresh(self, query: Query, ping_frequency: int = 5) -> ResultsResponse:
+    def refresh(
+        self, query: Query, ping_frequency: int = 5, performance: str = "medium"
+    ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
-        job_id = self._refresh(query, ping_frequency=ping_frequency)
+        job_id = self._refresh(
+            query, ping_frequency=ping_frequency, performance=performance
+        )
         return self.get_result(job_id)
 
-    def refresh_csv(self, query: Query, ping_frequency: int = 5) -> ExecutionResultCSV:
+    def refresh_csv(
+        self, query: Query, ping_frequency: int = 5, performance: str = "medium"
+    ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
         fetches and the results in CSV format
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
-        job_id = self._refresh(query, ping_frequency=ping_frequency)
+        job_id = self._refresh(
+            query, ping_frequency=ping_frequency, performance=performance
+        )
         return self.get_result_csv(job_id)
 
-    def refresh_into_dataframe(self, query: Query) -> Any:
+    def refresh_into_dataframe(self, query: Query, performance: str = "medium") -> Any:
         """
         Execute a Dune Query, waits till execution completes,
         fetched and returns the result as a Pandas DataFrame
@@ -178,5 +189,5 @@ class DuneClient(DuneInterface, BaseDuneClient):
             raise ImportError(
                 "dependency failure, pandas is required but missing"
             ) from exc
-        data = self.refresh_csv(query).data
+        data = self.refresh_csv(query, performance=performance).data
         return pandas.read_csv(data)
