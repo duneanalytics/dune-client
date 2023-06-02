@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 from io import BytesIO
-from typing import Any
+from typing import Any, Union
 
 import requests
 from requests import Response, JSONDecodeError
@@ -71,7 +71,9 @@ class DuneClient(DuneInterface, BaseDuneClient):
         )
         return self._handle_response(response)
 
-    def execute(self, query: Query, performance: str = "medium") -> ExecutionResponse:
+    def execute(
+        self, query: Query, performance: Union[str, None] = None
+    ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         response_json = self._post(
             route=f"query/{query.query_id}/execute",
@@ -79,7 +81,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
                 "query_parameters": {
                     p.key: p.to_dict()["value"] for p in query.parameters()
                 },
-                "performance": performance,
+                "performance": performance or self.performance,
             },
         )
         try:
@@ -134,7 +136,10 @@ class DuneClient(DuneInterface, BaseDuneClient):
             raise DuneError(response_json, "CancellationResponse", err) from err
 
     def _refresh(
-        self, query: Query, ping_frequency: int = 5, performance: str = "medium"
+        self,
+        query: Query,
+        ping_frequency: int = 5,
+        performance: Union[str, None] = None,
     ) -> str:
         job_id = self.execute(query=query, performance=performance).execution_id
         status = self.get_status(job_id)
@@ -151,7 +156,10 @@ class DuneClient(DuneInterface, BaseDuneClient):
         return job_id
 
     def refresh(
-        self, query: Query, ping_frequency: int = 5, performance: str = "medium"
+        self,
+        query: Query,
+        ping_frequency: int = 5,
+        performance: Union[str, None] = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
@@ -159,12 +167,17 @@ class DuneClient(DuneInterface, BaseDuneClient):
         Sleeps `ping_frequency` seconds between each status request.
         """
         job_id = self._refresh(
-            query, ping_frequency=ping_frequency, performance=performance
+            query,
+            ping_frequency=ping_frequency,
+            performance=performance,
         )
         return self.get_result(job_id)
 
     def refresh_csv(
-        self, query: Query, ping_frequency: int = 5, performance: str = "medium"
+        self,
+        query: Query,
+        ping_frequency: int = 5,
+        performance: Union[str, None] = None,
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
@@ -172,11 +185,15 @@ class DuneClient(DuneInterface, BaseDuneClient):
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
         job_id = self._refresh(
-            query, ping_frequency=ping_frequency, performance=performance
+            query,
+            ping_frequency=ping_frequency,
+            performance=performance,
         )
         return self.get_result_csv(job_id)
 
-    def refresh_into_dataframe(self, query: Query, performance: str = "medium") -> Any:
+    def refresh_into_dataframe(
+        self, query: Query, performance: Union[str, None] = None
+    ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
         fetched and returns the result as a Pandas DataFrame

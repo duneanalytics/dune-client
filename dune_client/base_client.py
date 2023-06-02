@@ -20,8 +20,9 @@ class BaseDuneClient:
     API_PATH = "/api/v1"
     DEFAULT_TIMEOUT = 10
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, performance: str = "medium"):
         self.token = api_key
+        self.performance = performance
         self.logger = logging.getLogger(__name__)
         logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
 

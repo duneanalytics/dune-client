@@ -5,7 +5,7 @@ https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e
 """
 from __future__ import annotations
 import asyncio
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from aiohttp import (
     ClientSession,
@@ -37,13 +37,15 @@ class AsyncDuneClient(BaseDuneClient):
 
     _connection_limit = 3
 
-    def __init__(self, api_key: str, connection_limit: int = 3):
+    def __init__(
+        self, api_key: str, connection_limit: int = 3, performance: str = "medium"
+    ):
         """
         api_key - Dune API key
         connection_limit - number of parallel requests to execute.
         For non-pro accounts Dune allows only up to 3 requests but that number can be increased.
         """
-        super().__init__(api_key=api_key)
+        super().__init__(api_key=api_key, performance=performance)
         self._connection_limit = connection_limit
         self._session: Optional[ClientSession] = None
 
@@ -106,11 +108,13 @@ class AsyncDuneClient(BaseDuneClient):
         )
         return await self._handle_response(response)
 
-    async def execute(self, query: Query, performance: str = "medium") -> ExecutionResponse:
+    async def execute(
+        self, query: Query, performance: Union[str, None] = None
+    ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         params = query.request_format()
-        params["performance"] = performance
-        
+        params["performance"] = performance or self.performance
+
         response_json = await self._post(
             url=f"/query/{query.query_id}/execute",
             params=params,
@@ -149,7 +153,10 @@ class AsyncDuneClient(BaseDuneClient):
             raise DuneError(response_json, "CancellationResponse", err) from err
 
     async def refresh(
-        self, query: Query, ping_frequency: int = 5, performance: str = "medium"
+        self,
+        query: Query,
+        ping_frequency: int = 5,
+        performance: Union[str, None] = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
