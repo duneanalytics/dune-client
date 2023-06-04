@@ -76,10 +76,7 @@ class AsyncDuneClient(BaseDuneClient):
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         await self.disconnect()
 
-    async def _handle_response(
-        self,
-        response: ClientResponse,
-    ) -> Any:
+    async def _handle_response(self, response: ClientResponse) -> Any:
         try:
             # Some responses can be decoded and converted to DuneErrors
             response_json = await response.json()
@@ -98,10 +95,7 @@ class AsyncDuneClient(BaseDuneClient):
         if self._session is None:
             raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"GET received input url={url}")
-        response = await self._session.get(
-            url=url,
-            headers=self.default_headers(),
-        )
+        response = await self._session.get(url=url, headers=self.default_headers())
         return await self._handle_response(response)
 
     async def _post(self, route: str, params: Any) -> Any:
@@ -119,8 +113,7 @@ class AsyncDuneClient(BaseDuneClient):
     async def execute(self, query: Query) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         response_json = await self._post(
-            route=f"/query/{query.query_id}/execute",
-            params=query.request_format(),
+            route=f"/query/{query.query_id}/execute", params=query.request_format()
         )
         try:
             return ExecutionResponse.from_dict(response_json)
@@ -129,9 +122,7 @@ class AsyncDuneClient(BaseDuneClient):
 
     async def get_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = await self._get(
-            route=f"/execution/{job_id}/status",
-        )
+        response_json = await self._get(route=f"/execution/{job_id}/status")
         try:
             return ExecutionStatusResponse.from_dict(response_json)
         except KeyError as err:
@@ -162,7 +153,9 @@ class AsyncDuneClient(BaseDuneClient):
 
     async def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
-        response_json = await self._post(route=f"/execution/{job_id}/cancel", params=None)
+        response_json = await self._post(
+            route=f"/execution/{job_id}/cancel", params=None
+        )
         try:
             # No need to make a dataclass for this since it's just a boolean.
             success: bool = response_json["success"]
@@ -194,7 +187,9 @@ class AsyncDuneClient(BaseDuneClient):
         job_id = await self._refresh(query, ping_frequency=ping_frequency)
         return await self.get_result(job_id)
 
-    async def refresh_csv(self, query: Query, ping_frequency: int = 5) -> ExecutionResultCSV:
+    async def refresh_csv(
+        self, query: Query, ping_frequency: int = 5
+    ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
         fetches and the results in CSV format
