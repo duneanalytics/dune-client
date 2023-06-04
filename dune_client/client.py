@@ -50,7 +50,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
     def _route_url(self, route: str) -> str:
         return f"{self.BASE_URL}{self.API_PATH}{route}"
 
-    def _get(self, route: str) -> Any:
+    def _get(self, route: str, raw: bool = False) -> Any:
         url = self._route_url(route)
         self.logger.debug(f"GET received input url={url}")
         response = requests.get(
@@ -58,6 +58,8 @@ class DuneClient(DuneInterface, BaseDuneClient):
             headers=self.default_headers(),
             timeout=self.DEFAULT_TIMEOUT,
         )
+        if raw:
+            return response
         return self._handle_response(response)
 
     def _post(self, route: str, params: Any) -> Any:
@@ -74,8 +76,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
     def execute(self, query: Query) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         response_json = self._post(
-            route=f"/query/{query.query_id}/execute",
-            params=query.request_format(),
+            route=f"/query/{query.query_id}/execute", params=query.request_format()
         )
         try:
             return ExecutionResponse.from_dict(response_json)
@@ -84,9 +85,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
     def get_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._get(
-            route=f"/execution/{job_id}/status",
-        )
+        response_json = self._get(route=f"/execution/{job_id}/status")
         try:
             return ExecutionStatusResponse.from_dict(response_json)
         except KeyError as err:
@@ -108,19 +107,19 @@ class DuneClient(DuneInterface, BaseDuneClient):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
+        route = f"/execution/{job_id}/results/csv"
         url = self._route_url(f"/execution/{job_id}/results/csv")
         self.logger.debug(f"GET CSV received input url={url}")
-        response = requests.get(
-            url,
-            headers={"x-dune-api-key": self.token},
-            timeout=self.DEFAULT_TIMEOUT,
-        )
+        response = self._get(route=route, raw=True)
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(response.content))
 
     def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._post(route=f"/execution/{job_id}/cancel", params=None)
+        response_json = self._post(
+            route=f"/execution/{job_id}/cancel",
+            params=None,
+        )
         try:
             # No need to make a dataclass for this since it's just a boolean.
             success: bool = response_json["success"]
