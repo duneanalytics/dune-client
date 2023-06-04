@@ -219,5 +219,5 @@ class AsyncDuneClient(BaseDuneClient):
             raise ImportError(
                 "dependency failure, pandas is required but missing"
             ) from exc
-        data = await self.refresh_csv(query).data
+        data = await (self.refresh_csv(query)).data
         return pandas.read_csv(data)
