@@ -151,7 +151,7 @@ class AsyncDuneClient(BaseDuneClient):
         self.logger.debug(f"GET CSV received input url={url}")
         response = await self._get(route=route, raw=True)
         response.raise_for_status()
-        return ExecutionResultCSV(data=BytesIO(response.content))
+        return ExecutionResultCSV(data=response.content)
 
     async def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
