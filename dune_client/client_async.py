@@ -153,13 +153,10 @@ class AsyncDuneClient(BaseDuneClient):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
+        route = f"/execution/{job_id}/results/csv"
         url = self._route_url(f"/execution/{job_id}/results/csv")
         self.logger.debug(f"GET CSV received input url={url}")
-        response = await requests.get(
-            url,
-            headers={"x-dune-api-key": self.token},
-            timeout=self.DEFAULT_TIMEOUT,
-        )
+        response = await self._get(route=route)
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(response.content))
 
