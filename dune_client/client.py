@@ -48,14 +48,14 @@ class DuneClient(DuneInterface, BaseDuneClient):
             raise ValueError("Unreachable since previous line raises") from err
 
     def _route_url(self, route: str) -> str:
-        return f"{self.BASE_URL}{self.API_PATH}/{route}"
+        return f"{self.BASE_URL}{self.API_PATH}{route}"
 
     def _get(self, route: str) -> Any:
         url = self._route_url(route)
         self.logger.debug(f"GET received input url={url}")
         response = requests.get(
-            url,
-            headers={"x-dune-api-key": self.token},
+            url=url,
+            headers=self.default_headers(),
             timeout=self.DEFAULT_TIMEOUT,
         )
         return self._handle_response(response)
@@ -66,7 +66,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         response = requests.post(
             url=url,
             json=params,
-            headers={"x-dune-api-key": self.token},
+            headers=self.default_headers(),
             timeout=self.DEFAULT_TIMEOUT,
         )
         return self._handle_response(response)
@@ -74,12 +74,8 @@ class DuneClient(DuneInterface, BaseDuneClient):
     def execute(self, query: Query) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         response_json = self._post(
-            route=f"query/{query.query_id}/execute",
-            params={
-                "query_parameters": {
-                    p.key: p.to_dict()["value"] for p in query.parameters()
-                }
-            },
+            route=f"/query/{query.query_id}/execute",
+            params=query.request_format(),
         )
         try:
             return ExecutionResponse.from_dict(response_json)
@@ -89,7 +85,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
     def get_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""
         response_json = self._get(
-            route=f"execution/{job_id}/status",
+            route=f"/execution/{job_id}/status",
         )
         try:
             return ExecutionStatusResponse.from_dict(response_json)
@@ -98,7 +94,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
     def get_result(self, job_id: str) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._get(route=f"execution/{job_id}/results")
+        response_json = self._get(route=f"/execution/{job_id}/results")
         try:
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
@@ -112,7 +108,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
-        url = self._route_url(f"execution/{job_id}/results/csv")
+        url = self._route_url(f"/execution/{job_id}/results/csv")
         self.logger.debug(f"GET CSV received input url={url}")
         response = requests.get(
             url,
@@ -124,7 +120,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
     def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._post(route=f"execution/{job_id}/cancel", params=None)
+        response_json = self._post(route=f"/execution/{job_id}/cancel", params=None)
         try:
             # No need to make a dataclass for this since it's just a boolean.
             success: bool = response_json["success"]

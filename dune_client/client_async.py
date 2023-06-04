@@ -4,6 +4,7 @@ Framework built on Dune's API Documentation
 https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e003a
 """
 from __future__ import annotations
+
 import asyncio
 from io import BytesIO
 from typing import Any, Optional
@@ -89,22 +90,27 @@ class AsyncDuneClient(BaseDuneClient):
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
 
-    async def _get(self, url: str) -> Any:
+    def _route_url(self, route: str) -> str:
+        return f"{self.API_PATH}{route}"
+
+    async def _get(self, route: str) -> Any:
+        url = self._route_url(route)
         if self._session is None:
             raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"GET received input url={url}")
         response = await self._session.get(
-            url=f"{self.API_PATH}{url}",
+            url=url,
             headers=self.default_headers(),
         )
         return await self._handle_response(response)
 
-    async def _post(self, url: str, params: Any) -> Any:
+    async def _post(self, route: str, params: Any) -> Any:
+        url = self._route_url(route)
         if self._session is None:
             raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"POST received input url={url}, params={params}")
         response = await self._session.post(
-            url=f"{self.API_PATH}{url}",
+            url=url,
             json=params,
             headers=self.default_headers(),
         )
@@ -113,7 +119,7 @@ class AsyncDuneClient(BaseDuneClient):
     async def execute(self, query: Query) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         response_json = await self._post(
-            url=f"/query/{query.query_id}/execute",
+            route=f"/query/{query.query_id}/execute",
             params=query.request_format(),
         )
         try:
@@ -124,7 +130,7 @@ class AsyncDuneClient(BaseDuneClient):
     async def get_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""
         response_json = await self._get(
-            url=f"/execution/{job_id}/status",
+            route=f"/execution/{job_id}/status",
         )
         try:
             return ExecutionStatusResponse.from_dict(response_json)
@@ -133,7 +139,7 @@ class AsyncDuneClient(BaseDuneClient):
 
     async def get_result(self, job_id: str) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = await self._get(url=f"/execution/{job_id}/results")
+        response_json = await self._get(route=f"/execution/{job_id}/results")
         try:
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
@@ -147,7 +153,7 @@ class AsyncDuneClient(BaseDuneClient):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
-        url = self._route_url(f"execution/{job_id}/results/csv")
+        url = self._route_url(f"/execution/{job_id}/results/csv")
         self.logger.debug(f"GET CSV received input url={url}")
         response = await requests.get(
             url,
@@ -159,7 +165,7 @@ class AsyncDuneClient(BaseDuneClient):
 
     async def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
-        response_json = await self._post(url=f"/execution/{job_id}/cancel", params=None)
+        response_json = await self._post(route=f"/execution/{job_id}/cancel", params=None)
         try:
             # No need to make a dataclass for this since it's just a boolean.
             success: bool = response_json["success"]
