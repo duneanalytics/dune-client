@@ -90,12 +90,14 @@ class AsyncDuneClient(BaseDuneClient):
     def _route_url(self, route: str) -> str:
         return f"{self.API_PATH}{route}"
 
-    async def _get(self, route: str) -> Any:
+    async def _get(self, route: str, raw: bool = False) -> Any:
         url = self._route_url(route)
         if self._session is None:
             raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"GET received input url={url}")
         response = await self._session.get(url=url, headers=self.default_headers())
+        if raw:
+            return response
         return await self._handle_response(response)
 
     async def _post(self, route: str, params: Any) -> Any:
@@ -147,7 +149,7 @@ class AsyncDuneClient(BaseDuneClient):
         route = f"/execution/{job_id}/results/csv"
         url = self._route_url(f"/execution/{job_id}/results/csv")
         self.logger.debug(f"GET CSV received input url={url}")
-        response = await self._get(route=route)
+        response = await self._get(route=route, raw=True)
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(response.content))
 
