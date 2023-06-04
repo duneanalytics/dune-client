@@ -9,8 +9,6 @@ import asyncio
 from io import BytesIO
 from typing import Any, Optional
 
-import requests
-
 from aiohttp import (
     ClientSession,
     ClientResponse,
@@ -95,7 +93,10 @@ class AsyncDuneClient(BaseDuneClient):
         if self._session is None:
             raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"GET received input url={url}")
-        response = await self._session.get(url=url, headers=self.default_headers())
+        response = await self._session.get(
+            url=url,
+            headers=self.default_headers(),
+        )
         if raw:
             return response
         return await self._handle_response(response)
@@ -151,12 +152,13 @@ class AsyncDuneClient(BaseDuneClient):
         self.logger.debug(f"GET CSV received input url={url}")
         response = await self._get(route=route, raw=True)
         response.raise_for_status()
-        return ExecutionResultCSV(data=response.content)
+        return ExecutionResultCSV(data=BytesIO(await response.content.read(-1)))
 
     async def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
         response_json = await self._post(
-            route=f"/execution/{job_id}/cancel", params=None
+            route=f"/execution/{job_id}/cancel",
+            params=None,
         )
         try:
             # No need to make a dataclass for this since it's just a boolean.
