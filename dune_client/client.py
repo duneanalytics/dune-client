@@ -33,10 +33,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
     combining the use of endpoints (e.g. refresh)
     """
 
-    def _handle_response(
-        self,
-        response: Response,
-    ) -> Any:
+    def _handle_response(self, response: Response) -> Any:
         try:
             # Some responses can be decoded and converted to DuneErrors
             response_json = response.json()
