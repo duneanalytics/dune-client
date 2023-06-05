@@ -87,13 +87,14 @@ class AsyncDuneClient(BaseDuneClient):
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
 
-    async def _get(self, url: str) -> Any:
+    async def _get(self, url: str, params: Optional[Any] = None) -> Any:
         if self._session is None:
             raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"GET received input url={url}")
         response = await self._session.get(
             url=f"{self.API_PATH}{url}",
             headers=self.default_headers(),
+            params=params,
         )
         return await self._handle_response(response)
 
@@ -109,7 +110,7 @@ class AsyncDuneClient(BaseDuneClient):
         return await self._handle_response(response)
 
     async def execute(
-        self, query: Query, performance: Union[str, None] = None
+        self, query: Query, performance: Optional[str] = None
     ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         params = query.request_format()
@@ -145,9 +146,25 @@ class AsyncDuneClient(BaseDuneClient):
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
-    async def get_latest_result(self, query: Query) -> ResultsResponse:
-        """GET latest results from Dune API for `query_id`"""
-        response_json = await self._get(url=f"query/{query.query_id}/results")
+    async def get_latest_result(self, query: Union[Query, str, int]) -> ResultsResponse:
+        """
+        GET the latest results for a query_id without having to execute the query again.
+
+        https://dune.com/docs/api/api-reference/latest_results/
+        """
+        if isinstance(query, Query):
+            params = {
+                f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()
+            }
+            query_id = query.query_id
+        else:
+            params = None
+            query_id = query
+
+        response_json = await self._get(
+            url=f"query/{query_id}/results",
+            params=params,
+        )
         try:
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
@@ -167,7 +184,7 @@ class AsyncDuneClient(BaseDuneClient):
         self,
         query: Query,
         ping_frequency: int = 5,
-        performance: Union[str, None] = None,
+        performance: Optional[str] = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,

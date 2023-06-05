@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 from io import BytesIO
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 import requests
 from requests import Response, JSONDecodeError
@@ -50,13 +50,14 @@ class DuneClient(DuneInterface, BaseDuneClient):
     def _route_url(self, route: str) -> str:
         return f"{self.BASE_URL}{self.API_PATH}/{route}"
 
-    def _get(self, route: str) -> Any:
+    def _get(self, route: str, params: Optional[Any] = None) -> Any:
         url = self._route_url(route)
         self.logger.debug(f"GET received input url={url}")
         response = requests.get(
             url,
             headers={"x-dune-api-key": self.token},
             timeout=self.DEFAULT_TIMEOUT,
+            params=params,
         )
         return self._handle_response(response)
 
@@ -72,7 +73,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         return self._handle_response(response)
 
     def execute(
-        self, query: Query, performance: Union[str, None] = None
+        self, query: Query, performance: Optional[str] = None
     ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         self.logger.info(
@@ -128,9 +129,25 @@ class DuneClient(DuneInterface, BaseDuneClient):
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(response.content))
 
-    def get_latest_result(self, query: Query) -> ResultsResponse:
-        """GET latest results from Dune API for `query_id`"""
-        response_json = self._get(route=f"query/{query.query_id}/results")
+    def get_latest_result(self, query: Union[Query, str, int]) -> ResultsResponse:
+        """
+        GET the latest results for a query_id without having to execute the query again.
+
+        https://dune.com/docs/api/api-reference/latest_results/
+        """
+        if isinstance(query, Query):
+            params = {
+                f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()
+            }
+            query_id = query.query_id
+        else:
+            params = None
+            query_id = query
+
+        response_json = self._get(
+            route=f"query/{query_id}/results",
+            params=params,
+        )
         try:
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
@@ -150,7 +167,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         self,
         query: Query,
         ping_frequency: int = 5,
-        performance: Union[str, None] = None,
+        performance: Optional[str] = None,
     ) -> str:
         job_id = self.execute(query=query, performance=performance).execution_id
         status = self.get_status(job_id)
@@ -170,7 +187,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         self,
         query: Query,
         ping_frequency: int = 5,
-        performance: Union[str, None] = None,
+        performance: Optional[str] = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
@@ -188,7 +205,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         self,
         query: Query,
         ping_frequency: int = 5,
-        performance: Union[str, None] = None,
+        performance: Optional[str] = None,
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
@@ -203,7 +220,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         return self.get_result_csv(job_id)
 
     def refresh_into_dataframe(
-        self, query: Query, performance: Union[str, None] = None
+        self, query: Query, performance: Optional[str] = None
     ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
