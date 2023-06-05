@@ -162,7 +162,7 @@ class AsyncDuneClient(BaseDuneClient):
             query_id = query
 
         response_json = await self._get(
-            url=f"query/{query_id}/results",
+            url=f"/query/{query_id}/results",
             params=params,
         )
         try:
