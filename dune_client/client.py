@@ -133,9 +133,9 @@ class DuneClient(DuneInterface, BaseDuneClient):
         """
         GET the latest results for a query_id without having to execute the query again.
 
-        :param query: :class:`Query` object OR query id as string | int  
+        :param query: :class:`Query` object OR query id as string | int
 
-        https://dune.com/docs/api/api-reference/latest_results/    
+        https://dune.com/docs/api/api-reference/latest_results/
         """
         if isinstance(query, Query):
             params = {
@@ -144,7 +144,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
             query_id = query.query_id
         else:
             params = None
-            query_id = query
+            query_id = int(query)
 
         response_json = self._get(
             route=f"query/{query_id}/results",
