@@ -159,7 +159,7 @@ class AsyncDuneClient(BaseDuneClient):
             query_id = query.query_id
         else:
             params = None
-            query_id = query
+            query_id = int(query)
 
         response_json = await self._get(
             url=f"/query/{query_id}/results",
