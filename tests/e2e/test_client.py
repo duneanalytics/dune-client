@@ -45,6 +45,11 @@ class TestDuneClient(unittest.TestCase):
         results = dune.refresh(self.query).get_rows()
         self.assertGreater(len(results), 0)
 
+    def test_refresh_performance_large(self):
+        dune = DuneClient(self.valid_api_key)
+        results = dune.refresh(self.query, performance="large").get_rows()
+        self.assertGreater(len(results), 0)
+
     def test_refresh_into_dataframe(self):
         dune = DuneClient(self.valid_api_key)
         pd = dune.refresh_into_dataframe(self.query)
@@ -159,6 +164,16 @@ class TestDuneClient(unittest.TestCase):
             "Can't build ExecutionStatusResponse from "
             "{'error': 'The requested execution ID (ID: Wonky Job ID) is invalid.'}",
         )
+
+    def test_get_latest_result_with_query_object(self):
+        dune = DuneClient(self.valid_api_key)
+        results = dune.get_latest_result(self.query).get_rows()
+        self.assertGreater(len(results), 0)
+
+    def test_get_latest_result_with_query_id(self):
+        dune = DuneClient(self.valid_api_key)
+        results = dune.get_latest_result(self.query.query_id).get_rows()
+        self.assertGreater(len(results), 0)
 
 
 if __name__ == "__main__":
