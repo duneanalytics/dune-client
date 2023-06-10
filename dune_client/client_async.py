@@ -90,7 +90,12 @@ class AsyncDuneClient(BaseDuneClient):
     def _route_url(self, route: str) -> str:
         return f"{self.API_PATH}{route}"
 
-    async def _get(self, route: str, params: Optional[Any] = None, raw: bool = False) -> Any:
+    async def _get(
+        self,
+        route: str,
+        params: Optional[Any] = None,
+        raw: bool = False,
+    ) -> Any:
         url = self._route_url(route)
         if self._session is None:
             raise ValueError("Client is not connected; call `await cl.connect()`")
@@ -127,7 +132,7 @@ class AsyncDuneClient(BaseDuneClient):
             f"executing {query.query_id} on {performance or self.performance} cluster"
         )
         response_json = await self._post(
-            url=f"/query/{query.query_id}/execute",
+            route=f"/query/{query.query_id}/execute",
             params=params,
         )
         try:
@@ -170,6 +175,8 @@ class AsyncDuneClient(BaseDuneClient):
         """
         GET the latest results for a query_id without having to execute the query again.
 
+        :param query: :class:`Query` object OR query id as string | int
+
         https://dune.com/docs/api/api-reference/latest_results/
         """
         if isinstance(query, Query):
@@ -182,7 +189,7 @@ class AsyncDuneClient(BaseDuneClient):
             query_id = int(query)
 
         response_json = await self._get(
-            url=f"/query/{query_id}/results",
+            route=f"/query/{query_id}/results",
             params=params,
         )
         try:
@@ -208,7 +215,7 @@ class AsyncDuneClient(BaseDuneClient):
         query: Query,
         ping_frequency: int = 5,
         performance: Optional[str] = None,
-    ) -> ResultsResponse:  # str?
+    ) -> str:
         """
         Executes a Dune `query`, waits until execution completes,
         fetches and returns the results.
@@ -228,27 +235,35 @@ class AsyncDuneClient(BaseDuneClient):
 
         return job_id
 
-    async def refresh(self, query: Query, ping_frequency: int = 5) -> ResultsResponse:
+    async def refresh(
+        self, query: Query, ping_frequency: int = 5, performance: Optional[str] = None
+    ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
-        job_id = await self._refresh(query, ping_frequency=ping_frequency)
+        job_id = await self._refresh(
+            query, ping_frequency=ping_frequency, performance=performance
+        )
         return await self.get_result(job_id)
 
     async def refresh_csv(
-        self, query: Query, ping_frequency: int = 5
+        self, query: Query, ping_frequency: int = 5, performance: Optional[str] = None
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
         fetches and the results in CSV format
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
-        job_id = await self._refresh(query, ping_frequency=ping_frequency)
+        job_id = await self._refresh(
+            query, ping_frequency=ping_frequency, performance=performance
+        )
         return await self.get_result_csv(job_id)
 
-    async def refresh_into_dataframe(self, query: Query) -> Any:
+    async def refresh_into_dataframe(
+        self, query: Query, performance: Optional[str] = None
+    ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
         fetched and returns the result as a Pandas DataFrame
@@ -261,5 +276,5 @@ class AsyncDuneClient(BaseDuneClient):
             raise ImportError(
                 "dependency failure, pandas is required but missing"
             ) from exc
-        data = (await self.refresh_csv(query)).data
+        data = (await self.refresh_csv(query, performance=performance)).data
         return pandas.read_csv(data)
