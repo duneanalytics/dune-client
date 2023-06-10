@@ -3,7 +3,7 @@ Data Class Representing a Dune Query
 """
 import urllib.parse
 from dataclasses import dataclass
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union
 
 from dune_client.types import QueryParameter
 
@@ -41,7 +41,7 @@ class Query:
         """
         return self.url().__hash__()
 
-    def request_format(self) -> Dict[str, Dict[str, str]]:
+    def request_format(self) -> Dict[str, Union[Dict[str, str], str, None]]:
         """Transforms Query objects to params to pass in API"""
         return {
             "query_parameters": {p.key: p.to_dict()["value"] for p in self.parameters()}

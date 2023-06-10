@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from io import BytesIO
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from aiohttp import (
     ClientSession,
@@ -40,13 +40,15 @@ class AsyncDuneClient(BaseDuneClient):
 
     _connection_limit = 3
 
-    def __init__(self, api_key: str, connection_limit: int = 3):
+    def __init__(
+        self, api_key: str, connection_limit: int = 3, performance: str = "medium"
+    ):
         """
         api_key - Dune API key
         connection_limit - number of parallel requests to execute.
         For non-pro accounts Dune allows only up to 3 requests but that number can be increased.
         """
-        super().__init__(api_key=api_key)
+        super().__init__(api_key=api_key, performance=performance)
         self._connection_limit = connection_limit
         self._session: Optional[ClientSession] = None
 
@@ -88,7 +90,7 @@ class AsyncDuneClient(BaseDuneClient):
     def _route_url(self, route: str) -> str:
         return f"{self.API_PATH}{route}"
 
-    async def _get(self, route: str, raw: bool = False) -> Any:
+    async def _get(self, route: str, params: Optional[Any] = None, raw: bool = False) -> Any:
         url = self._route_url(route)
         if self._session is None:
             raise ValueError("Client is not connected; call `await cl.connect()`")
@@ -96,6 +98,7 @@ class AsyncDuneClient(BaseDuneClient):
         response = await self._session.get(
             url=url,
             headers=self.default_headers(),
+            params=params,
         )
         if raw:
             return response
@@ -113,10 +116,19 @@ class AsyncDuneClient(BaseDuneClient):
         )
         return await self._handle_response(response)
 
-    async def execute(self, query: Query) -> ExecutionResponse:
+    async def execute(
+        self, query: Query, performance: Optional[str] = None
+    ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
+        params = query.request_format()
+        params["performance"] = performance or self.performance
+
+        self.logger.info(
+            f"executing {query.query_id} on {performance or self.performance} cluster"
+        )
         response_json = await self._post(
-            route=f"/query/{query.query_id}/execute", params=query.request_format()
+            url=f"/query/{query.query_id}/execute",
+            params=params,
         )
         try:
             return ExecutionResponse.from_dict(response_json)
@@ -154,6 +166,30 @@ class AsyncDuneClient(BaseDuneClient):
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(await response.content.read(-1)))
 
+    async def get_latest_result(self, query: Union[Query, str, int]) -> ResultsResponse:
+        """
+        GET the latest results for a query_id without having to execute the query again.
+
+        https://dune.com/docs/api/api-reference/latest_results/
+        """
+        if isinstance(query, Query):
+            params = {
+                f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()
+            }
+            query_id = query.query_id
+        else:
+            params = None
+            query_id = int(query)
+
+        response_json = await self._get(
+            url=f"/query/{query_id}/results",
+            params=params,
+        )
+        try:
+            return ResultsResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "ResultsResponse", err) from err
+
     async def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
         response_json = await self._post(
@@ -167,8 +203,18 @@ class AsyncDuneClient(BaseDuneClient):
         except KeyError as err:
             raise DuneError(response_json, "CancellationResponse", err) from err
 
-    async def _refresh(self, query: Query, ping_frequency: int = 5) -> str:
-        job_id = (await self.execute(query)).execution_id
+    async def _refresh(
+        self,
+        query: Query,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
+    ) -> ResultsResponse:  # str?
+        """
+        Executes a Dune `query`, waits until execution completes,
+        fetches and returns the results.
+        Sleeps `ping_frequency` seconds between each status request.
+        """
+        job_id = (await self.execute(query=query, performance=performance)).execution_id
         status = await self.get_status(job_id)
         while status.state not in ExecutionState.terminal_states():
             self.logger.info(
