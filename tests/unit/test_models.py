@@ -1,3 +1,4 @@
+import json
 import unittest
 import csv
 from datetime import datetime
@@ -16,7 +17,9 @@ from dune_client.models import (
     ExecutionResult,
     ResultMetadata,
     DuneError,
+    DuneQuery,
 )
+from dune_client.types import QueryParameter
 
 
 class MyTestCase(unittest.TestCase):
@@ -225,6 +228,41 @@ eth_traces,4474223
             ],
             [r for r in result],
         )
+
+    def test_dune_query_from_dict(self):
+        example_response = """{
+            "query_id": 60066,
+            "name": "Ethereum transactions",
+            "description": "Returns ethereum transactions starting from the oldest by block time",
+            "tags": ["ethereum", "transactions"],
+            "version": 15,
+            "parameters": [{"key": "limit", "value": "5", "type": "number"}],
+            "query_engine": "v2 Dune SQL",
+            "query_sql": "select block_number from ethereum.transactions limit {{limit}};",
+            "is_private": true,
+            "is_archived": false,
+            "is_unsaved": false,
+            "owner": "Owner Name"
+        }"""
+        expected = DuneQuery(
+            query_id=60066,
+            name="Ethereum transactions",
+            description="Returns ethereum transactions starting from the oldest by block time",
+            tags=["ethereum", "transactions"],
+            version=15,
+            parameters=[
+                QueryParameter.from_dict(
+                    {"key": "limit", "value": "5", "type": "number"}
+                )
+            ],
+            query_engine="v2 Dune SQL",
+            query_sql="select block_number from ethereum.transactions limit {{limit}};",
+            is_private=True,
+            is_archived=False,
+            is_unsaved=False,
+            owner="Owner Name",
+        )
+        self.assertEqual(expected, DuneQuery.from_dict(json.loads(example_response)))
 
 
 if __name__ == "__main__":

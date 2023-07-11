@@ -11,8 +11,7 @@ from io import BytesIO
 from typing import Optional, Any, Union, List, Dict
 
 from dateutil.parser import parse
-from dune_client.types import DuneRecord
-
+from dune_client.types import DuneRecord, QueryParameter
 
 log = logging.getLogger(__name__)
 logging.basicConfig(
@@ -251,3 +250,43 @@ class ResultsResponse:
 
         log.info(f"execution {self.state} returning empty list")
         return []
+
+
+@dataclass
+class DuneQuery:  # pylint: disable=too-many-instance-attributes
+    """
+    Modeling the CRUD operation response for `get_query`
+    """
+
+    query_id: int
+    name: str
+    description: str
+    tags: list[str]
+    version: int
+    parameters: list[QueryParameter]
+    query_engine: str
+    query_sql: str
+    is_private: bool
+    is_archived: bool
+    is_unsaved: bool
+    owner: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> DuneQuery:
+        """Constructor from json object"""
+        return cls(
+            query_id=int(data["query_id"]),
+            name=data["name"],
+            description=data["description"],
+            tags=data["tags"],
+            version=data["version"],
+            parameters=[
+                QueryParameter.from_dict(param) for param in data["parameters"]
+            ],
+            query_engine=data["query_engine"],
+            query_sql=data["query_sql"],
+            is_private=data["is_private"],
+            is_archived=data["is_archived"],
+            is_unsaved=data["is_unsaved"],
+            owner=data["owner"],
+        )

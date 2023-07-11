@@ -17,14 +17,21 @@ class BaseDuneClient:
     """
 
     BASE_URL = "https://api.dune.com"
-    API_PATH = "/api/v1"
     DEFAULT_TIMEOUT = 10
 
-    def __init__(self, api_key: str, performance: str = "medium"):
+    def __init__(
+        self, api_key: str, client_version: str = "v1", performance: str = "medium"
+    ):
         self.token = api_key
+        self.client_version = client_version
         self.performance = performance
         self.logger = logging.getLogger(__name__)
         logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
+
+    @property
+    def api_version(self) -> str:
+        """Returns client version string"""
+        return f"/api/{self.client_version}"
 
     def default_headers(self) -> Dict[str, str]:
         """Return default headers containing Dune Api token"""

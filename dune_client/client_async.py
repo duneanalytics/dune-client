@@ -92,7 +92,7 @@ class AsyncDuneClient(BaseDuneClient):
             raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"GET received input url={url}")
         response = await self._session.get(
-            url=f"{self.API_PATH}{url}",
+            url=f"{self.api_version}{url}",
             headers=self.default_headers(),
             params=params,
         )
@@ -103,7 +103,7 @@ class AsyncDuneClient(BaseDuneClient):
             raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"POST received input url={url}, params={params}")
         response = await self._session.post(
-            url=f"{self.API_PATH}{url}",
+            url=f"{self.api_version}{url}",
             json=params,
             headers=self.default_headers(),
         )

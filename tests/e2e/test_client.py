@@ -75,7 +75,7 @@ class TestDuneClient(unittest.TestCase):
                 {
                     "text_field": "different word",
                     "number_field": 22,
-                    "date_field": "1991-01-01T00:00:00",
+                    "date_field": "1991-01-01 00:00:00.000",
                     "list_field": "Option 2",
                 }
             ],
@@ -174,6 +174,50 @@ class TestDuneClient(unittest.TestCase):
         dune = DuneClient(self.valid_api_key)
         results = dune.get_latest_result(self.query.query_id).get_rows()
         self.assertGreater(len(results), 0)
+
+
+class TestCRUDOps(unittest.TestCase):
+    def setUp(self) -> None:
+        dotenv.load_dotenv()
+        self.valid_api_key = os.environ["DUNE_API_KEY"]
+        self.client = DuneClient(self.valid_api_key, client_version="alpha/v1")
+        self.existing_query_id = 2713571
+
+    @unittest.skip("Works fine, but creates too many queries")
+    def test_create(self):
+        q_id = self.client.create_query(name="test_create", query_sql="")
+        self.assertGreater(q_id, 0)
+
+    def test_get(self):
+        q_id = 12345
+        query = self.client.get_query(q_id)
+        self.assertEqual(query.query_id, q_id)
+
+    def test_update(self):
+        test_id = self.existing_query_id
+        current_sql = self.client.get_query(test_id).query_sql
+        self.client.update_query(query_id=test_id, query_sql="")
+        self.assertEqual(self.client.get_query(test_id).query_sql, "")
+        # Reset:
+        self.client.update_query(query_id=test_id, query_sql=current_sql)
+
+    def test_make_private(self):
+        self.client.make_private(self.existing_query_id)
+        self.assertEqual(self.client.get_query(self.existing_query_id).is_private, True)
+        self.client.make_public(self.existing_query_id)
+        self.assertEqual(
+            self.client.get_query(self.existing_query_id).is_private, False
+        )
+
+    def test_archive(self):
+        self.client.archive_query(self.existing_query_id)
+        self.assertEqual(
+            self.client.get_query(self.existing_query_id).is_archived, True
+        )
+        self.client.unarchive_query(self.existing_query_id)
+        self.assertEqual(
+            self.client.get_query(self.existing_query_id).is_archived, False
+        )
 
 
 if __name__ == "__main__":

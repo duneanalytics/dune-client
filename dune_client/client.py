@@ -22,9 +22,11 @@ from dune_client.models import (
     ExecutionStatusResponse,
     ResultsResponse,
     ExecutionState,
+    DuneQuery,
 )
 
 from dune_client.query import Query
+from dune_client.types import QueryParameter
 
 
 class DuneClient(DuneInterface, BaseDuneClient):
@@ -48,7 +50,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
             raise ValueError("Unreachable since previous line raises") from err
 
     def _route_url(self, route: str) -> str:
-        return f"{self.BASE_URL}{self.API_PATH}/{route}"
+        return f"{self.BASE_URL}{self.api_version}/{route}"
 
     def _get(self, route: str, params: Optional[Any] = None) -> Any:
         url = self._route_url(route)
@@ -61,10 +63,22 @@ class DuneClient(DuneInterface, BaseDuneClient):
         )
         return self._handle_response(response)
 
-    def _post(self, route: str, params: Any) -> Any:
+    def _post(self, route: str, params: Optional[Any] = None) -> Any:
         url = self._route_url(route)
         self.logger.debug(f"POST received input url={url}, params={params}")
         response = requests.post(
+            url=url,
+            json=params,
+            headers={"x-dune-api-key": self.token},
+            timeout=self.DEFAULT_TIMEOUT,
+        )
+        return self._handle_response(response)
+
+    def _patch(self, route: str, params: Any) -> Any:
+        url = self._route_url(route)
+        self.logger.debug(f"PATCH received input url={url}, params={params}")
+        response = requests.request(
+            method="PATCH",
             url=url,
             json=params,
             headers={"x-dune-api-key": self.token},
@@ -238,3 +252,125 @@ class DuneClient(DuneInterface, BaseDuneClient):
             ) from exc
         data = self.refresh_csv(query, performance=performance).data
         return pandas.read_csv(data)
+
+    # CRUD Operations: https://dune.com/docs/api/api-reference/edit-queries/
+    def create_query(
+        self,
+        name: str,
+        query_sql: str,
+        params: Optional[list[QueryParameter]] = None,
+        is_private: bool = False,
+    ) -> int:
+        """
+        Creates Dune Query by ID
+        https://dune.com/docs/api/api-reference/edit-queries/create-query/
+        """
+        query_parameters = {
+            "name": name,
+            "query_sql": query_sql,
+            "private": is_private,
+        }
+        if params is not None:
+            query_parameters["parameters"] = [p.to_dict() for p in params]
+        response_json = self._post(
+            route="query/",
+            params=query_parameters,
+        )
+        try:
+            # No need to make a dataclass for this since it's just a boolean.
+            return int(response_json["query_id"])
+        except KeyError as err:
+            raise DuneError(response_json, "create_query Response", err) from err
+
+    def get_query(self, query_id: int) -> DuneQuery:
+        """
+        Retrieves Dune Query by ID
+        https://dune.com/docs/api/api-reference/edit-queries/get-query/
+        """
+        response_json = self._get(route=f"query/{query_id}")
+        return DuneQuery.from_dict(response_json)
+
+    def update_query(  # pylint: disable=too-many-arguments
+        self,
+        query_id: int,
+        name: Optional[str] = None,
+        query_sql: Optional[str] = None,
+        params: Optional[list[QueryParameter]] = None,
+        description: Optional[str] = None,
+        tags: Optional[list[str]] = None,
+    ) -> int:
+        """
+        Updates Dune Query by ID
+        https://dune.com/docs/api/api-reference/edit-queries/update-query
+
+        The request body should contain all fields that need to be updated.
+        Any omitted fields will be left untouched.
+        If the tags or parameters are provided as an empty array,
+        they will be deleted from the query.
+        """
+        parameters: dict[str, Any] = {}
+        if name is not None:
+            parameters["name"] = name
+        if description is not None:
+            parameters["description"] = description
+        if tags is not None:
+            parameters["tags"] = tags
+        if query_sql is not None:
+            parameters["query_sql"] = query_sql
+        if params is not None:
+            parameters["parameters"] = [p.to_dict() for p in params]
+
+        if not bool(parameters):
+            # Nothing to change no need to make reqeust
+            self.logger.warning("called update_query with no proposed changes.")
+            return query_id
+
+        response_json = self._patch(
+            route=f"query/{query_id}",
+            params=parameters,
+        )
+        try:
+            # No need to make a dataclass for this since it's just a boolean.
+            return int(response_json["query_id"])
+        except KeyError as err:
+            raise DuneError(response_json, "update_query Response", err) from err
+
+    def archive_query(self, query_id: int) -> bool:
+        """
+        https://dune.com/docs/api/api-reference/edit-queries/archive-query
+        returns resulting value of Query.is_private
+        """
+        response_json = self._post(route=f"query/{query_id}/archive")
+        try:
+            # No need to make a dataclass for this since it's just a boolean.
+            return self.get_query(int(response_json["query_id"])).is_archived
+        except KeyError as err:
+            raise DuneError(response_json, "make_private Response", err) from err
+
+    def unarchive_query(self, query_id: int) -> bool:
+        """
+        https://dune.com/docs/api/api-reference/edit-queries/archive-query
+        returns resulting value of Query.is_private
+        """
+        response_json = self._post(route=f"query/{query_id}/unarchive")
+        try:
+            # No need to make a dataclass for this since it's just a boolean.
+            return self.get_query(int(response_json["query_id"])).is_archived
+        except KeyError as err:
+            raise DuneError(response_json, "make_private Response", err) from err
+
+    def make_private(self, query_id: int) -> None:
+        """
+        https://dune.com/docs/api/api-reference/edit-queries/private-query
+        returns resulting value of Query.is_private
+        """
+        response_json = self._post(route=f"query/{query_id}/private")
+        assert self.get_query(int(response_json["query_id"])).is_private
+
+    def make_public(self, query_id: int) -> None:
+        """
+        https://dune.com/docs/api/api-reference/edit-queries/private-query
+        returns resulting value of Query.is_private
+        """
+        response_json = self._post(route=f"query/{query_id}/unprivate")
+        assert not self.get_query(int(response_json["query_id"])).is_private
