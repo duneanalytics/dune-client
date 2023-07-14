@@ -35,10 +35,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
     combining the use of endpoints (e.g. refresh)
     """
 
-    def _handle_response(
-        self,
-        response: Response,
-    ) -> Any:
+    def _handle_response(self, response: Response) -> Any:
         try:
             # Some responses can be decoded and converted to DuneErrors
             response_json = response.json()
@@ -52,15 +49,22 @@ class DuneClient(DuneInterface, BaseDuneClient):
     def _route_url(self, route: str) -> str:
         return f"{self.BASE_URL}{self.api_version}/{route}"
 
-    def _get(self, route: str, params: Optional[Any] = None) -> Any:
+    def _get(
+        self,
+        route: str,
+        params: Optional[Any] = None,
+        raw: bool = False,
+    ) -> Any:
         url = self._route_url(route)
         self.logger.debug(f"GET received input url={url}")
         response = requests.get(
-            url,
-            headers={"x-dune-api-key": self.token},
+            url=url,
+            headers=self.default_headers(),
             timeout=self.DEFAULT_TIMEOUT,
             params=params,
         )
+        if raw:
+            return response
         return self._handle_response(response)
 
     def _post(self, route: str, params: Optional[Any] = None) -> Any:
@@ -69,7 +73,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         response = requests.post(
             url=url,
             json=params,
-            headers={"x-dune-api-key": self.token},
+            headers=self.default_headers(),
             timeout=self.DEFAULT_TIMEOUT,
         )
         return self._handle_response(response)
@@ -90,17 +94,15 @@ class DuneClient(DuneInterface, BaseDuneClient):
         self, query: Query, performance: Optional[str] = None
     ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
+        params = query.request_format()
+        params["performance"] = performance or self.performance
+
         self.logger.info(
             f"executing {query.query_id} on {performance or self.performance} cluster"
         )
         response_json = self._post(
-            route=f"query/{query.query_id}/execute",
-            params={
-                "query_parameters": {
-                    p.key: p.to_dict()["value"] for p in query.parameters()
-                },
-                "performance": performance or self.performance,
-            },
+            route=f"/query/{query.query_id}/execute",
+            params=params,
         )
         try:
             return ExecutionResponse.from_dict(response_json)
@@ -109,9 +111,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
     def get_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._get(
-            route=f"execution/{job_id}/status",
-        )
+        response_json = self._get(route=f"/execution/{job_id}/status")
         try:
             return ExecutionStatusResponse.from_dict(response_json)
         except KeyError as err:
@@ -119,7 +119,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
     def get_result(self, job_id: str) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._get(route=f"execution/{job_id}/results")
+        response_json = self._get(route=f"/execution/{job_id}/results")
         try:
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
@@ -133,13 +133,10 @@ class DuneClient(DuneInterface, BaseDuneClient):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
-        url = self._route_url(f"execution/{job_id}/results/csv")
+        route = f"/execution/{job_id}/results/csv"
+        url = self._route_url(f"/execution/{job_id}/results/csv")
         self.logger.debug(f"GET CSV received input url={url}")
-        response = requests.get(
-            url,
-            headers={"x-dune-api-key": self.token},
-            timeout=self.DEFAULT_TIMEOUT,
-        )
+        response = self._get(route=route, raw=True)
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(response.content))
 
@@ -161,7 +158,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
             query_id = int(query)
 
         response_json = self._get(
-            route=f"query/{query_id}/results",
+            route=f"/query/{query_id}/results",
             params=params,
         )
         try:
@@ -171,7 +168,10 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
     def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._post(route=f"execution/{job_id}/cancel", params=None)
+        response_json = self._post(
+            route=f"/execution/{job_id}/cancel",
+            params=None,
+        )
         try:
             # No need to make a dataclass for this since it's just a boolean.
             success: bool = response_json["success"]
@@ -185,6 +185,11 @@ class DuneClient(DuneInterface, BaseDuneClient):
         ping_frequency: int = 5,
         performance: Optional[str] = None,
     ) -> str:
+        """
+        Executes a Dune `query`, waits until execution completes,
+        fetches and returns the results.
+        Sleeps `ping_frequency` seconds between each status request.
+        """
         job_id = self.execute(query=query, performance=performance).execution_id
         status = self.get_status(job_id)
         while status.state not in ExecutionState.terminal_states():
@@ -200,10 +205,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         return job_id
 
     def refresh(
-        self,
-        query: Query,
-        ping_frequency: int = 5,
-        performance: Optional[str] = None,
+        self, query: Query, ping_frequency: int = 5, performance: Optional[str] = None
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
@@ -211,17 +213,12 @@ class DuneClient(DuneInterface, BaseDuneClient):
         Sleeps `ping_frequency` seconds between each status request.
         """
         job_id = self._refresh(
-            query,
-            ping_frequency=ping_frequency,
-            performance=performance,
+            query, ping_frequency=ping_frequency, performance=performance
         )
         return self.get_result(job_id)
 
     def refresh_csv(
-        self,
-        query: Query,
-        ping_frequency: int = 5,
-        performance: Optional[str] = None,
+        self, query: Query, ping_frequency: int = 5, performance: Optional[str] = None
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
@@ -229,9 +226,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
         job_id = self._refresh(
-            query,
-            ping_frequency=ping_frequency,
-            performance=performance,
+            query, ping_frequency=ping_frequency, performance=performance
         )
         return self.get_result_csv(job_id)
 
