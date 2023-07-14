@@ -272,7 +272,6 @@ class DuneClient(DuneInterface, BaseDuneClient):
             params=query_parameters,
         )
         try:
-            # No need to make a dataclass for this since it's just a boolean.
             return int(response_json["query_id"])
         except KeyError as err:
             raise DuneError(response_json, "create_query Response", err) from err
