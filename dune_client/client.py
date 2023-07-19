@@ -22,10 +22,9 @@ from dune_client.models import (
     ExecutionStatusResponse,
     ResultsResponse,
     ExecutionState,
-    DuneQuery,
 )
 
-from dune_client.query import Query
+from dune_client.query import QueryBase, DuneQuery
 from dune_client.types import QueryParameter
 
 
@@ -36,6 +35,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
     """
 
     def _handle_response(self, response: Response) -> Any:
+        """Generic response handler utilized by all Dune API routes"""
         try:
             # Some responses can be decoded and converted to DuneErrors
             response_json = response.json()
@@ -55,6 +55,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         params: Optional[Any] = None,
         raw: bool = False,
     ) -> Any:
+        """Generic interface for the GET method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"GET received input url={url}")
         response = requests.get(
@@ -68,6 +69,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         return self._handle_response(response)
 
     def _post(self, route: str, params: Optional[Any] = None) -> Any:
+        """Generic interface for the POST method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"POST received input url={url}, params={params}")
         response = requests.post(
@@ -79,6 +81,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         return self._handle_response(response)
 
     def _patch(self, route: str, params: Any) -> Any:
+        """Generic interface for the PATCH method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"PATCH received input url={url}, params={params}")
         response = requests.request(
@@ -91,7 +94,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         return self._handle_response(response)
 
     def execute(
-        self, query: Query, performance: Optional[str] = None
+        self, query: QueryBase, performance: Optional[str] = None
     ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         params = query.request_format()
@@ -140,7 +143,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(response.content))
 
-    def get_latest_result(self, query: Union[Query, str, int]) -> ResultsResponse:
+    def get_latest_result(self, query: Union[QueryBase, str, int]) -> ResultsResponse:
         """
         GET the latest results for a query_id without having to execute the query again.
 
@@ -148,7 +151,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
         https://dune.com/docs/api/api-reference/latest_results/
         """
-        if isinstance(query, Query):
+        if isinstance(query, QueryBase):
             params = {
                 f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()
             }
@@ -181,7 +184,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
     def _refresh(
         self,
-        query: Query,
+        query: QueryBase,
         ping_frequency: int = 5,
         performance: Optional[str] = None,
     ) -> str:
@@ -205,7 +208,10 @@ class DuneClient(DuneInterface, BaseDuneClient):
         return job_id
 
     def refresh(
-        self, query: Query, ping_frequency: int = 5, performance: Optional[str] = None
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
@@ -218,7 +224,10 @@ class DuneClient(DuneInterface, BaseDuneClient):
         return self.get_result(job_id)
 
     def refresh_csv(
-        self, query: Query, ping_frequency: int = 5, performance: Optional[str] = None
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
@@ -231,7 +240,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         return self.get_result_csv(job_id)
 
     def refresh_into_dataframe(
-        self, query: Query, performance: Optional[str] = None
+        self, query: QueryBase, performance: Optional[str] = None
     ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
@@ -255,24 +264,23 @@ class DuneClient(DuneInterface, BaseDuneClient):
         query_sql: str,
         params: Optional[list[QueryParameter]] = None,
         is_private: bool = False,
-    ) -> int:
+    ) -> DuneQuery:
         """
         Creates Dune Query by ID
         https://dune.com/docs/api/api-reference/edit-queries/create-query/
         """
-        query_parameters = {
+        parameters = {
             "name": name,
             "query_sql": query_sql,
             "private": is_private,
         }
         if params is not None:
-            query_parameters["parameters"] = [p.to_dict() for p in params]
-        response_json = self._post(
-            route="/query/",
-            params=query_parameters,
-        )
+            parameters["parameters"] = [p.to_dict() for p in params]
+        response_json = self._post(route="/query/", params=parameters)
         try:
-            return int(response_json["query_id"])
+            query_id = int(response_json["query_id"])
+            # Note that this requires an extra request.
+            return self.get_query(query_id)
         except KeyError as err:
             raise DuneError(response_json, "create_query Response", err) from err
 
@@ -332,24 +340,24 @@ class DuneClient(DuneInterface, BaseDuneClient):
     def archive_query(self, query_id: int) -> bool:
         """
         https://dune.com/docs/api/api-reference/edit-queries/archive-query
-        returns resulting value of Query.is_private
+        returns resulting value of Query.is_archived
         """
         response_json = self._post(route=f"/query/{query_id}/archive")
         try:
             # No need to make a dataclass for this since it's just a boolean.
-            return self.get_query(int(response_json["query_id"])).is_archived
+            return self.get_query(int(response_json["query_id"])).meta.is_archived
         except KeyError as err:
             raise DuneError(response_json, "make_private Response", err) from err
 
     def unarchive_query(self, query_id: int) -> bool:
         """
         https://dune.com/docs/api/api-reference/edit-queries/archive-query
-        returns resulting value of Query.is_private
+        returns resulting value of Query.is_archived
         """
         response_json = self._post(route=f"/query/{query_id}/unarchive")
         try:
             # No need to make a dataclass for this since it's just a boolean.
-            return self.get_query(int(response_json["query_id"])).is_archived
+            return self.get_query(int(response_json["query_id"])).meta.is_archived
         except KeyError as err:
             raise DuneError(response_json, "make_private Response", err) from err
 
@@ -359,7 +367,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         returns resulting value of Query.is_private
         """
         response_json = self._post(route=f"/query/{query_id}/private")
-        assert self.get_query(int(response_json["query_id"])).is_private
+        assert self.get_query(int(response_json["query_id"])).meta.is_private
 
     def make_public(self, query_id: int) -> None:
         """
@@ -367,4 +375,4 @@ class DuneClient(DuneInterface, BaseDuneClient):
         returns resulting value of Query.is_private
         """
         response_json = self._post(route=f"/query/{query_id}/unprivate")
-        assert not self.get_query(int(response_json["query_id"])).is_private
+        assert not self.get_query(int(response_json["query_id"])).meta.is_private

@@ -5,12 +5,12 @@ import aiounittest
 import dotenv
 
 from dune_client.client_async import AsyncDuneClient
-from dune_client.query import Query
+from dune_client.query import QueryBase
 
 
 class TestDuneClient(aiounittest.AsyncTestCase):
     def setUp(self) -> None:
-        self.query = Query(name="Sample Query", query_id=1215383)
+        self.query = QueryBase(name="Sample Query", query_id=1215383)
         dotenv.load_dotenv()
         self.valid_api_key = os.environ["DUNE_API_KEY"]
 

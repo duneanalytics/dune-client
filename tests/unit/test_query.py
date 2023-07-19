@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime
 
-from dune_client.query import Query
+from dune_client.query import QueryBase
 from dune_client.types import QueryParameter
 
 
@@ -14,7 +14,7 @@ class TestQueryMonitor(unittest.TestCase):
             QueryParameter.number_type("Number", 12),
             QueryParameter.date_type("Date", "2021-01-01 12:34:56"),
         ]
-        self.query = Query(name="", query_id=0, params=self.query_params)
+        self.query = QueryBase(name="", query_id=0, params=self.query_params)
 
     def test_base_url(self):
         self.assertEqual(self.query.base_url(), "https://dune.com/queries/0")
@@ -24,7 +24,7 @@ class TestQueryMonitor(unittest.TestCase):
             self.query.url(),
             "https://dune.com/queries/0?Enum=option1&Text=plain+text&Number=12&Date=2021-01-01+12%3A34%3A56",
         )
-        self.assertEqual(Query(0, "", []).url(), "https://dune.com/queries/0")
+        self.assertEqual(QueryBase(0, "", []).url(), "https://dune.com/queries/0")
 
     def test_parameters(self):
         self.assertEqual(self.query.parameters(), self.query_params)
@@ -42,18 +42,22 @@ class TestQueryMonitor(unittest.TestCase):
 
     def test_hash(self):
         # Same ID, different params
-        query1 = Query(query_id=0, params=[QueryParameter.text_type("Text", "word1")])
-        query2 = Query(query_id=0, params=[QueryParameter.text_type("Text", "word2")])
+        query1 = QueryBase(
+            query_id=0, params=[QueryParameter.text_type("Text", "word1")]
+        )
+        query2 = QueryBase(
+            query_id=0, params=[QueryParameter.text_type("Text", "word2")]
+        )
         self.assertNotEqual(hash(query1), hash(query2))
 
         # Different ID, same
-        query1 = Query(query_id=0)
-        query2 = Query(query_id=1)
+        query1 = QueryBase(query_id=0)
+        query2 = QueryBase(query_id=1)
         self.assertNotEqual(hash(query1), hash(query2))
 
         # Different ID different params
-        query1 = Query(query_id=0)
-        query2 = Query(query_id=1, params=[QueryParameter.number_type("num", 1)])
+        query1 = QueryBase(query_id=0)
+        query2 = QueryBase(query_id=1, params=[QueryParameter.number_type("num", 1)])
         self.assertNotEqual(hash(query1), hash(query2))
 
 

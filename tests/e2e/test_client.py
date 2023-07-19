@@ -12,12 +12,12 @@ from dune_client.client import (
     ExecutionState,
     DuneError,
 )
-from dune_client.query import Query
+from dune_client.query import QueryBase
 
 
 class TestDuneClient(unittest.TestCase):
     def setUp(self) -> None:
-        self.query = Query(
+        self.query = QueryBase(
             name="Sample Query",
             query_id=1215383,
             params=[
@@ -32,7 +32,7 @@ class TestDuneClient(unittest.TestCase):
         self.valid_api_key = os.environ["DUNE_API_KEY"]
 
     def test_get_status(self):
-        query = Query(name="No Name", query_id=1276442, params=[])
+        query = QueryBase(name="No Name", query_id=1276442, params=[])
         dune = DuneClient(self.valid_api_key)
         job_id = dune.execute(query).execution_id
         status = dune.get_status(job_id)
@@ -95,7 +95,7 @@ class TestDuneClient(unittest.TestCase):
 
     def test_cancel_execution(self):
         dune = DuneClient(self.valid_api_key)
-        query = Query(
+        query = QueryBase(
             name="Long Running Query",
             query_id=1229120,
         )
@@ -185,39 +185,29 @@ class TestCRUDOps(unittest.TestCase):
 
     @unittest.skip("Works fine, but creates too many queries")
     def test_create(self):
-        q_id = self.client.create_query(name="test_create", query_sql="")
-        self.assertGreater(q_id, 0)
+        new_query = self.client.create_query(name="test_create", query_sql="")
+        self.assertGreater(new_query.base.query_id, 0)
 
     def test_get(self):
         q_id = 12345
         query = self.client.get_query(q_id)
-        self.assertEqual(query.query_id, q_id)
+        self.assertEqual(query.base.query_id, q_id)
 
     def test_update(self):
         test_id = self.existing_query_id
-        current_sql = self.client.get_query(test_id).query_sql
+        current_sql = self.client.get_query(test_id).sql
         self.client.update_query(query_id=test_id, query_sql="")
-        self.assertEqual(self.client.get_query(test_id).query_sql, "")
+        self.assertEqual(self.client.get_query(test_id).sql, "")
         # Reset:
         self.client.update_query(query_id=test_id, query_sql=current_sql)
 
     def test_make_private(self):
-        self.client.make_private(self.existing_query_id)
-        self.assertEqual(self.client.get_query(self.existing_query_id).is_private, True)
-        self.client.make_public(self.existing_query_id)
-        self.assertEqual(
-            self.client.get_query(self.existing_query_id).is_private, False
-        )
+        self.assertEqual(self.client.make_private(self.existing_query_id), True)
+        self.assertEqual(self.client.make_public(self.existing_query_id), False)
 
     def test_archive(self):
-        self.client.archive_query(self.existing_query_id)
-        self.assertEqual(
-            self.client.get_query(self.existing_query_id).is_archived, True
-        )
-        self.client.unarchive_query(self.existing_query_id)
-        self.assertEqual(
-            self.client.get_query(self.existing_query_id).is_archived, False
-        )
+        self.assertEqual(self.client.archive_query(self.existing_query_id), True)
+        self.assertEqual(self.client.unarchive_query(self.existing_query_id), False)
 
 
 if __name__ == "__main__":

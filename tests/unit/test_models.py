@@ -17,9 +17,9 @@ from dune_client.models import (
     ExecutionResult,
     ResultMetadata,
     DuneError,
-    DuneQuery,
 )
 from dune_client.types import QueryParameter
+from dune_client.query import DuneQuery, QueryMeta, QueryBase
 
 
 class MyTestCase(unittest.TestCase):
@@ -245,22 +245,26 @@ eth_traces,4474223
             "owner": "Owner Name"
         }"""
         expected = DuneQuery(
-            query_id=60066,
-            name="Ethereum transactions",
-            description="Returns ethereum transactions starting from the oldest by block time",
-            tags=["ethereum", "transactions"],
-            version=15,
-            parameters=[
-                QueryParameter.from_dict(
-                    {"key": "limit", "value": "5", "type": "number"}
-                )
-            ],
-            query_engine="v2 Dune SQL",
-            query_sql="select block_number from ethereum.transactions limit {{limit}};",
-            is_private=True,
-            is_archived=False,
-            is_unsaved=False,
-            owner="Owner Name",
+            base=QueryBase(
+                query_id=60066,
+                name="Ethereum transactions",
+                params=[
+                    QueryParameter.from_dict(
+                        {"key": "limit", "value": "5", "type": "number"}
+                    )
+                ],
+            ),
+            meta=QueryMeta(
+                description="Returns ethereum transactions starting from the oldest by block time",
+                tags=["ethereum", "transactions"],
+                version=15,
+                engine="v2 Dune SQL",
+                is_private=True,
+                is_archived=False,
+                is_unsaved=False,
+                owner="Owner Name",
+            ),
+            sql="select block_number from ethereum.transactions limit {{limit}};",
         )
         self.assertEqual(expected, DuneQuery.from_dict(json.loads(example_response)))
 
