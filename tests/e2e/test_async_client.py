@@ -33,6 +33,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             results = (await cl.refresh(self.query)).get_rows()
         self.assertGreater(len(results), 0)
 
+    @unittest.skip("Large performance tier doesn't currently work.")
     async def test_refresh_context_manager_performance_large(self):
         async with AsyncDuneClient(self.valid_api_key) as cl:
             results = (await cl.refresh(self.query, performance="large")).get_rows()

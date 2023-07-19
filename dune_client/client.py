@@ -47,7 +47,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
             raise ValueError("Unreachable since previous line raises") from err
 
     def _route_url(self, route: str) -> str:
-        return f"{self.BASE_URL}{self.api_version}/{route}"
+        return f"{self.BASE_URL}{self.api_version}{route}"
 
     def _get(
         self,
@@ -268,7 +268,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         if params is not None:
             query_parameters["parameters"] = [p.to_dict() for p in params]
         response_json = self._post(
-            route="query/",
+            route="/query/",
             params=query_parameters,
         )
         try:
@@ -281,7 +281,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         Retrieves Dune Query by ID
         https://dune.com/docs/api/api-reference/edit-queries/get-query/
         """
-        response_json = self._get(route=f"query/{query_id}")
+        response_json = self._get(route=f"/query/{query_id}")
         return DuneQuery.from_dict(response_json)
 
     def update_query(  # pylint: disable=too-many-arguments
@@ -320,7 +320,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
             return query_id
 
         response_json = self._patch(
-            route=f"query/{query_id}",
+            route=f"/query/{query_id}",
             params=parameters,
         )
         try:
@@ -334,7 +334,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         https://dune.com/docs/api/api-reference/edit-queries/archive-query
         returns resulting value of Query.is_private
         """
-        response_json = self._post(route=f"query/{query_id}/archive")
+        response_json = self._post(route=f"/query/{query_id}/archive")
         try:
             # No need to make a dataclass for this since it's just a boolean.
             return self.get_query(int(response_json["query_id"])).is_archived
@@ -346,7 +346,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         https://dune.com/docs/api/api-reference/edit-queries/archive-query
         returns resulting value of Query.is_private
         """
-        response_json = self._post(route=f"query/{query_id}/unarchive")
+        response_json = self._post(route=f"/query/{query_id}/unarchive")
         try:
             # No need to make a dataclass for this since it's just a boolean.
             return self.get_query(int(response_json["query_id"])).is_archived
@@ -358,7 +358,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         https://dune.com/docs/api/api-reference/edit-queries/private-query
         returns resulting value of Query.is_private
         """
-        response_json = self._post(route=f"query/{query_id}/private")
+        response_json = self._post(route=f"/query/{query_id}/private")
         assert self.get_query(int(response_json["query_id"])).is_private
 
     def make_public(self, query_id: int) -> None:
@@ -366,5 +366,5 @@ class DuneClient(DuneInterface, BaseDuneClient):
         https://dune.com/docs/api/api-reference/edit-queries/private-query
         returns resulting value of Query.is_private
         """
-        response_json = self._post(route=f"query/{query_id}/unprivate")
+        response_json = self._post(route=f"/query/{query_id}/unprivate")
         assert not self.get_query(int(response_json["query_id"])).is_private
