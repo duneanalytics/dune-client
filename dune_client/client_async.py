@@ -88,7 +88,7 @@ class AsyncDuneClient(BaseDuneClient):
             raise ValueError("Unreachable since previous line raises") from err
 
     def _route_url(self, route: str) -> str:
-        return f"{self.API_PATH}{route}"
+        return f"{self.api_version}{route}"
 
     async def _get(
         self,
