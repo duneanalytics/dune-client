@@ -201,9 +201,12 @@ class TestCRUDOps(unittest.TestCase):
         # Reset:
         self.client.update_query(query_id=test_id, query_sql=current_sql)
 
-    def test_make_private(self):
-        self.assertEqual(self.client.make_private(self.existing_query_id), True)
-        self.assertEqual(self.client.make_public(self.existing_query_id), False)
+    def test_make_private_and_public(self):
+        q_id = self.existing_query_id
+        self.client.make_private(q_id)
+        self.assertEqual(self.client.get_query(q_id).meta.is_private, True)
+        self.client.make_public(q_id)
+        self.assertEqual(self.client.get_query(q_id).meta.is_private, False)
 
     def test_archive(self):
         self.assertEqual(self.client.archive_query(self.existing_query_id), True)
