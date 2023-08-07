@@ -28,7 +28,7 @@ from dune_client.models import (
     ExecutionState,
 )
 
-from dune_client.query import Query
+from dune_client.query import QueryBase
 
 
 # pylint: disable=duplicate-code
@@ -88,7 +88,7 @@ class AsyncDuneClient(BaseDuneClient):
             raise ValueError("Unreachable since previous line raises") from err
 
     def _route_url(self, route: str) -> str:
-        return f"{self.API_PATH}{route}"
+        return f"{self.api_version}{route}"
 
     async def _get(
         self,
@@ -122,7 +122,7 @@ class AsyncDuneClient(BaseDuneClient):
         return await self._handle_response(response)
 
     async def execute(
-        self, query: Query, performance: Optional[str] = None
+        self, query: QueryBase, performance: Optional[str] = None
     ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         params = query.request_format()
@@ -171,7 +171,9 @@ class AsyncDuneClient(BaseDuneClient):
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(await response.content.read(-1)))
 
-    async def get_latest_result(self, query: Union[Query, str, int]) -> ResultsResponse:
+    async def get_latest_result(
+        self, query: Union[QueryBase, str, int]
+    ) -> ResultsResponse:
         """
         GET the latest results for a query_id without having to execute the query again.
 
@@ -179,7 +181,7 @@ class AsyncDuneClient(BaseDuneClient):
 
         https://dune.com/docs/api/api-reference/latest_results/
         """
-        if isinstance(query, Query):
+        if isinstance(query, QueryBase):
             params = {
                 f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()
             }
@@ -212,7 +214,7 @@ class AsyncDuneClient(BaseDuneClient):
 
     async def _refresh(
         self,
-        query: Query,
+        query: QueryBase,
         ping_frequency: int = 5,
         performance: Optional[str] = None,
     ) -> str:
@@ -236,7 +238,10 @@ class AsyncDuneClient(BaseDuneClient):
         return job_id
 
     async def refresh(
-        self, query: Query, ping_frequency: int = 5, performance: Optional[str] = None
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
@@ -249,7 +254,10 @@ class AsyncDuneClient(BaseDuneClient):
         return await self.get_result(job_id)
 
     async def refresh_csv(
-        self, query: Query, ping_frequency: int = 5, performance: Optional[str] = None
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
@@ -262,7 +270,7 @@ class AsyncDuneClient(BaseDuneClient):
         return await self.get_result_csv(job_id)
 
     async def refresh_into_dataframe(
-        self, query: Query, performance: Optional[str] = None
+        self, query: QueryBase, performance: Optional[str] = None
     ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,

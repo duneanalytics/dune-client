@@ -12,12 +12,12 @@ from dune_client.client import (
     ExecutionState,
     DuneError,
 )
-from dune_client.query import Query
+from dune_client.query import QueryBase
 
 
 class TestDuneClient(unittest.TestCase):
     def setUp(self) -> None:
-        self.query = Query(
+        self.query = QueryBase(
             name="Sample Query",
             query_id=1215383,
             params=[
@@ -32,7 +32,7 @@ class TestDuneClient(unittest.TestCase):
         self.valid_api_key = os.environ["DUNE_API_KEY"]
 
     def test_get_status(self):
-        query = Query(name="No Name", query_id=1276442, params=[])
+        query = QueryBase(name="No Name", query_id=1276442, params=[])
         dune = DuneClient(self.valid_api_key)
         job_id = dune.execute(query).execution_id
         status = dune.get_status(job_id)
@@ -75,7 +75,7 @@ class TestDuneClient(unittest.TestCase):
                 {
                     "text_field": "different word",
                     "number_field": 22,
-                    "date_field": "1991-01-01T00:00:00",
+                    "date_field": "1991-01-01 00:00:00.000",
                     "list_field": "Option 2",
                 }
             ],
@@ -95,7 +95,7 @@ class TestDuneClient(unittest.TestCase):
 
     def test_cancel_execution(self):
         dune = DuneClient(self.valid_api_key)
-        query = Query(
+        query = QueryBase(
             name="Long Running Query",
             query_id=1229120,
         )
@@ -174,6 +174,43 @@ class TestDuneClient(unittest.TestCase):
         dune = DuneClient(self.valid_api_key)
         results = dune.get_latest_result(self.query.query_id).get_rows()
         self.assertGreater(len(results), 0)
+
+
+class TestCRUDOps(unittest.TestCase):
+    def setUp(self) -> None:
+        dotenv.load_dotenv()
+        self.valid_api_key = os.environ["DUNE_API_KEY"]
+        self.client = DuneClient(self.valid_api_key, client_version="alpha/v1")
+        self.existing_query_id = 2713571
+
+    @unittest.skip("Works fine, but creates too many queries")
+    def test_create(self):
+        new_query = self.client.create_query(name="test_create", query_sql="")
+        self.assertGreater(new_query.base.query_id, 0)
+
+    def test_get(self):
+        q_id = 12345
+        query = self.client.get_query(q_id)
+        self.assertEqual(query.base.query_id, q_id)
+
+    def test_update(self):
+        test_id = self.existing_query_id
+        current_sql = self.client.get_query(test_id).sql
+        self.client.update_query(query_id=test_id, query_sql="")
+        self.assertEqual(self.client.get_query(test_id).sql, "")
+        # Reset:
+        self.client.update_query(query_id=test_id, query_sql=current_sql)
+
+    def test_make_private_and_public(self):
+        q_id = self.existing_query_id
+        self.client.make_private(q_id)
+        self.assertEqual(self.client.get_query(q_id).meta.is_private, True)
+        self.client.make_public(q_id)
+        self.assertEqual(self.client.get_query(q_id).meta.is_private, False)
+
+    def test_archive(self):
+        self.assertEqual(self.client.archive_query(self.existing_query_id), True)
+        self.assertEqual(self.client.unarchive_query(self.existing_query_id), False)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ import abc
 from typing import Any
 
 from dune_client.models import ResultsResponse, ExecutionResultCSV
-from dune_client.query import Query
+from dune_client.query import QueryBase
 
 
 # pylint: disable=too-few-public-methods
@@ -15,14 +15,14 @@ class DuneInterface(abc.ABC):
     """
 
     @abc.abstractmethod
-    def refresh(self, query: Query) -> ResultsResponse:
+    def refresh(self, query: QueryBase) -> ResultsResponse:
         """
         Executes a Dune query, waits till query execution completes,
         fetches and returns the results.
         """
 
     @abc.abstractmethod
-    def refresh_csv(self, query: Query) -> ExecutionResultCSV:
+    def refresh_csv(self, query: QueryBase) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
         fetches and the results in CSV format
@@ -33,7 +33,7 @@ class DuneInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def refresh_into_dataframe(self, query: Query) -> Any:
+    def refresh_into_dataframe(self, query: QueryBase) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
         fetched and returns the result as a Pandas DataFrame

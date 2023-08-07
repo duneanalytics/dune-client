@@ -1,7 +1,7 @@
 import datetime
 import unittest
 
-from dune_client.query import Query
+from dune_client.query import QueryBase
 from dune_client.types import QueryParameter, Address
 
 
@@ -69,14 +69,14 @@ class TestQueryParameter(unittest.TestCase):
         )
 
     def test_repr_method(self):
-        query = Query(
+        query = QueryBase(
             query_id=1,
             name="Test Query",
             params=[self.number_type, self.text_type],
         )
 
         self.assertEqual(
-            "Query(query_id=1, name='Test Query', "
+            "QueryBase(query_id=1, name='Test Query', "
             "params=["
             "Parameter(name=Number, value=1, type=number), "
             "Parameter(name=Text, value=hello, type=text)"

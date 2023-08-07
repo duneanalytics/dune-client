@@ -11,8 +11,8 @@ from io import BytesIO
 from typing import Optional, Any, Union, List, Dict
 
 from dateutil.parser import parse
-from dune_client.types import DuneRecord
 
+from dune_client.types import DuneRecord
 
 log = logging.getLogger(__name__)
 logging.basicConfig(

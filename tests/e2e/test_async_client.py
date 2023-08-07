@@ -5,12 +5,12 @@ import aiounittest
 import dotenv
 
 from dune_client.client_async import AsyncDuneClient
-from dune_client.query import Query
+from dune_client.query import QueryBase
 
 
 class TestDuneClient(aiounittest.AsyncTestCase):
     def setUp(self) -> None:
-        self.query = Query(name="Sample Query", query_id=1215383)
+        self.query = QueryBase(name="Sample Query", query_id=1215383)
         dotenv.load_dotenv()
         self.valid_api_key = os.environ["DUNE_API_KEY"]
 
@@ -33,6 +33,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             results = (await cl.refresh(self.query)).get_rows()
         self.assertGreater(len(results), 0)
 
+    @unittest.skip("Large performance tier doesn't currently work.")
     async def test_refresh_context_manager_performance_large(self):
         async with AsyncDuneClient(self.valid_api_key) as cl:
             results = (await cl.refresh(self.query, performance="large")).get_rows()

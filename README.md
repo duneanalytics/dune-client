@@ -22,9 +22,9 @@ import os
 
 from dune_client.types import QueryParameter
 from dune_client.client import DuneClient
-from dune_client.query import Query
+from dune_client.query import QueryBase
 
-query = Query(
+query = QueryBase(
     name="Sample Query",
     query_id=1215383,
     params=[
