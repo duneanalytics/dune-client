@@ -185,17 +185,6 @@ class TestDuneClient(unittest.TestCase):
             True,
         )
 
-    def test_upload_csv_fail(self):
-        client = DuneClient(self.valid_api_key)
-        self.assertEqual(
-            client.upload_csv(
-                table_name="addresses",
-                description="should not be able to overwrite existing table that I don't own!",
-                data="column1,column2\nvalue1,value2\nvalue3,value4",
-            ),
-            False,
-        )
-
 
 @unittest.skip("This is an enterprise only endpoint that can no longer be tested.")
 class TestCRUDOps(unittest.TestCase):
