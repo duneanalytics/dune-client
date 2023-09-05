@@ -156,7 +156,6 @@ class TestDuneClient(unittest.TestCase):
 
     def test_invalid_job_id_error(self):
         dune = DuneClient(self.valid_api_key)
-
         with self.assertRaises(DuneError) as err:
             dune.get_status("Wonky Job ID")
         self.assertEqual(

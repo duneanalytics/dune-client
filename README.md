@@ -17,9 +17,6 @@ Export your `DUNE_API_KEY` (or place it in a `.env` file - as in
 here [.env.sample](./.env.sample).
 
 ```python
-import dotenv
-import os
-
 from dune_client.types import QueryParameter
 from dune_client.client import DuneClient
 from dune_client.query import QueryBase
@@ -36,8 +33,7 @@ query = QueryBase(
 )
 print("Results available at", query.url())
 
-dotenv.load_dotenv()
-dune = DuneClient(os.environ["DUNE_API_KEY"])
+dune = DuneClient.from_env()
 results = dune.refresh(query)
 ```
 

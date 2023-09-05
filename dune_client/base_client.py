@@ -6,6 +6,7 @@ https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e
 from __future__ import annotations
 
 import logging.config
+import os
 from typing import Dict
 
 
@@ -27,6 +28,14 @@ class BaseDuneClient:
         self.performance = performance
         self.logger = logging.getLogger(__name__)
         logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
+
+    @classmethod
+    def from_env(cls) -> BaseDuneClient:
+        """
+        Constructor allowing user to instantiate a client from environment variable
+        without having to import dotenv or os manually
+        """
+        return cls(os.environ["DUNE_API_KEY"])
 
     @property
     def api_version(self) -> str:
