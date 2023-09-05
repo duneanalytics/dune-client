@@ -156,7 +156,6 @@ class TestDuneClient(unittest.TestCase):
 
     def test_invalid_job_id_error(self):
         dune = DuneClient(self.valid_api_key)
-
         with self.assertRaises(DuneError) as err:
             dune.get_status("Wonky Job ID")
         self.assertEqual(
@@ -174,6 +173,28 @@ class TestDuneClient(unittest.TestCase):
         dune = DuneClient(self.valid_api_key)
         results = dune.get_latest_result(self.query.query_id).get_rows()
         self.assertGreater(len(results), 0)
+
+    def test_upload_csv_success(self):
+        client = DuneClient(self.valid_api_key)
+        self.assertEqual(
+            client.upload_csv(
+                table_name="bh2smith-test",
+                description="best data",
+                data="column1,column2\nvalue1,value2\nvalue3,value4",
+            ),
+            True,
+        )
+
+    def test_upload_csv_fail(self):
+        client = DuneClient(self.valid_api_key)
+        self.assertEqual(
+            client.upload_csv(
+                table_name="addresses",
+                description="should not be able to overwrite existing table that I don't own!",
+                data="column1,column2\nvalue1,value2\nvalue3,value4",
+            ),
+            False,
+        )
 
 
 @unittest.skip("This is an enterprise only endpoint that can no longer be tested.")

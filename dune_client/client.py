@@ -374,3 +374,23 @@ class DuneClient(DuneInterface, BaseDuneClient):
         """
         response_json = self._post(route=f"/query/{query_id}/unprivate")
         assert not self.get_query(int(response_json["query_id"])).meta.is_private
+
+    def upload_csv(self, table_name: str, data: str, description: str = "") -> bool:
+        """
+        https://dune.com/docs/api/api-reference/upload-data/?h=data+upload#endpoint
+        The write API allows you to upload any .csv file into Dune. The only limitations are:
+
+        - File has to be < 200 MB
+        - Column names in the table can't start with a special character or digits.
+
+        Below are the specifics of how to work with the API.
+        """
+        response_json = self._post(
+            route="/table/upload/csv",
+            params={
+                "table_name": table_name,
+                "description": description,
+                "data": data,
+            },
+        )
+        return bool(response_json["success"])
