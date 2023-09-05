@@ -151,7 +151,7 @@ class TestDuneClient(unittest.TestCase):
             dune.execute(query)
         self.assertEqual(
             str(err.exception),
-            "Can't build ExecutionResponse from {'error': 'Query not found'}",
+            "Can't build ExecutionResponse from {'error': 'An internal error occured'}",
         )
 
     def test_invalid_job_id_error(self):
@@ -176,6 +176,7 @@ class TestDuneClient(unittest.TestCase):
         self.assertGreater(len(results), 0)
 
 
+@unittest.skip("This is an enterprise only endpoint that can no longer be tested.")
 class TestCRUDOps(unittest.TestCase):
     def setUp(self) -> None:
         dotenv.load_dotenv()
