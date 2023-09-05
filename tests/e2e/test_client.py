@@ -176,6 +176,7 @@ class TestDuneClient(unittest.TestCase):
         self.assertGreater(len(results), 0)
 
 
+@unittest.skip("This is an enterprise only endpoint that can no longer be tested.")
 class TestCRUDOps(unittest.TestCase):
     def setUp(self) -> None:
         dotenv.load_dotenv()

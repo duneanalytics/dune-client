@@ -364,7 +364,6 @@ class DuneClient(DuneInterface, BaseDuneClient):
     def make_private(self, query_id: int) -> None:
         """
         https://dune.com/docs/api/api-reference/edit-queries/private-query
-        returns resulting value of Query.is_private
         """
         response_json = self._post(route=f"/query/{query_id}/private")
         assert self.get_query(int(response_json["query_id"])).meta.is_private
@@ -372,7 +371,6 @@ class DuneClient(DuneInterface, BaseDuneClient):
     def make_public(self, query_id: int) -> None:
         """
         https://dune.com/docs/api/api-reference/edit-queries/private-query
-        returns resulting value of Query.is_private
         """
         response_json = self._post(route=f"/query/{query_id}/unprivate")
         assert not self.get_query(int(response_json["query_id"])).meta.is_private
