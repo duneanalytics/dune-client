@@ -17,7 +17,7 @@ from aiohttp import (
     ClientTimeout,
 )
 
-from dune_client.base_client import BaseDuneClient
+from dune_client.api.base import BaseDuneClient
 from dune_client.models import (
     ExecutionResponse,
     ExecutionResultCSV,
