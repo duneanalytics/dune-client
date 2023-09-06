@@ -34,6 +34,7 @@ class BaseDuneClient:
         """
         Constructor allowing user to instantiate a client from environment variable
         without having to import dotenv or os manually
+        We use `DUNE_API_KEY` as the environment variable that holds the API key.
         """
         return cls(os.environ["DUNE_API_KEY"])
 
