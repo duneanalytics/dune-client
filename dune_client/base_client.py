@@ -9,7 +9,6 @@ import logging.config
 from typing import Dict
 
 
-# pylint: disable=too-few-public-methods
 class BaseDuneClient:
     """
     A Base Client for Dune which sets up default values

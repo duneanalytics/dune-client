@@ -178,7 +178,7 @@ class TestDuneClient(unittest.TestCase):
         client = DuneClient(self.valid_api_key)
         self.assertEqual(
             client.upload_csv(
-                table_name="bh2smith-test",
+                table_name="test",
                 description="best data",
                 data="column1,column2\nvalue1,value2\nvalue3,value4",
             ),
