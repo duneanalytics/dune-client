@@ -14,6 +14,8 @@ from dune_client.client import (
 )
 from dune_client.query import QueryBase
 
+dotenv.load_dotenv()
+
 
 class TestDuneClient(unittest.TestCase):
     def setUp(self) -> None:
@@ -28,8 +30,13 @@ class TestDuneClient(unittest.TestCase):
                 QueryParameter.enum_type(name="ListField", value="Option 1"),
             ],
         )
-        dotenv.load_dotenv()
         self.valid_api_key = os.environ["DUNE_API_KEY"]
+
+    def test_from_env_constructor(self):
+        try:
+            DuneClient.from_env()
+        except KeyError:
+            self.fail("DuneClient.from_env raised unexpectedly!")
 
     def test_get_status(self):
         query = QueryBase(name="No Name", query_id=1276442, params=[])
@@ -178,7 +185,6 @@ class TestDuneClient(unittest.TestCase):
 @unittest.skip("This is an enterprise only endpoint that can no longer be tested.")
 class TestCRUDOps(unittest.TestCase):
     def setUp(self) -> None:
-        dotenv.load_dotenv()
         self.valid_api_key = os.environ["DUNE_API_KEY"]
         self.client = DuneClient(self.valid_api_key, client_version="alpha/v1")
         self.existing_query_id = 2713571
