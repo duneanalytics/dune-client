@@ -20,7 +20,8 @@ class DuneClient(QueryAPI, ExtendedAPI):
         |       - Contains CRUD Operations on Queries
         |
         |--- ExtendedAPI
-                | - Contains higher level methods for higher productivity (things like `run_query`, `run_query_csv`, etc..)
+                | - Contains higher level methods for higher productivity
+                |       (things like `run_query`, `run_query_csv`, etc..)
                 |
                 |--- ExecutionAPI(BaseRouter)
                         - Contains query execution and result related methods.

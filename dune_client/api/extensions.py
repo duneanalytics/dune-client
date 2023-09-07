@@ -20,33 +20,9 @@ from dune_client.query import QueryBase
 
 class ExtendedAPI(ExecutionAPI):
     """
-    Provides higher level helper methods for faster and easier development on top of the base ExecutionAPI.
+    Provides higher level helper methods for faster
+    and easier development on top of the base ExecutionAPI.
     """
-
-    def _refresh(
-        self,
-        query: QueryBase,
-        ping_frequency: int = 5,
-        performance: Optional[str] = None,
-    ) -> str:
-        """
-        Executes a Dune `query`, waits until execution completes,
-        fetches and returns the results.
-        Sleeps `ping_frequency` seconds between each status request.
-        """
-        job_id = self.execute_query(query=query, performance=performance).execution_id
-        status = self.get_execution_status(job_id)
-        while status.state not in ExecutionState.terminal_states():
-            self.logger.info(
-                f"waiting for query execution {job_id} to complete: {status}"
-            )
-            time.sleep(ping_frequency)
-            status = self.get_execution_status(job_id)
-        if status.state == ExecutionState.FAILED:
-            self.logger.error(status)
-            raise QueryFailed(f"{status}. Perhaps your query took too long to run!")
-
-        return job_id
 
     def run_query(
         self,
@@ -100,7 +76,8 @@ class ExtendedAPI(ExecutionAPI):
 
     def get_latest_result(self, query: Union[QueryBase, str, int]) -> ResultsResponse:
         """
-        GET the latest results for a query_id without re-executing the query (doesn't use execution credits)
+        GET the latest results for a query_id without re-executing the query
+        (doesn't use execution credits)
 
         :param query: :class:`Query` object OR query id as string | int
 
@@ -124,7 +101,32 @@ class ExtendedAPI(ExecutionAPI):
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
+    def upload_csv(self, table_name: str, data: str, description: str = "") -> bool:
+        """
+        https://dune.com/docs/api/api-reference/upload-data/?h=data+upload#endpoint
+        The write API allows you to upload any .csv file into Dune. The only limitations are:
+
+        - File has to be < 200 MB
+        - Column names in the table can't start with a special character or digits.
+
+        Below are the specifics of how to work with the API.
+        """
+        response_json = self._post(
+            route="/table/upload/csv",
+            params={
+                "table_name": table_name,
+                "description": description,
+                "data": data,
+            },
+        )
+        try:
+            return bool(response_json["success"])
+        except KeyError as err:
+            raise DuneError(response_json, "upload_csv response", err) from err
+
+    ######################
     # Deprecated Functions
+    ######################
     @deprecated(version="1.2.1", reason="Please use run_query")
     def refresh(
         self,
@@ -165,25 +167,30 @@ class ExtendedAPI(ExecutionAPI):
         """
         return self.run_query_dataframe(query, performance)
 
-    def upload_csv(self, table_name: str, data: str, description: str = "") -> bool:
+    #################
+    # Private Methods
+    #################
+    def _refresh(
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
+    ) -> str:
         """
-        https://dune.com/docs/api/api-reference/upload-data/?h=data+upload#endpoint
-        The write API allows you to upload any .csv file into Dune. The only limitations are:
-
-        - File has to be < 200 MB
-        - Column names in the table can't start with a special character or digits.
-
-        Below are the specifics of how to work with the API.
+        Executes a Dune `query`, waits until execution completes,
+        fetches and returns the results.
+        Sleeps `ping_frequency` seconds between each status request.
         """
-        response_json = self._post(
-            route="/table/upload/csv",
-            params={
-                "table_name": table_name,
-                "description": description,
-                "data": data,
-            },
-        )
-        try:
-            return bool(response_json["success"])
-        except KeyError as err:
-            raise DuneError(response_json, "upload_csv response", err) from err
+        job_id = self.execute_query(query=query, performance=performance).execution_id
+        status = self.get_execution_status(job_id)
+        while status.state not in ExecutionState.terminal_states():
+            self.logger.info(
+                f"waiting for query execution {job_id} to complete: {status}"
+            )
+            time.sleep(ping_frequency)
+            status = self.get_execution_status(job_id)
+        if status.state == ExecutionState.FAILED:
+            self.logger.error(status)
+            raise QueryFailed(f"{status}. Perhaps your query took too long to run!")
+
+        return job_id
