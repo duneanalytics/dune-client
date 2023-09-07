@@ -2,6 +2,7 @@ aiohttp>=3.8.5
 types-python-dateutil>=2.8.19.14
 types-PyYAML>=6.0.12.11
 types-requests>=2.31.0.2
+types-setuptools>=68.2.0.0
 python-dateutil>=2.8.2
 requests>=2.31.0
 ndjson>=0.3.1

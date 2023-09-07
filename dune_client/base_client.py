@@ -9,6 +9,8 @@ import logging.config
 import os
 from typing import Dict
 
+from dune_client.util import get_package_version
+
 
 class BaseDuneClient:
     """
@@ -44,4 +46,5 @@ class BaseDuneClient:
 
     def default_headers(self) -> Dict[str, str]:
         """Return default headers containing Dune Api token"""
-        return {"x-dune-api-key": self.token}
+        client_version = get_package_version("dune-client") or "1.3.0"
+        return {"x-dune-api-key": self.token, "User-Agent": client_version}
