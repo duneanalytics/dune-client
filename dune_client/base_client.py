@@ -16,8 +16,8 @@ class BaseDuneClient:
     and provides some convenient functions to use in other clients
     """
 
-    BASE_URL = "https://api.dune.com"
-    DEFAULT_TIMEOUT = 10
+    BASE_URL = os.environ.get("BASE_API_URL", "https://api.dune.com")
+    REQUEST_TIMEOUT = os.environ.get("REQUEST_TIMEOUT", 10)
 
     def __init__(
         self, api_key: str, client_version: str = "v1", performance: str = "medium"

@@ -60,7 +60,7 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
         response = requests.get(
             url=url,
             headers=self.default_headers(),
-            timeout=self.DEFAULT_TIMEOUT,
+            timeout=self.REQUEST_TIMEOUT,
             params=params,
         )
         if raw:
@@ -75,7 +75,7 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
             url=url,
             json=params,
             headers=self.default_headers(),
-            timeout=self.DEFAULT_TIMEOUT,
+            timeout=self.REQUEST_TIMEOUT,
         )
         return self._handle_response(response)
 
@@ -88,7 +88,7 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
             url=url,
             json=params,
             headers={"x-dune-api-key": self.token},
-            timeout=self.DEFAULT_TIMEOUT,
+            timeout=self.REQUEST_TIMEOUT,
         )
         return self._handle_response(response)
 

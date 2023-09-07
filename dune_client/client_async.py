@@ -57,7 +57,7 @@ class AsyncDuneClient(BaseDuneClient):
         return ClientSession(
             connector=conn,
             base_url=self.BASE_URL,
-            timeout=ClientTimeout(total=self.DEFAULT_TIMEOUT),
+            timeout=ClientTimeout(total=self.REQUEST_TIMEOUT),
         )
 
     async def connect(self) -> None:
