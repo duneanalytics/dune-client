@@ -23,5 +23,5 @@ class DuneClient(QueryAPI, ExtendedAPI):
                 | - Contains compositions of execution methods like `run_query`
                 |
                 |--- ExecutionAPI(BaseRouter)
-                        - Contains query execution methods.
+                        - Contains query execution and result related methods.
     """
