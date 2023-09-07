@@ -100,7 +100,7 @@ class ExtendedAPI(ExecutionAPI):
 
     def get_latest_result(self, query: Union[QueryBase, str, int]) -> ResultsResponse:
         """
-        GET the latest results for a query_id without having to execute the query again.
+        GET the latest results for a query_id without re-executing the query (doesn't use execution credits)
 
         :param query: :class:`Query` object OR query id as string | int
 
