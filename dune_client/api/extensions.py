@@ -87,7 +87,7 @@ class ExtendedAPI(ExecutionAPI):
         Execute a Dune Query, waits till execution completes,
         fetched and returns the result as a Pandas DataFrame
 
-        This is a convenience method that uses refresh_csv underneath
+        This is a convenience method that uses run_query_csv() + pandas.read_csv() underneath
         """
         try:
             import pandas  # type: ignore # pylint: disable=import-outside-toplevel
