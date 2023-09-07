@@ -5,3 +5,5 @@ types-requests>=2.31.0.2
 python-dateutil>=2.8.2
 requests>=2.31.0
 ndjson>=0.3.1
+Deprecated>=1.2.14
+types-Deprecated==1.2.9.3

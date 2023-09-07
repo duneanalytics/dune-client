@@ -38,28 +38,28 @@ class TestDuneClient(unittest.TestCase):
         except KeyError:
             self.fail("DuneClient.from_env raised unexpectedly!")
 
-    def test_get_status(self):
+    def test_get_execution_status(self):
         query = QueryBase(name="No Name", query_id=1276442, params=[])
         dune = DuneClient(self.valid_api_key)
-        job_id = dune.execute(query).execution_id
-        status = dune.get_status(job_id)
+        job_id = dune.execute_query(query).execution_id
+        status = dune.get_execution_status(job_id)
         self.assertTrue(
             status.state in [ExecutionState.EXECUTING, ExecutionState.PENDING]
         )
 
-    def test_refresh(self):
+    def test_run_query(self):
         dune = DuneClient(self.valid_api_key)
-        results = dune.refresh(self.query).get_rows()
+        results = dune.run_query(self.query).get_rows()
         self.assertGreater(len(results), 0)
 
-    def test_refresh_performance_large(self):
+    def test_run_query_performance_large(self):
         dune = DuneClient(self.valid_api_key)
-        results = dune.refresh(self.query, performance="large").get_rows()
+        results = dune.run_query(self.query, performance="large").get_rows()
         self.assertGreater(len(results), 0)
 
-    def test_refresh_into_dataframe(self):
+    def test_run_query_dataframe(self):
         dune = DuneClient(self.valid_api_key)
-        pd = dune.refresh_into_dataframe(self.query)
+        pd = dune.run_query_dataframe(self.query)
         self.assertGreater(len(pd), 0)
 
     def test_parameters_recognized(self):
@@ -75,7 +75,7 @@ class TestDuneClient(unittest.TestCase):
         self.assertEqual(query.parameters(), new_params)
 
         dune = DuneClient(self.valid_api_key)
-        results = dune.refresh(query)
+        results = dune.run_query(query)
         self.assertEqual(
             results.get_rows(),
             [
@@ -90,14 +90,14 @@ class TestDuneClient(unittest.TestCase):
 
     def test_endpoints(self):
         dune = DuneClient(self.valid_api_key)
-        execution_response = dune.execute(self.query)
+        execution_response = dune.execute_query(self.query)
         self.assertIsInstance(execution_response, ExecutionResponse)
         job_id = execution_response.execution_id
-        status = dune.get_status(job_id)
+        status = dune.get_execution_status(job_id)
         self.assertIsInstance(status, ExecutionStatusResponse)
-        while dune.get_status(job_id).state != ExecutionState.COMPLETED:
+        while dune.get_execution_status(job_id).state != ExecutionState.COMPLETED:
             time.sleep(1)
-        results = dune.get_result(job_id).result.rows
+        results = dune.get_execution_results(job_id).result.rows
         self.assertGreater(len(results), 0)
 
     def test_cancel_execution(self):
@@ -106,31 +106,31 @@ class TestDuneClient(unittest.TestCase):
             name="Long Running Query",
             query_id=1229120,
         )
-        execution_response = dune.execute(query)
+        execution_response = dune.execute_query(query)
         job_id = execution_response.execution_id
         # POST Cancellation
         success = dune.cancel_execution(job_id)
         self.assertTrue(success)
 
-        results = dune.get_result(job_id)
+        results = dune.get_execution_results(job_id)
         self.assertEqual(results.state, ExecutionState.CANCELLED)
 
     def test_invalid_api_key_error(self):
         dune = DuneClient(api_key="Invalid Key")
         with self.assertRaises(DuneError) as err:
-            dune.execute(self.query)
+            dune.execute_query(self.query)
         self.assertEqual(
             str(err.exception),
             "Can't build ExecutionResponse from {'error': 'invalid API Key'}",
         )
         with self.assertRaises(DuneError) as err:
-            dune.get_status("wonky job_id")
+            dune.get_execution_status("wonky job_id")
         self.assertEqual(
             str(err.exception),
             "Can't build ExecutionStatusResponse from {'error': 'invalid API Key'}",
         )
         with self.assertRaises(DuneError) as err:
-            dune.get_result("wonky job_id")
+            dune.get_execution_results("wonky job_id")
         self.assertEqual(
             str(err.exception),
             "Can't build ResultsResponse from {'error': 'invalid API Key'}",
@@ -142,7 +142,7 @@ class TestDuneClient(unittest.TestCase):
         query.query_id = 99999999  # Invalid Query Id.
 
         with self.assertRaises(DuneError) as err:
-            dune.execute(query)
+            dune.execute_query(query)
         self.assertEqual(
             str(err.exception),
             "Can't build ExecutionResponse from {'error': 'Query not found'}",
@@ -155,7 +155,7 @@ class TestDuneClient(unittest.TestCase):
         query.query_id = 9999999999999
 
         with self.assertRaises(DuneError) as err:
-            dune.execute(query)
+            dune.execute_query(query)
         self.assertEqual(
             str(err.exception),
             "Can't build ExecutionResponse from {'error': 'An internal error occured'}",
@@ -164,7 +164,7 @@ class TestDuneClient(unittest.TestCase):
     def test_invalid_job_id_error(self):
         dune = DuneClient(self.valid_api_key)
         with self.assertRaises(DuneError) as err:
-            dune.get_status("Wonky Job ID")
+            dune.get_execution_status("Wonky Job ID")
         self.assertEqual(
             str(err.exception),
             "Can't build ExecutionStatusResponse from "

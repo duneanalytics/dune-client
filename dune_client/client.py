@@ -10,10 +10,10 @@ from io import BytesIO
 from typing import Any, Optional, Union
 
 import requests
+from deprecated import deprecated
 from requests import Response, JSONDecodeError
 
 from dune_client.base_client import BaseDuneClient
-from dune_client.interface import DuneInterface
 from dune_client.models import (
     ExecutionResponse,
     ExecutionResultCSV,
@@ -23,12 +23,11 @@ from dune_client.models import (
     ResultsResponse,
     ExecutionState,
 )
-
 from dune_client.query import QueryBase, DuneQuery
 from dune_client.types import QueryParameter
 
 
-class DuneClient(DuneInterface, BaseDuneClient):
+class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
     """
     An interface for Dune API with a few convenience methods
     combining the use of endpoints (e.g. refresh)
@@ -93,41 +92,24 @@ class DuneClient(DuneInterface, BaseDuneClient):
         )
         return self._handle_response(response)
 
+    @deprecated(version="1.2.1", reason="Please use execute_query")
     def execute(
         self, query: QueryBase, performance: Optional[str] = None
     ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
-        params = query.request_format()
-        params["performance"] = performance or self.performance
+        return self.execute_query(query, performance)
 
-        self.logger.info(
-            f"executing {query.query_id} on {performance or self.performance} cluster"
-        )
-        response_json = self._post(
-            route=f"/query/{query.query_id}/execute",
-            params=params,
-        )
-        try:
-            return ExecutionResponse.from_dict(response_json)
-        except KeyError as err:
-            raise DuneError(response_json, "ExecutionResponse", err) from err
-
+    @deprecated(version="1.2.1", reason="Please use get_execution_status")
     def get_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._get(route=f"/execution/{job_id}/status")
-        try:
-            return ExecutionStatusResponse.from_dict(response_json)
-        except KeyError as err:
-            raise DuneError(response_json, "ExecutionStatusResponse", err) from err
+        return self.get_execution_status(job_id)
 
+    @deprecated(version="1.2.1", reason="Please use get_execution_results")
     def get_result(self, job_id: str) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._get(route=f"/execution/{job_id}/results")
-        try:
-            return ResultsResponse.from_dict(response_json)
-        except KeyError as err:
-            raise DuneError(response_json, "ResultsResponse", err) from err
+        return self.get_execution_results(job_id)
 
+    @deprecated(version="1.2.1", reason="Please use get_execution_results_csv")
     def get_result_csv(self, job_id: str) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
@@ -136,12 +118,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
-        route = f"/execution/{job_id}/results/csv"
-        url = self._route_url(f"/execution/{job_id}/results/csv")
-        self.logger.debug(f"GET CSV received input url={url}")
-        response = self._get(route=route, raw=True)
-        response.raise_for_status()
-        return ExecutionResultCSV(data=BytesIO(response.content))
+        return self.get_execution_results_csv(job_id)
 
     def get_latest_result(self, query: Union[QueryBase, str, int]) -> ResultsResponse:
         """
@@ -207,6 +184,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
         return job_id
 
+    @deprecated(version="1.2.1", reason="Please use run_query")
     def refresh(
         self,
         query: QueryBase,
@@ -218,11 +196,9 @@ class DuneClient(DuneInterface, BaseDuneClient):
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
-        job_id = self._refresh(
-            query, ping_frequency=ping_frequency, performance=performance
-        )
-        return self.get_result(job_id)
+        return self.run_query(query, ping_frequency, performance)
 
+    @deprecated(version="1.2.1", reason="Please use run_query_csv")
     def refresh_csv(
         self,
         query: QueryBase,
@@ -234,11 +210,9 @@ class DuneClient(DuneInterface, BaseDuneClient):
         fetches and the results in CSV format
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
-        job_id = self._refresh(
-            query, ping_frequency=ping_frequency, performance=performance
-        )
-        return self.get_result_csv(job_id)
+        return self.run_query_csv(query, ping_frequency, performance)
 
+    @deprecated(version="1.2.1", reason="Please use run_query_dataframe")
     def refresh_into_dataframe(
         self, query: QueryBase, performance: Optional[str] = None
     ) -> Any:
@@ -248,14 +222,7 @@ class DuneClient(DuneInterface, BaseDuneClient):
 
         This is a convenience method that uses refresh_csv underneath
         """
-        try:
-            import pandas  # type: ignore # pylint: disable=import-outside-toplevel
-        except ImportError as exc:
-            raise ImportError(
-                "dependency failure, pandas is required but missing"
-            ) from exc
-        data = self.refresh_csv(query, performance=performance).data
-        return pandas.read_csv(data)
+        return self.run_query_dataframe(query, performance)
 
     # CRUD Operations: https://dune.com/docs/api/api-reference/edit-queries/
     def create_query(
@@ -397,3 +364,103 @@ class DuneClient(DuneInterface, BaseDuneClient):
             return bool(response_json["success"])
         except KeyError as err:
             raise DuneError(response_json, "upload_csv response", err) from err
+
+    def execute_query(
+        self, query: QueryBase, performance: Optional[str] = None
+    ) -> ExecutionResponse:
+        """Post's to Dune API for execute `query`"""
+        params = query.request_format()
+        params["performance"] = performance or self.performance
+
+        self.logger.info(
+            f"executing {query.query_id} on {performance or self.performance} cluster"
+        )
+        response_json = self._post(
+            route=f"/query/{query.query_id}/execute",
+            params=params,
+        )
+        try:
+            return ExecutionResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "ExecutionResponse", err) from err
+
+    def get_execution_status(self, job_id: str) -> ExecutionStatusResponse:
+        """GET status from Dune API for `job_id` (aka `execution_id`)"""
+        response_json = self._get(route=f"/execution/{job_id}/status")
+        try:
+            return ExecutionStatusResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "ExecutionStatusResponse", err) from err
+
+    def get_execution_results(self, job_id: str) -> ResultsResponse:
+        """GET results from Dune API for `job_id` (aka `execution_id`)"""
+        response_json = self._get(route=f"/execution/{job_id}/results")
+        try:
+            return ResultsResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "ResultsResponse", err) from err
+
+    def get_execution_results_csv(self, job_id: str) -> ExecutionResultCSV:
+        """
+        GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
+
+        this API only returns the raw data in CSV format, it is faster & lighterweight
+        use this method for large results where you want lower CPU and memory overhead
+        if you need metadata information use get_results() or get_status()
+        """
+        route = f"/execution/{job_id}/results/csv"
+        url = self._route_url(f"/execution/{job_id}/results/csv")
+        self.logger.debug(f"GET CSV received input url={url}")
+        response = self._get(route=route, raw=True)
+        response.raise_for_status()
+        return ExecutionResultCSV(data=BytesIO(response.content))
+
+    def run_query(
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
+    ) -> ResultsResponse:
+        """
+        Executes a Dune `query`, waits until execution completes,
+        fetches and returns the results.
+        Sleeps `ping_frequency` seconds between each status request.
+        """
+        job_id = self._refresh(
+            query, ping_frequency=ping_frequency, performance=performance
+        )
+        return self.get_result(job_id)
+
+    def run_query_csv(
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
+    ) -> ExecutionResultCSV:
+        """
+        Executes a Dune query, waits till execution completes,
+        fetches and the results in CSV format
+        (use it load the data directly in pandas.from_csv() or similar frameworks)
+        """
+        job_id = self._refresh(
+            query, ping_frequency=ping_frequency, performance=performance
+        )
+        return self.get_result_csv(job_id)
+
+    def run_query_dataframe(
+        self, query: QueryBase, performance: Optional[str] = None
+    ) -> Any:
+        """
+        Execute a Dune Query, waits till execution completes,
+        fetched and returns the result as a Pandas DataFrame
+
+        This is a convenience method that uses refresh_csv underneath
+        """
+        try:
+            import pandas  # type: ignore # pylint: disable=import-outside-toplevel
+        except ImportError as exc:
+            raise ImportError(
+                "dependency failure, pandas is required but missing"
+            ) from exc
+        data = self.refresh_csv(query, performance=performance).data
+        return pandas.read_csv(data)
