@@ -20,7 +20,7 @@ from dune_client.query import QueryBase
 
 class ExtendedAPI(ExecutionAPI):
     """
-    Extensions/helper methods built on top of the ExecutionAPI
+    Provides higher level helper methods for faster and easier development on top of the base ExecutionAPI.
     """
 
     def _refresh(
