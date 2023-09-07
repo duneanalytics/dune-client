@@ -181,6 +181,7 @@ class TestDuneClient(unittest.TestCase):
         results = dune.get_latest_result(self.query.query_id).get_rows()
         self.assertGreater(len(results), 0)
 
+    @unittest.skip("This is a plus subscription endpoint.")
     def test_upload_csv_success(self):
         client = DuneClient(self.valid_api_key)
         self.assertEqual(
