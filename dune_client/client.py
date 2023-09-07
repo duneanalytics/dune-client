@@ -170,14 +170,14 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
-        job_id = self.execute(query=query, performance=performance).execution_id
-        status = self.get_status(job_id)
+        job_id = self.execute_query(query=query, performance=performance).execution_id
+        status = self.get_execution_status(job_id)
         while status.state not in ExecutionState.terminal_states():
             self.logger.info(
                 f"waiting for query execution {job_id} to complete: {status}"
             )
             time.sleep(ping_frequency)
-            status = self.get_status(job_id)
+            status = self.get_execution_status(job_id)
         if status.state == ExecutionState.FAILED:
             self.logger.error(status)
             raise QueryFailed(f"{status}. Perhaps your query took too long to run!")
@@ -429,7 +429,7 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
         job_id = self._refresh(
             query, ping_frequency=ping_frequency, performance=performance
         )
-        return self.get_result(job_id)
+        return self.get_execution_results(job_id)
 
     def run_query_csv(
         self,
@@ -445,7 +445,7 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
         job_id = self._refresh(
             query, ping_frequency=ping_frequency, performance=performance
         )
-        return self.get_result_csv(job_id)
+        return self.get_execution_results_csv(job_id)
 
     def run_query_dataframe(
         self, query: QueryBase, performance: Optional[str] = None
@@ -462,5 +462,5 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
             raise ImportError(
                 "dependency failure, pandas is required but missing"
             ) from exc
-        data = self.refresh_csv(query, performance=performance).data
+        data = self.run_query_csv(query, performance=performance).data
         return pandas.read_csv(data)
