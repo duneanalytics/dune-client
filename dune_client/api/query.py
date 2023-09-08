@@ -30,14 +30,14 @@ class QueryAPI(BaseRouter):
         Creates Dune Query by ID
         https://dune.com/docs/api/api-reference/edit-queries/create-query/
         """
-        parameters = {
+        payload = {
             "name": name,
             "query_sql": query_sql,
             "private": is_private,
         }
         if params is not None:
-            parameters["parameters"] = [p.to_dict() for p in params]
-        response_json = self._post(route="/query/", params=parameters)
+            payload["parameters"] = [p.to_dict() for p in params]
+        response_json = self._post(route="/query/", params=payload)
         try:
             query_id = int(response_json["query_id"])
             # Note that this requires an extra request.
