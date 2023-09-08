@@ -48,7 +48,7 @@ visit [dune-alerts](https://github.com/cowprotocol/dune-alerts)
 # Developer Usage & Deployment
 
 ## Makefile
-This project's makefile comes equipt with sufficient commands for local development.
+This project's makefile comes equiped with sufficient commands for local development.
 
 ### Installation
 
