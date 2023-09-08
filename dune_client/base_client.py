@@ -16,13 +16,17 @@ class BaseDuneClient:
     and provides some convenient functions to use in other clients
     """
 
-    BASE_URL = os.environ.get("BASE_API_URL", "https://api.dune.com")
-    REQUEST_TIMEOUT = float(os.environ.get("REQUEST_TIMEOUT", 10))
-
-    def __init__(
-        self, api_key: str, client_version: str = "v1", performance: str = "medium"
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        api_key: str,
+        base_url: str = "https://api.dune.com",
+        request_timeout: float = 10,
+        client_version: str = "v1",
+        performance: str = "medium",
     ):
         self.token = api_key
+        self.base_url = base_url
+        self.request_timeout = request_timeout
         self.client_version = client_version
         self.performance = performance
         self.logger = logging.getLogger(__name__)
@@ -35,7 +39,11 @@ class BaseDuneClient:
         without having to import dotenv or os manually
         We use `DUNE_API_KEY` as the environment variable that holds the API key.
         """
-        return cls(os.environ["DUNE_API_KEY"])
+        return cls(
+            api_key=os.environ["DUNE_API_KEY"],
+            base_url=os.environ.get("BASE_API_URL", "https://api.dune.com"),
+            request_timeout=float(os.environ.get("REQUEST_TIMEOUT", 10)),
+        )
 
     @property
     def api_version(self) -> str:

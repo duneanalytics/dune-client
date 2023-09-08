@@ -46,7 +46,7 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
             raise ValueError("Unreachable since previous line raises") from err
 
     def _route_url(self, route: str) -> str:
-        return f"{self.BASE_URL}{self.api_version}{route}"
+        return f"{self.base_url}{self.api_version}{route}"
 
     def _get(
         self,
@@ -60,7 +60,7 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
         response = requests.get(
             url=url,
             headers=self.default_headers(),
-            timeout=self.REQUEST_TIMEOUT,
+            timeout=self.request_timeout,
             params=params,
         )
         if raw:
@@ -75,7 +75,7 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
             url=url,
             json=params,
             headers=self.default_headers(),
-            timeout=self.REQUEST_TIMEOUT,
+            timeout=self.request_timeout,
         )
         return self._handle_response(response)
 
@@ -88,7 +88,7 @@ class DuneClient(BaseDuneClient):  # pylint: disable=too-many-public-methods
             url=url,
             json=params,
             headers={"x-dune-api-key": self.token},
-            timeout=self.REQUEST_TIMEOUT,
+            timeout=self.request_timeout,
         )
         return self._handle_response(response)
 
