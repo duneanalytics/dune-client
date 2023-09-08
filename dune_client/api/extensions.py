@@ -125,9 +125,9 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         except KeyError as err:
             raise DuneError(response_json, "UploadCsvResponse", err) from err
 
-    ##################
-    # Premium Features
-    ##################
+    ##############################################################################################
+    # Premium Features: these features use APIs that are only available on paid subscription plans
+    ##############################################################################################
 
     def run_sql(
         self,
