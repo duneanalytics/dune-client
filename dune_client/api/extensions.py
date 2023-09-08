@@ -18,6 +18,7 @@ from dune_client.models import (
     ExecutionResultCSV,
 )
 from dune_client.query import QueryBase, parse_query_object_or_id
+from dune_client.types import QueryParameter
 
 
 class ExtendedAPI(ExecutionAPI, QueryAPI):
