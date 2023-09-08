@@ -122,7 +122,7 @@ class ExtendedAPI(ExecutionAPI):
         try:
             return bool(response_json["success"])
         except KeyError as err:
-            raise DuneError(response_json, "upload_csv response", err) from err
+            raise DuneError(response_json, "UploadCsvResponse", err) from err
 
     ######################
     # Deprecated Functions

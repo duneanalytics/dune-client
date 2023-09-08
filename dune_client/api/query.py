@@ -43,7 +43,7 @@ class QueryAPI(BaseRouter):
             # Note that this requires an extra request.
             return self.get_query(query_id)
         except KeyError as err:
-            raise DuneError(response_json, "create_query Response", err) from err
+            raise DuneError(response_json, "CreateQueryResponse", err) from err
 
     def get_query(self, query_id: int) -> DuneQuery:
         """
@@ -96,7 +96,7 @@ class QueryAPI(BaseRouter):
             # No need to make a dataclass for this since it's just a boolean.
             return int(response_json["query_id"])
         except KeyError as err:
-            raise DuneError(response_json, "update_query Response", err) from err
+            raise DuneError(response_json, "UpdateQueryResponse", err) from err
 
     def archive_query(self, query_id: int) -> bool:
         """
@@ -108,7 +108,7 @@ class QueryAPI(BaseRouter):
             # No need to make a dataclass for this since it's just a boolean.
             return self.get_query(int(response_json["query_id"])).meta.is_archived
         except KeyError as err:
-            raise DuneError(response_json, "make_private Response", err) from err
+            raise DuneError(response_json, "ArchiveQueryResponse", err) from err
 
     def unarchive_query(self, query_id: int) -> bool:
         """
@@ -120,18 +120,24 @@ class QueryAPI(BaseRouter):
             # No need to make a dataclass for this since it's just a boolean.
             return self.get_query(int(response_json["query_id"])).meta.is_archived
         except KeyError as err:
-            raise DuneError(response_json, "make_private Response", err) from err
+            raise DuneError(response_json, "UnarchiveQueryResponse", err) from err
 
     def make_private(self, query_id: int) -> None:
         """
         https://dune.com/docs/api/api-reference/edit-queries/private-query
         """
         response_json = self._post(route=f"/query/{query_id}/private")
-        assert self.get_query(int(response_json["query_id"])).meta.is_private
+        try:
+            assert self.get_query(int(response_json["query_id"])).meta.is_private
+        except KeyError as err:
+            raise DuneError(response_json, "MakePrivateResponse", err) from err
 
     def make_public(self, query_id: int) -> None:
         """
         https://dune.com/docs/api/api-reference/edit-queries/private-query
         """
         response_json = self._post(route=f"/query/{query_id}/unprivate")
-        assert not self.get_query(int(response_json["query_id"])).meta.is_private
+        try:
+            assert not self.get_query(int(response_json["query_id"])).meta.is_private
+        except KeyError as err:
+            raise DuneError(response_json, "MakePublicResponse", err) from err
