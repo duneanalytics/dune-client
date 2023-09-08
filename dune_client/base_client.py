@@ -41,8 +41,8 @@ class BaseDuneClient:
         """
         return cls(
             api_key=os.environ["DUNE_API_KEY"],
-            base_url=os.environ.get("BASE_API_URL", "https://api.dune.com"),
-            request_timeout=float(os.environ.get("REQUEST_TIMEOUT", 10)),
+            base_url=os.environ.get("DUNE_API_BASE_URL", "https://api.dune.com"),
+            request_timeout=float(os.environ.get("DUNE_API_REQUEST_TIMEOUT", 10)),
         )
 
     @property
