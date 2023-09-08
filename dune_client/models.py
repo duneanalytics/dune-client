@@ -183,7 +183,7 @@ class ExecutionResultCSV:
     Representation of a raw `result` in CSV format
     this payload can be passed directly to
         csv.reader(data) or
-        pandas.from_csv(data)
+        pandas.read_csv(data)
     """
 
     data: BytesIO  # includes all CSV rows, including the header row.

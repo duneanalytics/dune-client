@@ -3,6 +3,7 @@ Extended functionality for the ExecutionAPI
 """
 from __future__ import annotations
 import time
+from io import BytesIO
 from typing import Union, Optional, Any
 
 from deprecated import deprecated
@@ -16,8 +17,7 @@ from dune_client.models import (
     QueryFailed,
     ExecutionResultCSV,
 )
-from dune_client.query import QueryBase
-from dune_client.types import QueryParameter
+from dune_client.query import QueryBase, parse_query_object_or_id
 
 
 class ExtendedAPI(ExecutionAPI, QueryAPI):
@@ -80,19 +80,11 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         GET the latest results for a query_id without re-executing the query
         (doesn't use execution credits)
 
-        :param query: :class:`Query` object OR query id as string | int
+        :param query: :class:`Query` object OR query id as string or int
 
-        https://dune.com/docs/api/api-reference/latest_results/
+            https://dune.com/docs/api/api-reference/get-results/latest-results
         """
-        if isinstance(query, QueryBase):
-            params = {
-                f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()
-            }
-            query_id = query.query_id
-        else:
-            params = None
-            query_id = int(query)
-
+        params, query_id = parse_query_object_or_id(query)
         response_json = self._get(
             route=f"/query/{query_id}/results",
             params=params,
@@ -102,6 +94,21 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
+    def download_csv(self, query: Union[QueryBase, str, int]) -> ExecutionResultCSV:
+        """
+        Almost like an alias for `get_latest_result` but for the csv endpoint.
+        https://dune.com/docs/api/api-reference/get-results/latest-results
+        """
+        params, query_id = parse_query_object_or_id(query)
+        response = self._get(
+            route=f"/query/{query_id}/results/csv", params=params, raw=True
+        )
+        response.raise_for_status()
+        return ExecutionResultCSV(data=BytesIO(response.content))
+
+    ############################
+    # Plus Subscription Features
+    ############################
     def upload_csv(self, table_name: str, data: str, description: str = "") -> bool:
         """
         https://dune.com/docs/api/api-reference/upload-data/?h=data+upload#endpoint

@@ -28,7 +28,7 @@ from dune_client.models import (
     ExecutionState,
 )
 
-from dune_client.query import QueryBase
+from dune_client.query import QueryBase, parse_query_object_or_id
 
 
 # pylint: disable=duplicate-code
@@ -56,8 +56,8 @@ class AsyncDuneClient(BaseDuneClient):
         conn = TCPConnector(limit=self._connection_limit)
         return ClientSession(
             connector=conn,
-            base_url=self.BASE_URL,
-            timeout=ClientTimeout(total=self.DEFAULT_TIMEOUT),
+            base_url=self.base_url,
+            timeout=ClientTimeout(total=self.request_timeout),
         )
 
     async def connect(self) -> None:
@@ -181,15 +181,7 @@ class AsyncDuneClient(BaseDuneClient):
 
         https://dune.com/docs/api/api-reference/latest_results/
         """
-        if isinstance(query, QueryBase):
-            params = {
-                f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()
-            }
-            query_id = query.query_id
-        else:
-            params = None
-            query_id = int(query)
-
+        params, query_id = parse_query_object_or_id(query)
         response_json = await self._get(
             route=f"/query/{query_id}/results",
             params=params,

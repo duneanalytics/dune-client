@@ -9,6 +9,22 @@ from typing import Optional, List, Dict, Union, Any
 from dune_client.types import QueryParameter
 
 
+def parse_query_object_or_id(
+    query: Union[QueryBase, str, int],
+) -> tuple[dict[str, str] | None, int]:
+    """
+    Users are allowed to pass QueryBase or ID into some functions.
+    This method handles both scenarios, returning a pair of the form (params, query_id)
+    """
+    if isinstance(query, QueryBase):
+        params = {f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()}
+        query_id = query.query_id
+    else:
+        params = None
+        query_id = int(query)
+    return params, query_id
+
+
 @dataclass
 class QueryBase:
     """Basic data structure constituting a Dune Analytics Query."""
