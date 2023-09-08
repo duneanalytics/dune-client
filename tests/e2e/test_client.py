@@ -4,6 +4,7 @@ import time
 import unittest
 
 import dotenv
+import pandas
 
 from dune_client.models import (
     ExecutionState,
@@ -32,6 +33,18 @@ class TestDuneClient(unittest.TestCase):
             ],
         )
         self.valid_api_key = os.environ["DUNE_API_KEY"]
+
+    def copy_query_and_change_parameters(self) -> QueryBase:
+        new_query = copy.copy(self.query)
+        new_query.params = [
+            # Using all different values for parameters.
+            QueryParameter.text_type(name="TextField", value="different word"),
+            QueryParameter.number_type(name="NumberField", value=22),
+            QueryParameter.date_type(name="DateField", value="1991-01-01 00:00:00"),
+            QueryParameter.enum_type(name="ListField", value="Option 2"),
+        ]
+        self.assertNotEqual(self.query.parameters(), new_query.parameters())
+        return new_query
 
     def test_from_env_constructor(self):
         try:
@@ -64,19 +77,9 @@ class TestDuneClient(unittest.TestCase):
         self.assertGreater(len(pd), 0)
 
     def test_parameters_recognized(self):
-        query = copy.copy(self.query)
-        new_params = [
-            # Using all different values for parameters.
-            QueryParameter.text_type(name="TextField", value="different word"),
-            QueryParameter.number_type(name="NumberField", value=22),
-            QueryParameter.date_type(name="DateField", value="1991-01-01 00:00:00"),
-            QueryParameter.enum_type(name="ListField", value="Option 2"),
-        ]
-        query.params = new_params
-        self.assertEqual(query.parameters(), new_params)
-
+        new_query = self.copy_query_and_change_parameters()
         dune = DuneClient(self.valid_api_key)
-        results = dune.run_query(query)
+        results = dune.run_query(new_query)
         self.assertEqual(
             results.get_rows(),
             [
@@ -192,6 +195,50 @@ class TestDuneClient(unittest.TestCase):
                 data="column1,column2\nvalue1,value2\nvalue3,value4",
             ),
             True,
+        )
+
+    def test_download_csv_success_by_id(self):
+        client = DuneClient(self.valid_api_key)
+        new_query = self.copy_query_and_change_parameters()
+        # Run query with new parameters
+        client.run_query(new_query)
+        # Download CSV by query_id
+        result_csv = client.download_csv(self.query.query_id)
+        # Expect that the csv returns the latest execution results (i.e. those that were just run)
+        self.assertEqual(
+            pandas.read_csv(result_csv.data).to_dict(orient="records"),
+            [
+                {
+                    "text_field": "different word",
+                    "number_field": 22,
+                    "date_field": "1991-01-01 00:00:00.000",
+                    "list_field": "Option 2",
+                }
+            ],
+        )
+
+    def test_download_csv_success_with_params(self):
+        client = DuneClient(self.valid_api_key)
+        # Download CSV with query and given parameters.
+        result_csv = client.download_csv(self.query)
+        # Expect the result to be relative to values of given parameters.
+        #################################################################
+        # Note that we could compare results with
+        #    ",".join([p.value for p in self.query.parameters()]) + "\n"
+        # but there seems to be a discrepancy with the date string values.
+        # Specifically 1991-01-01 00:00:00.000
+        #           vs 1991-01-01 00:00:00
+        #################################################################
+        self.assertEqual(
+            pandas.read_csv(result_csv.data).to_dict(orient="records"),
+            [
+                {
+                    "date_field": "2022-05-04 00:00:00.000",
+                    "list_field": "Option 1",
+                    "number_field": 3.1415926535,
+                    "text_field": "Plain Text",
+                }
+            ],
         )
 
 
