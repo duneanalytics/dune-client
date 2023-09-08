@@ -83,8 +83,6 @@ class ExecutionAPI(BaseRouter):
         if you need metadata information use get_results() or get_status()
         """
         route = f"/execution/{job_id}/results/csv"
-        url = self._route_url(f"/execution/{job_id}/results/csv")
-        self.logger.debug(f"GET CSV received input url={url}")
         response = self._get(route=route, raw=True)
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(response.content))
