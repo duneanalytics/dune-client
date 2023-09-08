@@ -35,9 +35,7 @@ class ExtendedAPI(ExecutionAPI):
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
-        job_id = self._refresh(
-            query, ping_frequency=ping_frequency, performance=performance
-        )
+        job_id = self._refresh(query, ping_frequency, performance)
         return self.get_execution_results(job_id)
 
     def run_query_csv(
@@ -51,13 +49,14 @@ class ExtendedAPI(ExecutionAPI):
         fetches and the results in CSV format
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
-        job_id = self._refresh(
-            query, ping_frequency=ping_frequency, performance=performance
-        )
+        job_id = self._refresh(query, ping_frequency, performance)
         return self.get_execution_results_csv(job_id)
 
     def run_query_dataframe(
-        self, query: QueryBase, performance: Optional[str] = None
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
     ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
@@ -71,7 +70,7 @@ class ExtendedAPI(ExecutionAPI):
             raise ImportError(
                 "dependency failure, pandas is required but missing"
             ) from exc
-        data = self.run_query_csv(query, performance=performance).data
+        data = self.run_query_csv(query, ping_frequency, performance).data
         return pandas.read_csv(data)
 
     def get_latest_result(self, query: Union[QueryBase, str, int]) -> ResultsResponse:
@@ -157,7 +156,10 @@ class ExtendedAPI(ExecutionAPI):
 
     @deprecated(version="1.2.1", reason="Please use run_query_dataframe")
     def refresh_into_dataframe(
-        self, query: QueryBase, performance: Optional[str] = None
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
     ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
@@ -165,7 +167,7 @@ class ExtendedAPI(ExecutionAPI):
 
         This is a convenience method that uses refresh_csv underneath
         """
-        return self.run_query_dataframe(query, performance)
+        return self.run_query_dataframe(query, ping_frequency, performance)
 
     #################
     # Private Methods
