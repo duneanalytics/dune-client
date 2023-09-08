@@ -47,4 +47,7 @@ class BaseDuneClient:
     def default_headers(self) -> Dict[str, str]:
         """Return default headers containing Dune Api token"""
         client_version = get_package_version("dune-client") or "1.3.0"
-        return {"x-dune-api-key": self.token, "User-Agent": client_version}
+        return {
+            "x-dune-api-key": self.token,
+            "User-Agent": f"dune-client/{client_version} (https://pypi.org/project/dune-client/)",
+        }
