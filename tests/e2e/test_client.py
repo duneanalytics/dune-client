@@ -4,14 +4,15 @@ import time
 import unittest
 
 import dotenv
-from dune_client.types import QueryParameter
-from dune_client.client import (
-    DuneClient,
+
+from dune_client.models import (
+    ExecutionState,
     ExecutionResponse,
     ExecutionStatusResponse,
-    ExecutionState,
     DuneError,
 )
+from dune_client.types import QueryParameter
+from dune_client.client import DuneClient
 from dune_client.query import QueryBase
 
 dotenv.load_dotenv()
