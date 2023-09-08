@@ -4,14 +4,15 @@ import time
 import unittest
 
 import dotenv
-from dune_client.types import QueryParameter
-from dune_client.client import (
-    DuneClient,
+
+from dune_client.models import (
+    ExecutionState,
     ExecutionResponse,
     ExecutionStatusResponse,
-    ExecutionState,
     DuneError,
 )
+from dune_client.types import QueryParameter
+from dune_client.client import DuneClient
 from dune_client.query import QueryBase
 
 dotenv.load_dotenv()
@@ -181,6 +182,7 @@ class TestDuneClient(unittest.TestCase):
         results = dune.get_latest_result(self.query.query_id).get_rows()
         self.assertGreater(len(results), 0)
 
+    @unittest.skip("This is a plus subscription endpoint.")
     def test_upload_csv_success(self):
         client = DuneClient(self.valid_api_key)
         self.assertEqual(
