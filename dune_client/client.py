@@ -4,10 +4,9 @@ Framework built on Dune's API Documentation
 https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e003a
 """
 from dune_client.api.extensions import ExtendedAPI
-from dune_client.api.query import QueryAPI
 
 
-class DuneClient(QueryAPI, ExtendedAPI):
+class DuneClient(ExtendedAPI):
     """
     An interface for Dune API with a few convenience methods
     combining the use of endpoints (e.g. run_query)
@@ -16,13 +15,14 @@ class DuneClient(QueryAPI, ExtendedAPI):
 
         DuneClient
         |
-        |--- QueryAPI(BaseRouter)
-        |       - Contains CRUD Operations on Queries
-        |
         |--- ExtendedAPI
-                | - Contains higher level methods for higher productivity
-                |       (things like `run_query`, `run_query_csv`, etc..)
+                |   - Contains compositions of execution methods like `run_query`
+                |               (things like `run_query`, `run_query_csv`, etc..)
+                |   - make use of both Execution and Query APIs
                 |
                 |--- ExecutionAPI(BaseRouter)
-                        - Contains query execution and result related methods.
+                |        - Contains query execution methods.
+                |
+                |--- QueryAPI(BaseRouter)
+                |       - Contains CRUD Operations on Queries
     """

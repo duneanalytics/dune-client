@@ -1,13 +1,14 @@
 """
 Extended functionality for the ExecutionAPI
 """
-
+from __future__ import annotations
 import time
 from typing import Union, Optional, Any
 
 from deprecated import deprecated
 
 from dune_client.api.execution import ExecutionAPI
+from dune_client.api.query import QueryAPI
 from dune_client.models import (
     ResultsResponse,
     DuneError,
@@ -16,9 +17,10 @@ from dune_client.models import (
     ExecutionResultCSV,
 )
 from dune_client.query import QueryBase
+from dune_client.types import QueryParameter
 
 
-class ExtendedAPI(ExecutionAPI):
+class ExtendedAPI(ExecutionAPI, QueryAPI):
     """
     Provides higher level helper methods for faster
     and easier development on top of the base ExecutionAPI.
@@ -122,6 +124,29 @@ class ExtendedAPI(ExecutionAPI):
             return bool(response_json["success"])
         except KeyError as err:
             raise DuneError(response_json, "UploadCsvResponse", err) from err
+
+    ##################
+    # Premium Features
+    ##################
+
+    def run_sql(
+        self,
+        query_sql: str,
+        params: Optional[list[QueryParameter]] = None,
+        is_private: bool = True,
+        archive_after: bool = True,
+    ) -> ResultsResponse:
+        """
+        Allows user to provide execute raw_sql via the CRUD interface
+        - create, run, get results with optional archive/delete.
+        - Query is by default made private and archived after execution.
+        Requires premium subscription!
+        """
+        query = self.create_query("API Query", query_sql, params, is_private)
+        results = self.run_query(query.base)
+        if archive_after:
+            self.archive_query(query.base.query_id)
+        return results
 
     ######################
     # Deprecated Functions

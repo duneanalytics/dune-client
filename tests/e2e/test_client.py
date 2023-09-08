@@ -231,6 +231,17 @@ class TestCRUDOps(unittest.TestCase):
         self.assertEqual(self.client.archive_query(self.existing_query_id), True)
         self.assertEqual(self.client.unarchive_query(self.existing_query_id), False)
 
+    @unittest.skip("Works fine, but creates too many queries!")
+    def test_run_sql(self):
+        query_sql = "select 85"
+        results = self.client.run_sql(query_sql)
+        self.assertEqual(results.get_rows(), [{"_col0": 85}])
+
+        # The default functionality is meant to create a private query and then archive it.
+        query = self.client.get_query(results.query_id)
+        self.assertTrue(query.meta.is_archived)
+        self.assertTrue(query.meta.is_private)
+
 
 if __name__ == "__main__":
     unittest.main()
