@@ -18,6 +18,8 @@ pip install dune-client
 
 # Example Usage
 
+## Quickstart: run_sql
+
 Export your `DUNE_API_KEY` (or place it in a `.env` file - as in
 here [.env.sample](./.env.sample) and `source .env`).
 
@@ -39,16 +41,82 @@ query = QueryBase(
 print("Results available at", query.url())
 
 dune = DuneClient.from_env()
-results = dune.refresh(query)
+results = dune.run_query(query)
+
+# or as CSV
+# results_csv = dune.run_query_csv(query)
+
+# or as Pandas Dataframe
+# results_df = dune.run_query_dataframe(query)
 ```
 
-For a more elaborate example,
-visit [dune-alerts](https://github.com/cowprotocol/dune-alerts)
+## Further Examples
+
+### Get Latest Results
+Save execution credits with `get_latest_results`! Specify `max_age_hours` when using 
+latest result will trigger refresh if data is considered too old.
+
+```python
+from dune_client.client import DuneClient
+
+dune = DuneClient.from_env()
+results = dune.get_latest_result(1215383, max_age_hours=8)
+```
+
+## Paid Subscription Features
+
+### CRUD Operations
+
+If you're writing scripts that rely on Dune query results and want to ensure that your local, 
+peer-reviewed, queries are being used at runtime, you can call `update_query` before `run_query`!
+
+Here is a fictitious example making use of this functionality;
+
+```python
+from dune_client.types import QueryParameter
+from dune_client.client import DuneClient
+
+sql = """
+    SELECT block_time, hash,
+    FROM ethereum.transactions
+    ORDER BY CAST(gas_used as uint256) * CAST(gas_price AS uint256) DESC
+    LIMIT {{N}}
+    """
+
+dune = DuneClient.from_env()
+query = dune.create_query(
+    name="Top {N} Most Expensive Transactions on Ethereum",
+    query_sql=sql,
+    # Optional fields
+    params=[QueryParameter.number_type(name="N", value=10)],
+    is_private=False  # default
+)
+query_id = query.base.query_id
+print(f"Created query with id {query.base.query_id}")
+# Could retrieve using 
+# dune.get_query(query_id)
+
+dune.update_query(
+    query_id, 
+    # All parameters below are optional
+    name="Top {N} Most Expensive Transactions on {Blockchain}",
+    query_sql=sql.replace("ethereum", "{{Blockchain}}"),
+    params=query.base.parameters() + [QueryParameter.text_type("Blockchain", "ethereum")],
+    description="Shows time and hash of the most expensive transactions",
+    tags=["XP€N$IV $H1T"]
+)
+
+dune.archive_query(query_id)
+dune.unarchive_query(query_id)
+
+dune.make_private(query_id)
+dune.make_public(query_id)
+```
 
 # Developer Usage & Deployment
 
 ## Makefile
-This project's makefile comes equiped with sufficient commands for local development.
+This project's makefile comes equipped with sufficient commands for local development.
 
 ### Installation
 
