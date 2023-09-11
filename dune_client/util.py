@@ -20,3 +20,11 @@ def get_package_version(package_name: str) -> Optional[str]:
         return pkg_resources.get_distribution(package_name).version
     except pkg_resources.DistributionNotFound:
         return None
+
+
+def age_in_hours(timestamp: datetime) -> float:
+    """
+    Returns the time (in hours) between now and `timestamp`
+    """
+    result_age = datetime.now() - timestamp
+    return result_age.total_seconds() / (60 * 60)
