@@ -2,7 +2,10 @@
 Extended functionality for the ExecutionAPI
 """
 from __future__ import annotations
+
+import logging
 import time
+
 from io import BytesIO
 from typing import Union, Optional, Any
 
@@ -19,6 +22,9 @@ from dune_client.models import (
 )
 from dune_client.query import QueryBase, parse_query_object_or_id
 from dune_client.types import QueryParameter
+from dune_client.util import age_in_hours
+
+THREE_MONTHS_IN_HOURS = 2191
 
 
 class ExtendedAPI(ExecutionAPI, QueryAPI):
@@ -76,13 +82,17 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         data = self.run_query_csv(query, ping_frequency, performance).data
         return pandas.read_csv(data)
 
-    def get_latest_result(self, query: Union[QueryBase, str, int]) -> ResultsResponse:
+    def get_latest_result(
+        self,
+        query: Union[QueryBase, str, int],
+        max_age_hours: int = THREE_MONTHS_IN_HOURS,
+    ) -> ResultsResponse:
         """
         GET the latest results for a query_id without re-executing the query
         (doesn't use execution credits)
 
         :param query: :class:`Query` object OR query id as string or int
-
+        :param max_age_hours: re-executes the query if result is older than max_age_hours
             https://dune.com/docs/api/api-reference/get-results/latest-results
         """
         params, query_id = parse_query_object_or_id(query)
@@ -91,7 +101,17 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
             params=params,
         )
         try:
-            return ResultsResponse.from_dict(response_json)
+            results = ResultsResponse.from_dict(response_json)
+            last_run = results.times.execution_ended_at
+            if last_run and age_in_hours(last_run) > max_age_hours:
+                # Query older than specified max age
+                logging.info(
+                    f"results (from {last_run}) older than {max_age_hours} hours, re-running query"
+                )
+                results = self.run_query(
+                    query if isinstance(query, QueryBase) else QueryBase(query_id)
+                )
+            return results
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
