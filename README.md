@@ -53,8 +53,8 @@ results = dune.run_query(query)
 ## Further Examples
 
 ### Get Latest Results
-Save execution credits with `get_latest_results`! Specify `max_age_hours` when using 
-latest result will trigger refresh if data is considered too old.
+Use `get_latest_results` to get the most recent query results without using execution credits. 
+You can specify a `max_age_hours` to re-run the query if the data is too outdated.
 
 ```python
 from dune_client.client import DuneClient
