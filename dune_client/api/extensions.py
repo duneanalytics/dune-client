@@ -92,7 +92,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         (doesn't use execution credits)
 
         :param query: :class:`Query` object OR query id as string or int
-        :param max_age_hours: time
+        :param max_age_hours: re-executes the query if result is older than max_age_hours
             https://dune.com/docs/api/api-reference/get-results/latest-results
         """
         params, query_id = parse_query_object_or_id(query)
@@ -106,7 +106,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
             if last_run and age_in_hours(last_run) > max_age_hours:
                 # Query older than specified max age
                 logging.info(
-                    "results are older than specified max age, refreshing results"
+                    f"results (from {last_run}) older than {max_age_hours} hours, re-running query"
                 )
                 results = self.run_query(
                     query if isinstance(query, QueryBase) else QueryBase(query_id)
