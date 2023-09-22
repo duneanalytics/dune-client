@@ -18,7 +18,7 @@ pip install dune-client
 
 # Example Usage
 
-## Quickstart: run_sql
+## Quickstart: run_query
 
 Export your `DUNE_API_KEY` (or place it in a `.env` file - as in
 here [.env.sample](./.env.sample) and `source .env`).

@@ -24,7 +24,10 @@ from dune_client.query import QueryBase, parse_query_object_or_id
 from dune_client.types import QueryParameter
 from dune_client.util import age_in_hours
 
+# This is the expiry time on old query results.
 THREE_MONTHS_IN_HOURS = 2191
+# Seconds between checking execution status
+POLL_FREQUENCY_SECONDS = 1
 
 
 class ExtendedAPI(ExecutionAPI, QueryAPI):
@@ -36,7 +39,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
     def run_query(
         self,
         query: QueryBase,
-        ping_frequency: int = 5,
+        ping_frequency: int = POLL_FREQUENCY_SECONDS,
         performance: Optional[str] = None,
     ) -> ResultsResponse:
         """
@@ -50,7 +53,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
     def run_query_csv(
         self,
         query: QueryBase,
-        ping_frequency: int = 5,
+        ping_frequency: int = POLL_FREQUENCY_SECONDS,
         performance: Optional[str] = None,
     ) -> ExecutionResultCSV:
         """
@@ -64,7 +67,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
     def run_query_dataframe(
         self,
         query: QueryBase,
-        ping_frequency: int = 5,
+        ping_frequency: int = POLL_FREQUENCY_SECONDS,
         performance: Optional[str] = None,
     ) -> Any:
         """
@@ -183,7 +186,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
     def refresh(
         self,
         query: QueryBase,
-        ping_frequency: int = 5,
+        ping_frequency: int = POLL_FREQUENCY_SECONDS,
         performance: Optional[str] = None,
     ) -> ResultsResponse:
         """
@@ -197,7 +200,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
     def refresh_csv(
         self,
         query: QueryBase,
-        ping_frequency: int = 5,
+        ping_frequency: int = POLL_FREQUENCY_SECONDS,
         performance: Optional[str] = None,
     ) -> ExecutionResultCSV:
         """
@@ -211,7 +214,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
     def refresh_into_dataframe(
         self,
         query: QueryBase,
-        ping_frequency: int = 5,
+        ping_frequency: int = POLL_FREQUENCY_SECONDS,
         performance: Optional[str] = None,
     ) -> Any:
         """
@@ -228,7 +231,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
     def _refresh(
         self,
         query: QueryBase,
-        ping_frequency: int = 5,
+        ping_frequency: int = POLL_FREQUENCY_SECONDS,
         performance: Optional[str] = None,
     ) -> str:
         """
