@@ -2,7 +2,7 @@
 Functions you can call to make different graphs
 """
 
-from typing import Union
+from typing import Dict, Union
 import plotly.graph_objects as go
 import colorlover as cl
 import pandas as pd
@@ -10,9 +10,9 @@ import pandas as pd
 # function to create Sankey diagram
 def create_sankey(
     query_result: pd.DataFrame,
-    predefined_colors: dict[str, str],
-    columns: dict[str, str],
-    viz_config: dict[str, Union[int, float]],
+    predefined_colors: Dict[str, str],
+    columns: Dict[str, str],
+    viz_config: Dict[str, Union[int, float]],
     title: str = "unnamed",
 ):
     """
@@ -54,24 +54,24 @@ def create_sankey(
 
     fig = go.Figure(
         go.Sankey(
-            node=dict(
-                pad=viz_config["node_pad"],
-                thickness=viz_config["node_thickness"],
-                line=dict(color="black", width=viz_config["node_line_width"]),
-                label=all_nodes,
-                color=[
+            node={
+                "pad": viz_config["node_pad"],
+                "thickness": viz_config["node_thickness"],
+                "line": {"color": "black", "width": viz_config["node_line_width"]},
+                "label": all_nodes,
+                "color": [
                     color_map.get(node, "blue") for node in all_nodes
                 ],  # customize node color
-            ),
-            link=dict(
-                source=query_result["source_idx"],
-                target=query_result["target_idx"],
-                value=query_result[columns["value"]],
-                color=[
+            },
+            link={
+                "source": query_result["source_idx"],
+                "target": query_result["target_idx"],
+                "value": query_result[columns["value"]],
+                "color": [
                     color_map.get(query_result[columns["source"]].iloc[i], "black")
                     for i in range(len(query_result))
                 ],  # customize link color
-            ),
+            },
         )
     )
     fig.update_layout(
