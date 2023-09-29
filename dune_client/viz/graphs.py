@@ -2,6 +2,7 @@
 Functions you can call to make different graphs
 """
 
+from typing import Union
 import plotly.graph_objects as go
 import colorlover as cl
 import pandas as pd
@@ -9,9 +10,9 @@ import pandas as pd
 # function to create Sankey diagram
 def create_sankey(
     query_result: pd.DataFrame,
-    predefined_colors: dict,
-    columns: dict,
-    viz_config: dict,
+    predefined_colors: dict[str, str],
+    columns: dict[str, str],
+    viz_config: dict[str, Union[int, float]],
     title: str = "unnamed",
 ):
     """

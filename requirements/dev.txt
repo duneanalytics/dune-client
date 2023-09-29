@@ -6,3 +6,5 @@ pytest>=7.4.1
 python-dotenv>=1.0.0
 mypy>=1.5.1
 aiounittest>=1.4.2
+colorlover>=0.3.0
+plotly>=5.9.0
