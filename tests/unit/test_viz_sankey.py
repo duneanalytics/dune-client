@@ -9,9 +9,9 @@ class TestCreateSankey(unittest.TestCase):
     def setUp(self):
         self.df = pd.DataFrame(
             {
-                "source": ["WBTC", "USDC"],
-                "target": ["USDC", "WBTC"],
-                "value": [2184, 2076],
+                "source_col": ["WBTC", "USDC"],
+                "target_col": ["USDC", "WBTC"],
+                "value_col": [2184, 2076],
             }
         )
 
@@ -36,7 +36,7 @@ class TestCreateSankey(unittest.TestCase):
 
     def test_missing_column(self):
         # Remove a required column from dataframe
-        df_without_target = self.df.drop(columns=["target"])
+        df_without_target = self.df.drop(columns=["target_col"])
         with self.assertRaises(ValueError):
             create_sankey(
                 df_without_target, self.predefined_colors, self.columns, self.viz_config
@@ -45,7 +45,7 @@ class TestCreateSankey(unittest.TestCase):
     def test_value_column_not_numeric(self):
         # Change the 'value' column to a non-numeric type
         df_with_str_values = self.df.copy()
-        df_with_str_values["value"] = ["10", "11"]
+        df_with_str_values["value_col"] = ["10", "11"]
         with self.assertRaises(ValueError):
             create_sankey(
                 df_with_str_values,
