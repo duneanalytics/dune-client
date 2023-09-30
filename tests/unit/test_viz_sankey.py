@@ -41,7 +41,7 @@ class TestCreateSankey(unittest.TestCase):
     def test_value_column_not_numeric(self):
         # Change the 'value' column to a non-numeric type
         df_with_str_values = self.df.copy()
-        df_with_str_values["value"] = ["10"] * len(df_with_str_values)
+        df_with_str_values["value"] = ["10", "11"]
         with self.assertRaises(ValueError):
             create_sankey(
                 df_with_str_values,

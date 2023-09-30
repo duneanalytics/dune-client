@@ -20,8 +20,8 @@ def create_sankey(
     title: str = "unnamed",
 ) -> Figure:
     """
-    Creates a Sankey diagram based on input query_result
-    , which must contain source, target, value columns
+    Creates a Sankey diagram based on input query_result,
+    which must contain source, target, value columns
     """
     # Check if the dataframe contains required columns
     required_columns = [columns["source"], columns["target"], columns["value"]]
