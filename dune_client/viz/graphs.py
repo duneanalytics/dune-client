@@ -21,7 +21,9 @@ def create_sankey(
 ) -> Figure:
     """
     Creates a Sankey diagram based on input query_result,
-    which must contain source, target, value columns
+    which must contain source, target, value columns.
+    Column names don't have to be exact same but there must be
+    these three columns conceptually and value column must be numeric.
     """
     # Check if the dataframe contains required columns
     required_columns = [columns["source"], columns["target"], columns["value"]]

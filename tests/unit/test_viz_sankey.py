@@ -20,7 +20,11 @@ class TestCreateSankey(unittest.TestCase):
             "WBTC": "rgb(247, 150, 38)",
         }
 
-        self.columns = {"source": "source", "target": "target", "value": "value"}
+        self.columns = {
+            "source": "source_col",
+            "target": "target_col",
+            "value": "value_col",
+        }
         self.viz_config: dict = {
             "node_pad": 15,
             "node_thickness": 20,
