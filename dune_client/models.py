@@ -107,6 +107,33 @@ class TimeData:
 
 
 @dataclass
+class ExecutionError:
+    """
+    Representation of Execution Error Response:
+
+    Example:
+    {
+        "type":"FAILED_TYPE_EXECUTION_FAILED",
+        "message":"line 24:13: Binary literal can only contain hexadecimal digits",
+        "metadata":{"line":24,"column":13}
+    }
+    """
+
+    type: str
+    message: str
+    metadata: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, str]) -> ExecutionError:
+        """Constructs an instance from a dict"""
+        return cls(
+            type=data.get("type", "unknown"),
+            message=data.get("message", "unknown"),
+            metadata=data.get("metadata", "unknown"),
+        )
+
+
+@dataclass
 class ExecutionStatusResponse:
     """
     Representation of Response from Dune's [Get] Execution Status endpoint
@@ -119,11 +146,13 @@ class ExecutionStatusResponse:
     queue_position: Optional[int]
     # this will be present when the query execution completes
     result_metadata: Optional[ResultMetadata]
+    error: Optional[ExecutionError]
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ExecutionStatusResponse:
         """Constructor from dictionary. See unit test for sample input."""
         dct: Optional[MetaData] = data.get("result_metadata")
+        error: Optional[dict[str, str]] = data.get("error")
         return cls(
             execution_id=data["execution_id"],
             query_id=int(data["query_id"]),
@@ -131,6 +160,7 @@ class ExecutionStatusResponse:
             state=ExecutionState(data["state"]),
             result_metadata=ResultMetadata.from_dict(dct) if dct else None,
             times=TimeData.from_dict(data),  # Sending the entire data dict
+            error=ExecutionError.from_dict(error) if error else None,
         )
 
     def __str__(self) -> str:
