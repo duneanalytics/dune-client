@@ -123,6 +123,7 @@ eth_traces,4474223
             times=TimeData.from_dict(self.status_response_data),
             result_metadata=None,
             queue_position=None,
+            error=None
         )
         self.assertEqual(
             expected, ExecutionStatusResponse.from_dict(self.status_response_data)
@@ -160,6 +161,7 @@ eth_traces,4474223
                 times=TimeData.from_dict(self.status_response_data),
                 result_metadata=ResultMetadata.from_dict(self.result_metadata_data),
                 queue_position=None,
+                error=None
             ),
             ExecutionStatusResponse.from_dict(self.status_response_data_completed),
         )
