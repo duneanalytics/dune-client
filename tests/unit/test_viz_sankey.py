@@ -5,7 +5,6 @@ from dune_client.viz.graphs import create_sankey
 
 
 class TestCreateSankey(unittest.TestCase):
-
     # Setting up a dataframe for testing
     def setUp(self):
         self.df = pd.DataFrame(
@@ -54,7 +53,6 @@ class TestCreateSankey(unittest.TestCase):
     # Mocking the visualization creation and just testing the processing logic
     @patch("plotly.graph_objects.Figure")
     def test_mocked_visualization(self, MockFigure):
-
         result = create_sankey(
             self.df, self.predefined_colors, self.columns, self.viz_config, "test"
         )

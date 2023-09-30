@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import colorlover as cl
 import pandas as pd
 
+
 # function to create Sankey diagram
 def create_sankey(
     query_result: pd.DataFrame,
