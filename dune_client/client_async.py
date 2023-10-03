@@ -271,7 +271,7 @@ class AsyncDuneClient(BaseDuneClient):
         This is a convenience method that uses refresh_csv underneath
         """
         try:
-            import pandas  # type: ignore # pylint: disable=import-outside-toplevel
+            import pandas  # pylint: disable=import-outside-toplevel
         except ImportError as exc:
             raise ImportError(
                 "dependency failure, pandas is required but missing"
