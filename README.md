@@ -57,10 +57,12 @@ Use `get_latest_results` to get the most recent query results without using exec
 You can specify a `max_age_hours` to re-run the query if the data is too outdated.
 
 ```python
+import pandas as pd
 from dune_client.client import DuneClient
 
 dune = DuneClient.from_env()
 results = dune.get_latest_result(1215383, max_age_hours=8)
+query_result = pd.DataFrame(query_result.result.rows)
 ```
 
 ## Paid Subscription Features
