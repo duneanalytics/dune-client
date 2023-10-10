@@ -118,6 +118,27 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
+    def get_latest_result_dataframe(
+        self,
+        query: Union[QueryBase, str, int],
+    ) -> Any:
+        """
+        GET the latest results for a query_id without re-executing the query
+        (doesn't use execution credits)
+        returns the result as a Pandas DataFrame
+
+        This is a convenience method that uses get_latest_result() + pandas.read_csv() underneath
+        """
+        try:
+            import pandas  # pylint: disable=import-outside-toplevel
+        except ImportError as exc:
+            raise ImportError(
+                "dependency failure, pandas is required but missing"
+            ) from exc
+
+        data = self.download_csv(query).data
+        return pandas.read_csv(data)
+
     def download_csv(self, query: Union[QueryBase, str, int]) -> ExecutionResultCSV:
         """
         Almost like an alias for `get_latest_result` but for the csv endpoint.
