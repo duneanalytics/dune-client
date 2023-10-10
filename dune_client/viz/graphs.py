@@ -5,10 +5,10 @@ Functions you can call to make different graphs
 from typing import Dict, Union
 
 # https://github.com/plotly/colorlover/issues/35
-import colorlover as cl  # type: ignore[import]
+import colorlover as cl  # type: ignore[import-untyped]
 import pandas as pd
-import plotly.graph_objects as go  # type: ignore[import]
-from plotly.graph_objs import Figure  # type: ignore[import]
+import plotly.graph_objects as go  # type: ignore[import-untyped]
+from plotly.graph_objs import Figure  # type: ignore[import-untyped]
 
 
 # function to create Sankey diagram
