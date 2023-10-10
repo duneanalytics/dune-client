@@ -257,6 +257,6 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
             status = self.get_execution_status(job_id)
         if status.state == ExecutionState.FAILED:
             self.logger.error(status)
-            raise QueryFailed(f"{status}. Perhaps your query took too long to run!")
+            raise QueryFailed(f"Error data: {status.error}")
 
         return job_id
