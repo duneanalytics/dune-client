@@ -195,6 +195,8 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         params: Optional[list[QueryParameter]] = None,
         is_private: bool = True,
         archive_after: bool = True,
+        performance: Optional[str] = None,
+        name: str = "API Query",
     ) -> ResultsResponse:
         """
         Allows user to provide execute raw_sql via the CRUD interface
@@ -202,8 +204,8 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         - Query is by default made private and archived after execution.
         Requires premium subscription!
         """
-        query = self.create_query("API Query", query_sql, params, is_private)
-        results = self.run_query(query.base)
+        query = self.create_query(name, query_sql, params, is_private)
+        results = self.run_query(query=query.base, performance=performance)
         if archive_after:
             self.archive_query(query.base.query_id)
         return results
