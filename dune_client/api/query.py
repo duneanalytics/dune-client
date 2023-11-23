@@ -33,7 +33,7 @@ class QueryAPI(BaseRouter):
         payload = {
             "name": name,
             "query_sql": query_sql,
-            "private": is_private,
+            "is_private": is_private,
         }
         if params is not None:
             payload["parameters"] = [p.to_dict() for p in params]

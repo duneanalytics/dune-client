@@ -1,2 +1,4 @@
 [MASTER]
 disable=fixme,logging-fstring-interpolation
+[DESIGN]
+max-args=10
