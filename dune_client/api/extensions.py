@@ -207,10 +207,8 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         """
         query = self.create_query(name, query_sql, params, is_private)
         results = self.run_query(
-            query=query.base,
-            performance=performance,
-            ping_frequency=ping_frequency
-            )
+            query=query.base, performance=performance, ping_frequency=ping_frequency
+        )
         if archive_after:
             self.archive_query(query.base.query_id)
         return results
