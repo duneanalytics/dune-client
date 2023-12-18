@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import asyncio
 from io import BytesIO
-from typing import Any, Optional, Union
+from time import time
+from typing import Any, Callable, Optional, Union
 
 from aiohttp import (
     ClientSession,
@@ -17,7 +18,7 @@ from aiohttp import (
     ClientTimeout,
 )
 
-from dune_client.api.base import BaseDuneClient
+from dune_client.api.base import BaseDuneClient, RateLimitedError
 from dune_client.models import (
     ExecutionResponse,
     ExecutionResultCSV,
@@ -77,6 +78,9 @@ class AsyncDuneClient(BaseDuneClient):
         await self.disconnect()
 
     async def _handle_response(self, response: ClientResponse) -> Any:
+        if response.status == 429:
+            raise RateLimitedError
+
         try:
             # Some responses can be decoded and converted to DuneErrors
             response_json = await response.json()
@@ -90,6 +94,18 @@ class AsyncDuneClient(BaseDuneClient):
     def _route_url(self, route: str) -> str:
         return f"{self.api_version}{route}"
 
+    async def _handle_ratelimit(self, call: Callable[..., Any]) -> Any:
+        """Generic wrapper around request callables. If the request fails due to rate limiting,
+        it will retry it up to five times, sleeping i * 5s in between"""
+        for i in range(5):
+            try:
+                return await call()
+            except RateLimitedError:
+                self.logger.warning(f"Rate limited. Retrying in {i * 5} seconds.")
+                time.sleep(i * 5)
+
+        raise RateLimitedError
+
     async def _get(
         self,
         route: str,
@@ -97,29 +113,37 @@ class AsyncDuneClient(BaseDuneClient):
         raw: bool = False,
     ) -> Any:
         url = self._route_url(route)
-        if self._session is None:
-            raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"GET received input url={url}")
-        response = await self._session.get(
-            url=url,
-            headers=self.default_headers(),
-            params=params,
-        )
-        if raw:
-            return response
-        return await self._handle_response(response)
+
+        async def _get() -> Any:
+            if self._session is None:
+                raise ValueError("Client is not connected; call `await cl.connect()`")
+            response = await self._session.get(
+                url=url,
+                headers=self.default_headers(),
+                params=params,
+            )
+            if raw:
+                return response
+            return await self._handle_response(response)
+
+        return await self._handle_ratelimit(_get)
 
     async def _post(self, route: str, params: Any) -> Any:
         url = self._route_url(route)
-        if self._session is None:
-            raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"POST received input url={url}, params={params}")
-        response = await self._session.post(
-            url=url,
-            json=params,
-            headers=self.default_headers(),
-        )
-        return await self._handle_response(response)
+
+        async def _post() -> Any:
+            if self._session is None:
+                raise ValueError("Client is not connected; call `await cl.connect()`")
+            response = await self._session.post(
+                url=url,
+                json=params,
+                headers=self.default_headers(),
+            )
+            return await self._handle_response(response)
+
+        return await self._handle_ratelimit(_post)
 
     async def execute(
         self, query: QueryBase, performance: Optional[str] = None
