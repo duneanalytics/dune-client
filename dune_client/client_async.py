@@ -18,7 +18,7 @@ from aiohttp import (
     ClientTimeout,
 )
 
-from dune_client.api.base import BaseDuneClient, RateLimitedError
+from dune_client.api.base import BaseDuneClient
 from dune_client.models import (
     ExecutionResponse,
     ExecutionResultCSV,

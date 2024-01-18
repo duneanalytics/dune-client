@@ -8,17 +8,12 @@ from __future__ import annotations
 import logging.config
 import os
 from json import JSONDecodeError
-from time import time
-from typing import Callable, Dict, Optional, Any
+from typing import Dict, Optional, Any
 
-import requests
-from requests import Response
+from requests import Response, Session
+from requests.adapters import HTTPAdapter, Retry
 
 from dune_client.util import get_package_version
-
-
-class RateLimitedError(Exception):
-    """Special Error for Rate Limited Requests"""
 
 
 # pylint: disable=too-few-public-methods
@@ -43,6 +38,17 @@ class BaseDuneClient:
         self.performance = performance
         self.logger = logging.getLogger(__name__)
         logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
+        retry_strategy = Retry(
+            total=5,
+            backoff_factor=0.5,
+            status_forcelist={429, 500, 502, 503, 504},
+            allowed_methods={'GET', 'POST', 'PATCH'},
+            raise_on_status=True,
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.http = Session()
+        self.http.mount("https://", adapter)
+        self.http.mount("http://", adapter)
 
     @classmethod
     def from_env(cls) -> BaseDuneClient:
@@ -76,8 +82,6 @@ class BaseRouter(BaseDuneClient):
 
     def _handle_response(self, response: Response) -> Any:
         """Generic response handler utilized by all Dune API routes"""
-        if response.status_code == 429:
-            raise RateLimitedError
         try:
             # Some responses can be decoded and converted to DuneErrors
             response_json = response.json()
@@ -91,18 +95,6 @@ class BaseRouter(BaseDuneClient):
     def _route_url(self, route: str) -> str:
         return f"{self.base_url}{self.api_version}{route}"
 
-    def _handle_ratelimit(self, call: Callable[..., Any]) -> Any:
-        """Generic wrapper around request callables. If the request fails due to rate limiting,
-        it will retry it up to five times, sleeping i * 5s in between"""
-        for i in range(5):
-            try:
-                return call()
-            except RateLimitedError:
-                self.logger.warning(f"Rate limited. Retrying in {i * 5} seconds.")
-                time.sleep(i * 5)
-
-        raise RateLimitedError
-
     def _get(
         self,
         route: str,
@@ -112,49 +104,36 @@ class BaseRouter(BaseDuneClient):
         """Generic interface for the GET method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"GET received input url={url}")
-
-        def _get() -> Any:
-            response = requests.get(
-                url=url,
-                headers=self.default_headers(),
-                timeout=self.request_timeout,
-                params=params,
-            )
-            if raw:
-                return response
-            return self._handle_response(response)
-
-        return self._handle_ratelimit(_get)
+        response = self.http.get(
+            url=url,
+            headers=self.default_headers(),
+            timeout=self.request_timeout,
+            params=params,
+        )
+        if raw:
+            return response
+        return self._handle_response(response)
 
     def _post(self, route: str, params: Optional[Any] = None) -> Any:
         """Generic interface for the POST method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"POST received input url={url}, params={params}")
-
-        def _post() -> Any:
-            response = requests.post(
-                url=url,
-                json=params,
-                headers=self.default_headers(),
-                timeout=self.request_timeout,
-            )
-            return self._handle_response(response)
-
-        return self._handle_ratelimit(_post)
+        response = self.http.post(
+            url=url,
+            json=params,
+            headers=self.default_headers(),
+            timeout=self.request_timeout,
+        )
+        return self._handle_response(response)
 
     def _patch(self, route: str, params: Any) -> Any:
         """Generic interface for the PATCH method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"PATCH received input url={url}, params={params}")
-
-        def _patch() -> Any:
-            response = requests.request(
-                method="PATCH",
-                url=url,
-                json=params,
-                headers=self.default_headers(),
-                timeout=self.request_timeout,
-            )
-            return self._handle_response(response)
-
-        return self._handle_ratelimit(_patch)
+        response = self.http.patch(
+            url=url,
+            json=params,
+            headers=self.default_headers(),
+            timeout=self.request_timeout,
+        )
+        return self._handle_response(response)
