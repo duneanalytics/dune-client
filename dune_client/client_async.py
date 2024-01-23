@@ -7,9 +7,10 @@ from __future__ import annotations
 
 import asyncio
 from io import BytesIO
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from aiohttp import (
+    ClientResponseError,
     ClientSession,
     ClientResponse,
     ContentTypeError,
@@ -29,6 +30,29 @@ from dune_client.models import (
 )
 
 from dune_client.query import QueryBase, parse_query_object_or_id
+
+
+class RetryableError(Exception):
+    """
+    Internal exception used to signal that the request should be retried
+    """
+
+    def __init__(self, base_error: ClientResponseError) -> None:
+        self.base_error = base_error
+
+
+class MaxRetryError(Exception):
+    """
+    This exception is raised when the maximum number of retries is exceeded,
+    e.g. due to rate limiting or internal server errors
+    """
+
+    def __init__(self, url: str, reason: Exception | None = None) -> None:
+        self.reason = reason
+
+        message = f"Max retries exceeded with url: {url} (Caused by {reason!r})"
+
+        super().__init__(message)
 
 
 # pylint: disable=duplicate-code
@@ -77,6 +101,13 @@ class AsyncDuneClient(BaseDuneClient):
         await self.disconnect()
 
     async def _handle_response(self, response: ClientResponse) -> Any:
+        if response.status in {429, 502, 503, 504}:
+            try:
+                response.raise_for_status()
+            except ClientResponseError as err:
+                raise RetryableError(
+                    base_error=err,
+                ) from err
         try:
             # Some responses can be decoded and converted to DuneErrors
             response_json = await response.json()
@@ -90,6 +121,24 @@ class AsyncDuneClient(BaseDuneClient):
     def _route_url(self, route: str) -> str:
         return f"{self.api_version}{route}"
 
+    async def _handle_ratelimit(self, call: Callable[..., Any], url: str) -> Any:
+        """Generic wrapper around request callables. If the request fails due to rate limiting,
+        or server side errors, it will retry it up to five times, sleeping i * 5s in between
+        """
+        backoff_factor = 0.5
+        error: Optional[ClientResponseError] = None
+        for i in range(5):
+            try:
+                return await call()
+            except RetryableError as e:
+                self.logger.warning(
+                    f"Rate limited or internal error. Retrying in {i * 5} seconds..."
+                )
+                error = e.base_error
+                await asyncio.sleep(i**2 * backoff_factor)
+
+        raise MaxRetryError(url, error)
+
     async def _get(
         self,
         route: str,
@@ -97,29 +146,37 @@ class AsyncDuneClient(BaseDuneClient):
         raw: bool = False,
     ) -> Any:
         url = self._route_url(route)
-        if self._session is None:
-            raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"GET received input url={url}")
-        response = await self._session.get(
-            url=url,
-            headers=self.default_headers(),
-            params=params,
-        )
-        if raw:
-            return response
-        return await self._handle_response(response)
+
+        async def _get() -> Any:
+            if self._session is None:
+                raise ValueError("Client is not connected; call `await cl.connect()`")
+            response = await self._session.get(
+                url=url,
+                headers=self.default_headers(),
+                params=params,
+            )
+            if raw:
+                return response
+            return await self._handle_response(response)
+
+        return await self._handle_ratelimit(_get, route)
 
     async def _post(self, route: str, params: Any) -> Any:
         url = self._route_url(route)
-        if self._session is None:
-            raise ValueError("Client is not connected; call `await cl.connect()`")
         self.logger.debug(f"POST received input url={url}, params={params}")
-        response = await self._session.post(
-            url=url,
-            json=params,
-            headers=self.default_headers(),
-        )
-        return await self._handle_response(response)
+
+        async def _post() -> Any:
+            if self._session is None:
+                raise ValueError("Client is not connected; call `await cl.connect()`")
+            response = await self._session.post(
+                url=url,
+                json=params,
+                headers=self.default_headers(),
+            )
+            return await self._handle_response(response)
+
+        return await self._handle_ratelimit(_post, route)
 
     async def execute(
         self, query: QueryBase, performance: Optional[str] = None

@@ -10,8 +10,8 @@ import os
 from json import JSONDecodeError
 from typing import Dict, Optional, Any
 
-import requests
-from requests import Response
+from requests import Response, Session
+from requests.adapters import HTTPAdapter, Retry
 
 from dune_client.util import get_package_version
 
@@ -38,6 +38,17 @@ class BaseDuneClient:
         self.performance = performance
         self.logger = logging.getLogger(__name__)
         logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
+        retry_strategy = Retry(
+            total=5,
+            backoff_factor=0.5,
+            status_forcelist={429, 502, 503, 504},
+            allowed_methods={"GET", "POST", "PATCH"},
+            raise_on_status=True,
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.http = Session()
+        self.http.mount("https://", adapter)
+        self.http.mount("http://", adapter)
 
     @classmethod
     def from_env(cls) -> BaseDuneClient:
@@ -93,7 +104,7 @@ class BaseRouter(BaseDuneClient):
         """Generic interface for the GET method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"GET received input url={url}")
-        response = requests.get(
+        response = self.http.get(
             url=url,
             headers=self.default_headers(),
             timeout=self.request_timeout,
@@ -107,7 +118,7 @@ class BaseRouter(BaseDuneClient):
         """Generic interface for the POST method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"POST received input url={url}, params={params}")
-        response = requests.post(
+        response = self.http.post(
             url=url,
             json=params,
             headers=self.default_headers(),
@@ -119,8 +130,7 @@ class BaseRouter(BaseDuneClient):
         """Generic interface for the PATCH method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"PATCH received input url={url}, params={params}")
-        response = requests.request(
-            method="PATCH",
+        response = self.http.patch(
             url=url,
             json=params,
             headers=self.default_headers(),
