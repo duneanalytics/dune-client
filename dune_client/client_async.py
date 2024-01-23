@@ -37,10 +37,7 @@ class RetryableError(Exception):
     Internal exception used to signal that the request should be retried
     """
 
-    def __init__(
-        self,
-        base_error: ClientResponseError
-    ) -> None:
+    def __init__(self, base_error: ClientResponseError) -> None:
         self.base_error = base_error
 
 
@@ -50,9 +47,7 @@ class MaxRetryError(Exception):
     e.g. due to rate limiting or internal server errors
     """
 
-    def __init__(
-        self, url: str, reason: Exception | None = None
-    ) -> None:
+    def __init__(self, url: str, reason: Exception | None = None) -> None:
         self.reason = reason
 
         message = f"Max retries exceeded with url: {url} (Caused by {reason!r})"
@@ -128,7 +123,8 @@ class AsyncDuneClient(BaseDuneClient):
 
     async def _handle_ratelimit(self, call: Callable[..., Any], url: str) -> Any:
         """Generic wrapper around request callables. If the request fails due to rate limiting,
-        or server side errors, it will retry it up to five times, sleeping i * 5s in between"""
+        or server side errors, it will retry it up to five times, sleeping i * 5s in between
+        """
         backoff_factor = 0.5
         error: Optional[ClientResponseError] = None
         for i in range(5):
@@ -136,7 +132,8 @@ class AsyncDuneClient(BaseDuneClient):
                 return await call()
             except RetryableError as e:
                 self.logger.warning(
-                    f"Rate limited or internal error. Retrying in {i * 5} seconds...")
+                    f"Rate limited or internal error. Retrying in {i * 5} seconds..."
+                )
                 error = e.base_error
                 await asyncio.sleep(i**2 * backoff_factor)
 
