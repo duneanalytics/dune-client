@@ -101,7 +101,7 @@ class AsyncDuneClient(BaseDuneClient):
         await self.disconnect()
 
     async def _handle_response(self, response: ClientResponse) -> Any:
-        if response.status in {429, 500, 502, 503, 504}:
+        if response.status in {429, 502, 503, 504}:
             try:
                 response.raise_for_status()
             except ClientResponseError as err:
