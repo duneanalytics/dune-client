@@ -9,8 +9,7 @@ $(VENV)/bin/activate: requirements/dev.txt
 	$(PIP) install -r requirements/dev.txt
 
 
-install:
-	make $(VENV)/bin/activate
+install: $(VENV)/bin/activate
 
 clean:
 	rm -rf __pycache__
@@ -24,10 +23,7 @@ lint:
 types:
 	mypy dune_client/ --strict
 
-check:
-	make fmt
-	make lint
-	make types
+check: fmt lint types
 
 test-unit:
 	python -m pytest tests/unit
@@ -35,6 +31,4 @@ test-unit:
 test-e2e:
 	python -m pytest tests/e2e
 
-test-all:
-	make test-unit
-	make test-e2e
+test-all: test-unit test-e2e
