@@ -3,6 +3,7 @@ Basic Dune Client Class responsible for refreshing Dune Queries
 Framework built on Dune's API Documentation
 https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e003a
 """
+
 from dune_client.api.extensions import ExtendedAPI
 
 

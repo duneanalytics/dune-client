@@ -1,6 +1,7 @@
 """
 Extended functionality for the ExecutionAPI
 """
+
 from __future__ import annotations
 
 import logging

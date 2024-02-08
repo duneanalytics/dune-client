@@ -4,6 +4,7 @@ create, read, update, make public/private or archive queries beyond the Dune IDE
 Enables more flexible integration of Dune API into your workflow
 and freeing you from UI-exclusive query editing.
 """
+
 from __future__ import annotations
 from typing import Optional, Any
 

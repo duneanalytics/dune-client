@@ -1,4 +1,5 @@
 """File Reader and Writer for DuneRecords"""
+
 from __future__ import annotations
 
 import logging

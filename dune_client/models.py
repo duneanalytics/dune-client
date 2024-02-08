@@ -1,6 +1,7 @@
 """
 Dataclasses encoding response data from Dune API.
 """
+
 from __future__ import annotations
 
 import logging.config

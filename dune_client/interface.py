@@ -1,6 +1,7 @@
 """
 Abstract class for a basic Dune Interface with refresh method used by Query Runner.
 """
+
 import abc
 from typing import Any
 

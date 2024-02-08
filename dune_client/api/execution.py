@@ -5,6 +5,7 @@ Further Documentation:
     execution: https://dune.com/docs/api/api-reference/execute-queries/
     get results: https://dune.com/docs/api/api-reference/get-results/
 """
+
 from io import BytesIO
 from typing import Optional
 
