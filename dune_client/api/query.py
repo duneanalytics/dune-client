@@ -16,7 +16,7 @@ from dune_client.types import QueryParameter
 
 class QueryAPI(BaseRouter):
     """
-    Implementation of Query API (aka CRUD) Operations - premium subscription only
+    Implementation of Query API (aka CRUD) Operations - Plus subscription only
     https://dune.com/docs/api/api-reference/edit-queries/
     """
 

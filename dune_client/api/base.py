@@ -16,6 +16,12 @@ from requests.adapters import HTTPAdapter, Retry
 
 from dune_client.util import get_package_version
 
+# Headers used for pagination in CSV results
+DUNE_CSV_NEXT_URI_HEADER = "x-dune-next-uri"
+DUNE_CSV_NEXT_OFFSET_HEADER = "x-dune-next-offset"
+# Default maximum number of rows to retrieve per batch of results
+MAX_NUM_ROWS_PER_BATCH = 32_000
+
 
 # pylint: disable=too-few-public-methods
 class BaseDuneClient:
@@ -98,15 +104,23 @@ class BaseRouter(BaseDuneClient):
 
     def _get(
         self,
-        route: str,
+        route: Optional[str] = None,
         params: Optional[Any] = None,
         raw: bool = False,
+        url: Optional[str] = None,
     ) -> Any:
         """Generic interface for the GET method of a Dune API request"""
-        url = self._route_url(route)
-        self.logger.debug(f"GET received input url={url}")
+        if route is not None:
+            final_url = self._route_url(route)
+        elif url is not None:
+            final_url = url
+        else:
+            assert route is not None or url is not None
+
+        self.logger.debug(f"GET received input url={final_url}")
+
         response = self.http.get(
-            url=url,
+            url=final_url,
             headers=self.default_headers(),
             timeout=self.request_timeout,
             params=params,

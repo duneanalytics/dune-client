@@ -13,7 +13,7 @@ from typing import Any, Dict
 
 from dune_client.util import postgres_date
 
-DuneRecord = Dict[str, str]
+DuneRecord = Dict[str, Any]
 
 
 # pylint: disable=too-few-public-methods

@@ -206,15 +206,34 @@ class AsyncDuneClient(BaseDuneClient):
         except KeyError as err:
             raise DuneError(response_json, "ExecutionStatusResponse", err) from err
 
-    async def get_result(self, job_id: str) -> ResultsResponse:
+    async def get_result(
+        self,
+        job_id: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = await self._get(route=f"/execution/{job_id}/results")
+        params = {}
+        if limit is not None:
+            params["limit"] = limit
+        if offset is not None:
+            params["offset"] = offset
+
+        response_json = await self._get(
+            route=f"/execution/{job_id}/results",
+            params=params,
+        )
         try:
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
-    async def get_result_csv(self, job_id: str) -> ExecutionResultCSV:
+    async def get_result_csv(
+        self,
+        job_id: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
 
@@ -222,9 +241,12 @@ class AsyncDuneClient(BaseDuneClient):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
+        params = {}
+        if limit is not None:
+            params["limit"] = limit
+        if offset is not None:
+            params["offset"] = offset
         route = f"/execution/{job_id}/results/csv"
-        url = self._route_url(f"/execution/{job_id}/results/csv")
-        self.logger.debug(f"GET CSV received input url={url}")
         response = await self._get(route=route, raw=True)
         response.raise_for_status()
         return ExecutionResultCSV(data=BytesIO(await response.content.read(-1)))
