@@ -216,6 +216,8 @@ class ResultMetadata:
         Enables combining results by updating the metadata associated to
         an execution by using the `+` operator.
         """
+        assert other is not None
+
         self.row_count += other.row_count
         self.result_set_bytes += other.result_set_bytes
         self.datapoint_count += other.datapoint_count
@@ -241,6 +243,8 @@ class ExecutionResultCSV:
 
     def __add__(self, other: ExecutionResultCSV) -> ExecutionResultCSV:
         assert other is not None
+        assert other.data is not None
+
         self.next_uri = other.next_uri
         self.next_offset = other.next_offset
 
@@ -280,7 +284,7 @@ class ExecutionResult:
         """
         Enables combining results using the `+` operator.
         """
-        self.rows += other.rows
+        self.rows.extend(other.rows)
         self.metadata += other.metadata
 
         return self
