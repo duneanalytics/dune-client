@@ -343,7 +343,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         """
         next_uri = results.next_uri
         while next_uri is not None:
-            batch = self.get_execution_results_by_url(url=next_uri)
+            batch = self._get_execution_results_by_url(url=next_uri)
             results += batch
             next_uri = batch.next_uri
 
@@ -358,7 +358,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         """
         next_uri = results.next_uri
         while next_uri is not None:
-            batch = self.get_execution_results_csv_by_url(url=next_uri)
+            batch = self._get_execution_results_csv_by_url(url=next_uri)
             results += batch
             next_uri = batch.next_uri
 

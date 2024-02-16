@@ -86,20 +86,18 @@ class ExecutionAPI(BaseRouter):
 
         route = f"/execution/{job_id}/results"
         url = self._route_url(route)
-        return self.get_execution_results_by_url(url=url, params=params)
+        return self._get_execution_results_by_url(url=url, params=params)
 
-    def get_execution_results_by_url(
+    def _get_execution_results_by_url(
         self,
         url: str,
         params: Optional[Dict[str, Any]] = None,
     ) -> ResultsResponse:
         """
         GET results from Dune API with a given URL. This is particularly useful for pagination.
-
-        No checks are performed on the URL; it is your responsibility to ensure
-        it is a legitimate URL, or one returned directly by the API.
-        The API key will be sent to the server.
         """
+        assert url.startswith(self.base_url)
+
         response_json = self._get(url=url, params=params)
         try:
             return ResultsResponse.from_dict(response_json)
@@ -127,9 +125,9 @@ class ExecutionAPI(BaseRouter):
 
         route = f"/execution/{job_id}/results/csv"
         url = self._route_url(route)
-        return self.get_execution_results_csv_by_url(url=url, params=params)
+        return self._get_execution_results_csv_by_url(url=url, params=params)
 
-    def get_execution_results_csv_by_url(
+    def _get_execution_results_csv_by_url(
         self,
         url: str,
         params: Optional[Dict[str, Any]] = None,
@@ -138,14 +136,12 @@ class ExecutionAPI(BaseRouter):
         GET results in CSV format from Dune API with a given URL. This is particularly
         useful for pagination
 
-        No checks are performed on the URL; it is your responsibility to ensure
-        it is a legitimate URL, or one returned directly by the API.
-        The API key will be sent to the server.
-
         this API only returns the raw data in CSV format, it is faster & lighterweight
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
+        assert url.startswith(self.base_url)
+
         response = self._get(url=url, params=params, raw=True)
         response.raise_for_status()
         next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
