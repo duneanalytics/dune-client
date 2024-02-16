@@ -19,7 +19,11 @@ from aiohttp import (
     ClientTimeout,
 )
 
-from dune_client.api.base import BaseDuneClient
+from dune_client.api.base import (
+    BaseDuneClient,
+    DUNE_CSV_NEXT_URI_HEADER,
+    DUNE_CSV_NEXT_OFFSET_HEADER,
+)
 from dune_client.models import (
     ExecutionResponse,
     ExecutionResultCSV,
@@ -249,10 +253,20 @@ class AsyncDuneClient(BaseDuneClient):
         route = f"/execution/{job_id}/results/csv"
         response = await self._get(route=route, raw=True)
         response.raise_for_status()
-        return ExecutionResultCSV(data=BytesIO(await response.content.read(-1)))
+
+        next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
+        next_offset = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
+        return ExecutionResultCSV(
+            data=BytesIO(await response.content.read(-1)),
+            next_uri=next_uri,
+            next_offset=next_offset,
+        )
 
     async def get_latest_result(
-        self, query: Union[QueryBase, str, int]
+        self,
+        query: Union[QueryBase, str, int],
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> ResultsResponse:
         """
         GET the latest results for a query_id without having to execute the query again.
@@ -262,6 +276,14 @@ class AsyncDuneClient(BaseDuneClient):
         https://dune.com/docs/api/api-reference/latest_results/
         """
         params, query_id = parse_query_object_or_id(query)
+
+        if params is None:
+            params = {}
+        if limit is not None:
+            params["limit"] = limit
+        if offset is not None:
+            params["offset"] = offset
+
         response_json = await self._get(
             route=f"/query/{query_id}/results",
             params=params,
