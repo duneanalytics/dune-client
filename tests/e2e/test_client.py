@@ -32,6 +32,10 @@ class TestDuneClient(unittest.TestCase):
                 QueryParameter.enum_type(name="ListField", value="Option 1"),
             ],
         )
+        self.multi_rows_query = QueryBase(
+            name="Query that returns multiple rows",
+            query_id=3435763,
+        )
         self.valid_api_key = os.environ["DUNE_API_KEY"]
 
     def copy_query_and_change_parameters(self) -> QueryBase:
@@ -66,6 +70,25 @@ class TestDuneClient(unittest.TestCase):
         results = dune.run_query(self.query).get_rows()
         self.assertGreater(len(results), 0)
 
+    def test_run_query_paginated(self):
+        # Arrange
+        dune = DuneClient(self.valid_api_key)
+
+        # Act
+        results = dune.run_query(self.multi_rows_query, batch_size=1).get_rows()
+
+        # Assert
+        self.assertEqual(
+            results,
+            [
+                {"number": 1},
+                {"number": 2},
+                {"number": 3},
+                {"number": 4},
+                {"number": 5},
+            ],
+        )
+
     def test_run_query_performance_large(self):
         dune = DuneClient(self.valid_api_key)
         results = dune.run_query(self.query, performance="large").get_rows()
@@ -86,7 +109,7 @@ class TestDuneClient(unittest.TestCase):
                 {
                     "text_field": "different word",
                     "number_field": 22,
-                    "date_field": "1991-01-01 00:00:00.000",
+                    "date_field": "1991-01-01T00:00:00Z",
                     "list_field": "Option 2",
                 }
             ],
@@ -197,6 +220,26 @@ class TestDuneClient(unittest.TestCase):
             True,
         )
 
+    def test_download_csv_with_pagination(self):
+        # Arrange
+        client = DuneClient(self.valid_api_key)
+        client.run_query(self.multi_rows_query)
+
+        # Act
+        result_csv = client.download_csv(self.multi_rows_query.query_id, batch_size=1)
+
+        # Assert
+        self.assertEqual(
+            pandas.read_csv(result_csv.data).to_dict(orient="records"),
+            [
+                {"number": 1},
+                {"number": 2},
+                {"number": 3},
+                {"number": 4},
+                {"number": 5},
+            ],
+        )
+
     def test_download_csv_success_by_id(self):
         client = DuneClient(self.valid_api_key)
         new_query = self.copy_query_and_change_parameters()
@@ -211,7 +254,7 @@ class TestDuneClient(unittest.TestCase):
                 {
                     "text_field": "different word",
                     "number_field": 22,
-                    "date_field": "1991-01-01 00:00:00.000",
+                    "date_field": "1991-01-01T00:00:00Z",
                     "list_field": "Option 2",
                 }
             ],
@@ -233,7 +276,7 @@ class TestDuneClient(unittest.TestCase):
             pandas.read_csv(result_csv.data).to_dict(orient="records"),
             [
                 {
-                    "date_field": "2022-05-04 00:00:00.000",
+                    "date_field": "2022-05-04T00:00:00Z",
                     "list_field": "Option 1",
                     "number_field": 3.1415926535,
                     "text_field": "Plain Text",

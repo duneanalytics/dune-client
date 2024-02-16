@@ -1,4 +1,5 @@
 """Utility methods for package."""
+
 from datetime import datetime, timezone
 from typing import Optional
 

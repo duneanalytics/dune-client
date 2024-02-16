@@ -1,6 +1,7 @@
 """
 Data Classes Representing a Dune Query
 """
+
 from __future__ import annotations
 import urllib.parse
 from dataclasses import dataclass
@@ -11,7 +12,7 @@ from dune_client.types import QueryParameter
 
 def parse_query_object_or_id(
     query: Union[QueryBase, str, int],
-) -> tuple[dict[str, str] | None, int]:
+) -> tuple[dict[str, Any] | None, int]:
     """
     Users are allowed to pass QueryBase or ID into some functions.
     This method handles both scenarios, returning a pair of the form (params, query_id)

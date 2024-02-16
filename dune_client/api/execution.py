@@ -5,12 +5,17 @@ Further Documentation:
     execution: https://dune.com/docs/api/api-reference/execute-queries/
     get results: https://dune.com/docs/api/api-reference/get-results/
 """
+
 from io import BytesIO
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from deprecated import deprecated
 
-from dune_client.api.base import BaseRouter
+from dune_client.api.base import (
+    BaseRouter,
+    DUNE_CSV_NEXT_URI_HEADER,
+    DUNE_CSV_NEXT_OFFSET_HEADER,
+)
 from dune_client.models import (
     ExecutionResponse,
     ExecutionStatusResponse,
@@ -66,15 +71,45 @@ class ExecutionAPI(BaseRouter):
         except KeyError as err:
             raise DuneError(response_json, "ExecutionStatusResponse", err) from err
 
-    def get_execution_results(self, job_id: str) -> ResultsResponse:
+    def get_execution_results(
+        self,
+        job_id: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = self._get(route=f"/execution/{job_id}/results")
+        params = {}
+        if limit is not None:
+            params["limit"] = limit
+        if offset is not None:
+            params["offset"] = offset
+
+        route = f"/execution/{job_id}/results"
+        url = self._route_url(route)
+        return self._get_execution_results_by_url(url=url, params=params)
+
+    def _get_execution_results_by_url(
+        self,
+        url: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> ResultsResponse:
+        """
+        GET results from Dune API with a given URL. This is particularly useful for pagination.
+        """
+        assert url.startswith(self.base_url)
+
+        response_json = self._get(url=url, params=params)
         try:
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
-    def get_execution_results_csv(self, job_id: str) -> ExecutionResultCSV:
+    def get_execution_results_csv(
+        self,
+        job_id: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
 
@@ -82,10 +117,40 @@ class ExecutionAPI(BaseRouter):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
+        params = {}
+        if limit is not None:
+            params["limit"] = limit
+        if offset is not None:
+            params["offset"] = offset
+
         route = f"/execution/{job_id}/results/csv"
-        response = self._get(route=route, raw=True)
+        url = self._route_url(route)
+        return self._get_execution_results_csv_by_url(url=url, params=params)
+
+    def _get_execution_results_csv_by_url(
+        self,
+        url: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> ExecutionResultCSV:
+        """
+        GET results in CSV format from Dune API with a given URL. This is particularly
+        useful for pagination
+
+        this API only returns the raw data in CSV format, it is faster & lighterweight
+        use this method for large results where you want lower CPU and memory overhead
+        if you need metadata information use get_results() or get_status()
+        """
+        assert url.startswith(self.base_url)
+
+        response = self._get(url=url, params=params, raw=True)
         response.raise_for_status()
-        return ExecutionResultCSV(data=BytesIO(response.content))
+        next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
+        next_offset = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
+        return ExecutionResultCSV(
+            data=BytesIO(response.content),
+            next_uri=next_uri,
+            next_offset=next_offset,
+        )
 
     #######################
     # Deprecated Functions:

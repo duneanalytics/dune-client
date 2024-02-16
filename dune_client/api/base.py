@@ -3,6 +3,7 @@ Basic Dune Client Class responsible for refreshing Dune Queries
 Framework built on Dune's API Documentation
 https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e003a
 """
+
 from __future__ import annotations
 
 import logging.config
@@ -14,6 +15,12 @@ from requests import Response, Session
 from requests.adapters import HTTPAdapter, Retry
 
 from dune_client.util import get_package_version
+
+# Headers used for pagination in CSV results
+DUNE_CSV_NEXT_URI_HEADER = "x-dune-next-uri"
+DUNE_CSV_NEXT_OFFSET_HEADER = "x-dune-next-offset"
+# Default maximum number of rows to retrieve per batch of results
+MAX_NUM_ROWS_PER_BATCH = 32_000
 
 
 # pylint: disable=too-few-public-methods
@@ -92,20 +99,29 @@ class BaseRouter(BaseDuneClient):
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
 
-    def _route_url(self, route: str) -> str:
-        return f"{self.base_url}{self.api_version}{route}"
+    def _route_url(self, route: Optional[str] = None, url: Optional[str] = None) -> str:
+        if route is not None:
+            final_url = f"{self.base_url}{self.api_version}{route}"
+        elif url is not None:
+            final_url = url
+        else:
+            assert route is not None or url is not None
+
+        return final_url
 
     def _get(
         self,
-        route: str,
+        route: Optional[str] = None,
         params: Optional[Any] = None,
         raw: bool = False,
+        url: Optional[str] = None,
     ) -> Any:
         """Generic interface for the GET method of a Dune API request"""
-        url = self._route_url(route)
-        self.logger.debug(f"GET received input url={url}")
+        final_url = self._route_url(route=route, url=url)
+        self.logger.debug(f"GET received input url={final_url}")
+
         response = self.http.get(
-            url=url,
+            url=final_url,
             headers=self.default_headers(),
             timeout=self.request_timeout,
             params=params,

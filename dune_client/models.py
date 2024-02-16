@@ -1,6 +1,7 @@
 """
 Dataclasses encoding response data from Dune API.
 """
+
 from __future__ import annotations
 
 import logging.config
@@ -8,6 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from io import BytesIO
+from os import SEEK_END
 from typing import Optional, Any, Union, List, Dict
 
 from dateutil.parser import parse
@@ -48,13 +50,14 @@ class ExecutionState(Enum):
     PENDING = "QUERY_STATE_PENDING"
     CANCELLED = "QUERY_STATE_CANCELLED"
     FAILED = "QUERY_STATE_FAILED"
+    EXPIRED = "QUERY_STATE_EXPIRED"
 
     @classmethod
     def terminal_states(cls) -> set[ExecutionState]:
         """
         Returns the terminal states (i.e. when a query execution is no longer executing
         """
-        return {cls.COMPLETED, cls.CANCELLED, cls.FAILED}
+        return {cls.COMPLETED, cls.CANCELLED, cls.FAILED, cls.EXPIRED}
 
     def is_complete(self) -> bool:
         """Returns True is state is completed, otherwise False."""
@@ -181,9 +184,13 @@ class ResultMetadata:
     Representation of Dune's Result Metadata from [Get] Query Results endpoint
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     column_names: list[str]
+    row_count: int
     result_set_bytes: int
     total_row_count: int
+    total_result_set_bytes: int
     datapoint_count: int
     pending_time_millis: Optional[int]
     execution_time_millis: int
@@ -195,15 +202,29 @@ class ResultMetadata:
         pending_time = data.get("pending_time_millis", None)
         return cls(
             column_names=data["column_names"],
+            row_count=int(data["total_row_count"]),
             result_set_bytes=int(data["result_set_bytes"]),
             total_row_count=int(data["total_row_count"]),
+            total_result_set_bytes=int(data["result_set_bytes"]),
             datapoint_count=int(data["datapoint_count"]),
             pending_time_millis=int(pending_time) if pending_time else None,
             execution_time_millis=int(data["execution_time_millis"]),
         )
 
+    def __add__(self, other: ResultMetadata) -> ResultMetadata:
+        """
+        Enables combining results by updating the metadata associated to
+        an execution by using the `+` operator.
+        """
+        assert other is not None
 
-RowData = List[Dict[str, str]]
+        self.row_count += other.row_count
+        self.result_set_bytes += other.result_set_bytes
+        self.datapoint_count += other.datapoint_count
+        return self
+
+
+RowData = List[Dict[str, Any]]
 MetaData = Dict[str, Union[int, List[str]]]
 
 
@@ -217,6 +238,29 @@ class ExecutionResultCSV:
     """
 
     data: BytesIO  # includes all CSV rows, including the header row.
+    next_uri: Optional[str] = None
+    next_offset: Optional[int] = None
+
+    def __add__(self, other: ExecutionResultCSV) -> ExecutionResultCSV:
+        assert other is not None
+        assert other.data is not None
+
+        self.next_uri = other.next_uri
+        self.next_offset = other.next_offset
+
+        # Get to the end of the current CSV
+        self.data.seek(0, SEEK_END)
+
+        # Skip the first line of the new CSV, which contains the header
+        other.data.readline()
+
+        # Append the rest of the content from `other` into current one
+        self.data.write(other.data.read())
+
+        # Move the cursor back to the start of the CSV
+        self.data.seek(0)
+
+        return self
 
 
 @dataclass
@@ -236,6 +280,15 @@ class ExecutionResult:
             metadata=ResultMetadata.from_dict(data["metadata"]),
         )
 
+    def __add__(self, other: ExecutionResult) -> ExecutionResult:
+        """
+        Enables combining results using the `+` operator.
+        """
+        self.rows.extend(other.rows)
+        self.metadata += other.metadata
+
+        return self
+
 
 ResultData = Dict[str, Union[RowData, MetaData]]
 
@@ -252,6 +305,8 @@ class ResultsResponse:
     times: TimeData
     # optional because it will only be present when the query execution completes
     result: Optional[ExecutionResult]
+    next_uri: Optional[str]
+    next_offset: Optional[int]
 
     @classmethod
     def from_dict(cls, data: dict[str, str | int | ResultData]) -> ResultsResponse:
@@ -261,12 +316,18 @@ class ResultsResponse:
         assert isinstance(data["state"], str)
         result = data.get("result", {})
         assert isinstance(result, dict)
+        next_uri = data.get("next_uri")
+        assert isinstance(next_uri, str) or next_uri is None
+        next_offset = data.get("next_offset")
+        assert isinstance(next_offset, int) or next_offset is None
         return cls(
             execution_id=data["execution_id"],
             query_id=int(data["query_id"]),
             state=ExecutionState(data["state"]),
             times=TimeData.from_dict(data),
             result=ExecutionResult.from_dict(result) if result else None,
+            next_uri=next_uri,
+            next_offset=next_offset,
         )
 
     def get_rows(self) -> list[DuneRecord]:
@@ -281,3 +342,15 @@ class ResultsResponse:
 
         log.info(f"execution {self.state} returning empty list")
         return []
+
+    def __add__(self, other: ResultsResponse) -> ResultsResponse:
+        """
+        Enables combining results using the `+` operator.
+        """
+        assert self.execution_id == other.execution_id
+        assert self.result is not None
+        assert other.result is not None
+        self.result += other.result
+        self.next_uri = other.next_uri
+        self.next_offset = other.next_offset
+        return self

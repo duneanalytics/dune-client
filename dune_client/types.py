@@ -3,6 +3,7 @@ These types were primarily copied from:
 https://github.com/bh2smith/duneapi/blob/v4.0.0/duneapi/types.py
 with small adjustments (removing Options from QueryParameter)
 """
+
 from __future__ import annotations
 
 import re
@@ -12,7 +13,7 @@ from typing import Any, Dict
 
 from dune_client.util import postgres_date
 
-DuneRecord = Dict[str, str]
+DuneRecord = Dict[str, Any]
 
 
 # pylint: disable=too-few-public-methods

@@ -44,7 +44,9 @@ class MyTestCase(unittest.TestCase):
         }
         self.result_metadata_data = {
             "column_names": ["ct", "TableName"],
+            "row_count": 8,
             "result_set_bytes": 194,
+            "total_result_set_bytes": 194,
             "total_row_count": 8,
             "datapoint_count": 2,
             "pending_time_millis": 54,
@@ -169,8 +171,10 @@ eth_traces,4474223
     def test_parse_result_metadata(self):
         expected = ResultMetadata(
             column_names=["ct", "TableName"],
+            row_count=8,
             result_set_bytes=194,
             total_row_count=8,
+            total_result_set_bytes=194,
             datapoint_count=2,
             pending_time_millis=54,
             execution_time_millis=900,
@@ -212,6 +216,8 @@ eth_traces,4474223
             times=time_data,
             # Execution result parsing tested above in test_execution_result
             result=ExecutionResult.from_dict(self.results_response_data["result"]),
+            next_uri=None,
+            next_offset=None,
         )
         self.assertEqual(
             expected, ResultsResponse.from_dict(self.results_response_data)
