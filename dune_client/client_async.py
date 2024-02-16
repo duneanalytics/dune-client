@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from io import BytesIO
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 from aiohttp import (
     ClientResponseError,
@@ -19,7 +19,12 @@ from aiohttp import (
     ClientTimeout,
 )
 
-from dune_client.api.base import BaseDuneClient
+from dune_client.api.base import (
+    BaseDuneClient,
+    DUNE_CSV_NEXT_URI_HEADER,
+    DUNE_CSV_NEXT_OFFSET_HEADER,
+    MAX_NUM_ROWS_PER_BATCH,
+)
 from dune_client.models import (
     ExecutionResponse,
     ExecutionResultCSV,
@@ -119,8 +124,20 @@ class AsyncDuneClient(BaseDuneClient):
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
 
-    def _route_url(self, route: str) -> str:
-        return f"{self.api_version}{route}"
+    def _route_url(
+        self,
+        route: Optional[str] = None,
+        url: Optional[str] = None,
+    ) -> str:
+        if route is not None:
+            final_route = f"{self.api_version}{route}"
+        elif url is not None:
+            assert url.startswith(self.base_url)
+            final_route = url[len(self.base_url) :]
+        else:
+            assert route is not None or url is not None
+
+        return final_route
 
     async def _handle_ratelimit(self, call: Callable[..., Any], url: str) -> Any:
         """Generic wrapper around request callables. If the request fails due to rate limiting,
@@ -142,18 +159,19 @@ class AsyncDuneClient(BaseDuneClient):
 
     async def _get(
         self,
-        route: str,
+        route: Optional[str] = None,
         params: Optional[Any] = None,
         raw: bool = False,
+        url: Optional[str] = None,
     ) -> Any:
-        url = self._route_url(route)
-        self.logger.debug(f"GET received input url={url}")
+        final_route = self._route_url(route=route, url=url)
+        self.logger.debug(f"GET received input route={final_route}")
 
         async def _get() -> Any:
             if self._session is None:
                 raise ValueError("Client is not connected; call `await cl.connect()`")
             response = await self._session.get(
-                url=url,
+                url=final_route,
                 headers=self.default_headers(),
                 params=params,
             )
@@ -161,7 +179,7 @@ class AsyncDuneClient(BaseDuneClient):
                 return response
             return await self._handle_response(response)
 
-        return await self._handle_ratelimit(_get, route)
+        return await self._handle_ratelimit(_get, final_route)
 
     async def _post(self, route: str, params: Any) -> Any:
         url = self._route_url(route)
@@ -206,15 +224,25 @@ class AsyncDuneClient(BaseDuneClient):
         except KeyError as err:
             raise DuneError(response_json, "ExecutionStatusResponse", err) from err
 
-    async def get_result(self, job_id: str) -> ResultsResponse:
+    async def get_result(
+        self,
+        job_id: str,
+        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+    ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        response_json = await self._get(route=f"/execution/{job_id}/results")
-        try:
-            return ResultsResponse.from_dict(response_json)
-        except KeyError as err:
-            raise DuneError(response_json, "ResultsResponse", err) from err
 
-    async def get_result_csv(self, job_id: str) -> ExecutionResultCSV:
+        results = await self._get_result_page(job_id, limit=batch_size)
+        while results.next_uri is not None:
+            batch = await self._get_result_by_url(results.next_uri)
+            results += batch
+
+        return results
+
+    async def get_result_csv(
+        self,
+        job_id: str,
+        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+    ) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
 
@@ -222,15 +250,18 @@ class AsyncDuneClient(BaseDuneClient):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
-        route = f"/execution/{job_id}/results/csv"
-        url = self._route_url(f"/execution/{job_id}/results/csv")
-        self.logger.debug(f"GET CSV received input url={url}")
-        response = await self._get(route=route, raw=True)
-        response.raise_for_status()
-        return ExecutionResultCSV(data=BytesIO(await response.content.read(-1)))
+
+        results = await self._get_result_csv_page(job_id, limit=batch_size)
+        while results.next_uri is not None:
+            batch = await self._get_result_csv_by_url(results.next_uri)
+            results += batch
+
+        return results
 
     async def get_latest_result(
-        self, query: Union[QueryBase, str, int]
+        self,
+        query: Union[QueryBase, str, int],
+        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
     ) -> ResultsResponse:
         """
         GET the latest results for a query_id without having to execute the query again.
@@ -240,12 +271,23 @@ class AsyncDuneClient(BaseDuneClient):
         https://dune.com/docs/api/api-reference/latest_results/
         """
         params, query_id = parse_query_object_or_id(query)
+
+        if params is None:
+            params = {}
+
+        params["limit"] = batch_size
+
         response_json = await self._get(
             route=f"/query/{query_id}/results",
             params=params,
         )
         try:
-            return ResultsResponse.from_dict(response_json)
+            results = ResultsResponse.from_dict(response_json)
+            while results.next_uri is not None:
+                batch = await self._get_result_by_url(results.next_uri)
+                results += batch
+
+            return results
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
@@ -261,6 +303,155 @@ class AsyncDuneClient(BaseDuneClient):
             return success
         except KeyError as err:
             raise DuneError(response_json, "CancellationResponse", err) from err
+
+    ########################
+    # Higher level functions
+    ########################
+
+    async def refresh(
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
+        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+    ) -> ResultsResponse:
+        """
+        Executes a Dune `query`, waits until execution completes,
+        fetches and returns the results.
+        Sleeps `ping_frequency` seconds between each status request.
+        """
+        job_id = await self._refresh(
+            query, ping_frequency=ping_frequency, performance=performance
+        )
+        return await self.get_result(job_id, batch_size=batch_size)
+
+    async def refresh_csv(
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: Optional[str] = None,
+        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+    ) -> ExecutionResultCSV:
+        """
+        Executes a Dune query, waits till execution completes,
+        fetches and the results in CSV format
+        (use it load the data directly in pandas.from_csv() or similar frameworks)
+        """
+        job_id = await self._refresh(
+            query, ping_frequency=ping_frequency, performance=performance
+        )
+        return await self.get_result_csv(job_id, batch_size=batch_size)
+
+    async def refresh_into_dataframe(
+        self,
+        query: QueryBase,
+        performance: Optional[str] = None,
+        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+    ) -> Any:
+        """
+        Execute a Dune Query, waits till execution completes,
+        fetched and returns the result as a Pandas DataFrame
+
+        This is a convenience method that uses refresh_csv underneath
+        """
+        try:
+            import pandas  # pylint: disable=import-outside-toplevel
+        except ImportError as exc:
+            raise ImportError(
+                "dependency failure, pandas is required but missing"
+            ) from exc
+        results = await self.refresh_csv(
+            query, performance=performance, batch_size=batch_size
+        )
+        return pandas.read_csv(results.data)
+
+    #################
+    # Private Methods
+    #################
+
+    async def _get_result_page(
+        self,
+        job_id: str,
+        limit: int = MAX_NUM_ROWS_PER_BATCH,
+        offset: int = 0,
+    ) -> ResultsResponse:
+        """GET a page of results from Dune API for `job_id` (aka `execution_id`)"""
+
+        params = {
+            "limit": limit,
+            "offset": offset,
+        }
+        response_json = await self._get(
+            route=f"/execution/{job_id}/results",
+            params=params,
+        )
+
+        try:
+            return ResultsResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "ResultsResponse", err) from err
+
+    async def _get_result_by_url(
+        self,
+        url: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> ResultsResponse:
+        """
+        GET results from Dune API with a given URL. This is particularly useful for pagination.
+        """
+        response_json = await self._get(url=url, params=params)
+
+        try:
+            return ResultsResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "ResultsResponse", err) from err
+
+    async def _get_result_csv_page(
+        self,
+        job_id: str,
+        limit: int = MAX_NUM_ROWS_PER_BATCH,
+        offset: int = 0,
+    ) -> ExecutionResultCSV:
+        """
+        GET a page of results in CSV format from Dune API for `job_id` (aka `execution_id`)
+        """
+
+        params = {
+            "limit": limit,
+            "offset": offset,
+        }
+
+        route = f"/execution/{job_id}/results/csv"
+        response = await self._get(route=route, params=params, raw=True)
+        response.raise_for_status()
+
+        next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
+        next_offset = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
+        return ExecutionResultCSV(
+            data=BytesIO(await response.content.read(-1)),
+            next_uri=next_uri,
+            next_offset=next_offset,
+        )
+
+    async def _get_result_csv_by_url(
+        self,
+        url: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> ExecutionResultCSV:
+        """
+        GET results in CSV format from Dune API with a given URL.
+        This is particularly useful for pagination.
+        """
+        response = await self._get(url=url, params=params, raw=True)
+        response.raise_for_status()
+
+        next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
+        next_offset = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
+        return ExecutionResultCSV(
+            data=BytesIO(await response.content.read(-1)),
+            next_uri=next_uri,
+            next_offset=next_offset,
+        )
 
     async def _refresh(
         self,
@@ -286,53 +477,3 @@ class AsyncDuneClient(BaseDuneClient):
             raise QueryFailed(f"Error data: {status.error}")
 
         return job_id
-
-    async def refresh(
-        self,
-        query: QueryBase,
-        ping_frequency: int = 5,
-        performance: Optional[str] = None,
-    ) -> ResultsResponse:
-        """
-        Executes a Dune `query`, waits until execution completes,
-        fetches and returns the results.
-        Sleeps `ping_frequency` seconds between each status request.
-        """
-        job_id = await self._refresh(
-            query, ping_frequency=ping_frequency, performance=performance
-        )
-        return await self.get_result(job_id)
-
-    async def refresh_csv(
-        self,
-        query: QueryBase,
-        ping_frequency: int = 5,
-        performance: Optional[str] = None,
-    ) -> ExecutionResultCSV:
-        """
-        Executes a Dune query, waits till execution completes,
-        fetches and the results in CSV format
-        (use it load the data directly in pandas.from_csv() or similar frameworks)
-        """
-        job_id = await self._refresh(
-            query, ping_frequency=ping_frequency, performance=performance
-        )
-        return await self.get_result_csv(job_id)
-
-    async def refresh_into_dataframe(
-        self, query: QueryBase, performance: Optional[str] = None
-    ) -> Any:
-        """
-        Execute a Dune Query, waits till execution completes,
-        fetched and returns the result as a Pandas DataFrame
-
-        This is a convenience method that uses refresh_csv underneath
-        """
-        try:
-            import pandas  # pylint: disable=import-outside-toplevel
-        except ImportError as exc:
-            raise ImportError(
-                "dependency failure, pandas is required but missing"
-            ) from exc
-        data = (await self.refresh_csv(query, performance=performance)).data
-        return pandas.read_csv(data)
