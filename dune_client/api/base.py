@@ -99,8 +99,15 @@ class BaseRouter(BaseDuneClient):
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
 
-    def _route_url(self, route: str) -> str:
-        return f"{self.base_url}{self.api_version}{route}"
+    def _route_url(self, route: Optional[str] = None, url: Optional[str] = None) -> str:
+        if route is not None:
+            final_url = f"{self.base_url}{self.api_version}{route}"
+        elif url is not None:
+            final_url = url
+        else:
+            assert route is not None or url is not None
+
+        return final_url
 
     def _get(
         self,
@@ -110,13 +117,7 @@ class BaseRouter(BaseDuneClient):
         url: Optional[str] = None,
     ) -> Any:
         """Generic interface for the GET method of a Dune API request"""
-        if route is not None:
-            final_url = self._route_url(route)
-        elif url is not None:
-            final_url = url
-        else:
-            assert route is not None or url is not None
-
+        final_url = self._route_url(route=route, url=url)
         self.logger.debug(f"GET received input url={final_url}")
 
         response = self.http.get(
