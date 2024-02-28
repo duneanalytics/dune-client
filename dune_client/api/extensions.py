@@ -257,12 +257,9 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
             results = self.run_query(
                 query=query.base, performance=performance, ping_frequency=ping_frequency
             )
+        finally:
             if archive_after:
                 self.archive_query(query.base.query_id)
-        except QueryFailed as exc:
-            if archive_after:
-                self.archive_query(query.base.query_id)
-            raise exc
         return results
 
     ######################
