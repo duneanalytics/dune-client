@@ -253,11 +253,16 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         Requires Plus subscription!
         """
         query = self.create_query(name, query_sql, params, is_private)
-        results = self.run_query(
-            query=query.base, performance=performance, ping_frequency=ping_frequency
-        )
-        if archive_after:
-            self.archive_query(query.base.query_id)
+        try:
+            results = self.run_query(
+                query=query.base, performance=performance, ping_frequency=ping_frequency
+            )
+            if archive_after:
+                self.archive_query(query.base.query_id)
+        except QueryFailed as exc:
+            if archive_after:
+                self.archive_query(query.base.query_id)
+            raise exc
         return results
 
     ######################
