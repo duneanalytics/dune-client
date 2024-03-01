@@ -57,6 +57,24 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             ],
         )
 
+    async def test_refresh_with_filters(self):
+        # Arrange
+        async with AsyncDuneClient(self.valid_api_key) as cl:
+
+            # Act
+            results = (
+                await cl.refresh(self.multi_rows_query, filters="number < 3")
+            ).get_rows()
+
+        # Assert
+        self.assertEqual(
+            results,
+            [
+                {"number": 1},
+                {"number": 2},
+            ],
+        )
+
     async def test_refresh_csv_with_pagination(self):
         # Arrange
         async with AsyncDuneClient(self.valid_api_key) as cl:
@@ -73,6 +91,24 @@ class TestDuneClient(aiounittest.AsyncTestCase):
                 {"number": 3},
                 {"number": 4},
                 {"number": 5},
+            ],
+        )
+
+    async def test_refresh_csv_with_filters(self):
+        # Arrange
+        async with AsyncDuneClient(self.valid_api_key) as cl:
+
+            # Act
+            result_csv = await cl.refresh_csv(
+                self.multi_rows_query, filters="number < 3"
+            )
+
+        # Assert
+        self.assertEqual(
+            pandas.read_csv(result_csv.data).to_dict(orient="records"),
+            [
+                {"number": 1},
+                {"number": 2},
             ],
         )
 

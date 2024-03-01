@@ -7,7 +7,7 @@ Further Documentation:
 """
 
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from deprecated import deprecated
 
@@ -165,50 +165,6 @@ class ExecutionAPI(BaseRouter):
             next_uri=next_uri,
             next_offset=next_offset,
         )
-
-    ############
-    # Utilities:
-    ############
-
-    def _build_parameters(
-        self,
-        params: Optional[Dict[str, Union[str, int]]] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-    ) -> Dict[str, Union[str, int]]:
-        # Ensure we don't specify parameters that are incompatible:
-        assert (
-            # We are not sampling
-            sample_count is None
-            # We are sampling and don't use filters or pagination
-            or (limit is None and offset is None and filters is None)
-        ), "sampling cannot be combined with filters or pagination"
-
-        params = params or {}
-        if columns is not None and len(columns) > 0:
-            output = []
-            for column in columns:
-                # Escape all quotes and add quotes around it
-                col = '"' + column.replace('"', '\\"') + '"'
-                output.append(col)
-
-            params["columns"] = ",".join(output)
-        if sample_count is not None:
-            params["sample_count"] = sample_count
-        if filters is not None:
-            params["filters"] = filters
-        if sort_by is not None and len(sort_by) > 0:
-            params["sort_by"] = ",".join(sort_by)
-        if limit is not None:
-            params["limit"] = limit
-        if offset is not None:
-            params["offset"] = offset
-
-        return params
 
     #######################
     # Deprecated Functions:

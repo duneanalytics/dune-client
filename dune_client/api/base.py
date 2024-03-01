@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging.config
 import os
 from json import JSONDecodeError
-from typing import Dict, Optional, Any
+from typing import Any, Dict, List, Optional, Union
 
 from requests import Response, Session
 from requests.adapters import HTTPAdapter, Retry
@@ -82,6 +82,55 @@ class BaseDuneClient:
             "x-dune-api-key": self.token,
             "User-Agent": f"dune-client/{client_version} (https://pypi.org/project/dune-client/)",
         }
+
+    ############
+    # Utilities:
+    ############
+
+    def _build_parameters(
+        self,
+        params: Optional[Dict[str, Union[str, int]]] = None,
+        columns: Optional[List[str]] = None,
+        sample_count: Optional[int] = None,
+        filters: Optional[str] = None,
+        sort_by: Optional[List[str]] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> Dict[str, Union[str, int]]:
+        """
+        Utility function that builds a dictionary of parameters to be used
+        when retrieving advanced results (filters, pagination, sorting, etc.).
+        This is shared between the sync and async client.
+        """
+        # Ensure we don't specify parameters that are incompatible:
+        assert (
+            # We are not sampling
+            sample_count is None
+            # We are sampling and don't use filters or pagination
+            or (limit is None and offset is None and filters is None)
+        ), "sampling cannot be combined with filters or pagination"
+
+        params = params or {}
+        if columns is not None and len(columns) > 0:
+            output = []
+            for column in columns:
+                # Escape all quotes and add quotes around it
+                col = '"' + column.replace('"', '\\"') + '"'
+                output.append(col)
+
+            params["columns"] = ",".join(output)
+        if sample_count is not None:
+            params["sample_count"] = sample_count
+        if filters is not None:
+            params["filters"] = filters
+        if sort_by is not None and len(sort_by) > 0:
+            params["sort_by"] = ",".join(sort_by)
+        if limit is not None:
+            params["limit"] = limit
+        if offset is not None:
+            params["offset"] = offset
+
+        return params
 
 
 class BaseRouter(BaseDuneClient):
