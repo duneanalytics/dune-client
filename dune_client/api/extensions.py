@@ -8,7 +8,7 @@ import logging
 import time
 
 from io import BytesIO
-from typing import Union, Optional, Any
+from typing import Any, List, Optional, Union
 
 from deprecated import deprecated
 
@@ -47,16 +47,41 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         query: QueryBase,
         ping_frequency: int = POLL_FREQUENCY_SECONDS,
         performance: Optional[str] = None,
-        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+        batch_size: Optional[int] = None,
+        columns: Optional[List[str]] = None,
+        sample_count: Optional[int] = None,
+        filters: Optional[str] = None,
+        sort_by: Optional[List[str]] = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
+        # Ensure we don't specify parameters that are incompatible:
+        assert (
+            # We are not sampling
+            sample_count is None
+            # We are sampling and don't use filters or pagination
+            or (batch_size is None and filters is None)
+        ), "sampling cannot be combined with filters or pagination"
+
+        if sample_count is not None:
+            limit = None
+        else:
+            limit = 10 or batch_size or MAX_NUM_ROWS_PER_BATCH
+
+        # pylint: disable=duplicate-code
         job_id = self._refresh(query, ping_frequency, performance)
         return self._fetch_entire_result(
-            self.get_execution_results(job_id, limit=batch_size),
+            self.get_execution_results(
+                job_id,
+                columns=columns,
+                sample_count=sample_count,
+                filters=filters,
+                sort_by=sort_by,
+                limit=limit,
+            ),
         )
 
     def run_query_csv(
@@ -64,16 +89,41 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         query: QueryBase,
         ping_frequency: int = POLL_FREQUENCY_SECONDS,
         performance: Optional[str] = None,
-        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+        batch_size: Optional[int] = None,
+        columns: Optional[List[str]] = None,
+        sample_count: Optional[int] = None,
+        filters: Optional[str] = None,
+        sort_by: Optional[List[str]] = None,
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
         fetches and the results in CSV format
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
+        # Ensure we don't specify parameters that are incompatible:
+        assert (
+            # We are not sampling
+            sample_count is None
+            # We are sampling and don't use filters or pagination
+            or (batch_size is None and filters is None)
+        ), "sampling cannot be combined with filters or pagination"
+
+        if sample_count is not None:
+            limit = None
+        else:
+            limit = batch_size or MAX_NUM_ROWS_PER_BATCH
+
+        # pylint: disable=duplicate-code
         job_id = self._refresh(query, ping_frequency, performance)
         return self._fetch_entire_result_csv(
-            self.get_execution_results_csv(job_id, limit=batch_size),
+            self.get_execution_results_csv(
+                job_id,
+                columns=columns,
+                sample_count=sample_count,
+                filters=filters,
+                sort_by=sort_by,
+                limit=limit,
+            ),
         )
 
     def run_query_dataframe(
@@ -81,7 +131,11 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         query: QueryBase,
         ping_frequency: int = POLL_FREQUENCY_SECONDS,
         performance: Optional[str] = None,
-        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+        batch_size: Optional[int] = None,
+        columns: Optional[List[str]] = None,
+        sample_count: Optional[int] = None,
+        filters: Optional[str] = None,
+        sort_by: Optional[List[str]] = None,
     ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
@@ -96,7 +150,14 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
                 "dependency failure, pandas is required but missing"
             ) from exc
         data = self.run_query_csv(
-            query, ping_frequency, performance, batch_size=batch_size
+            query,
+            ping_frequency,
+            performance,
+            batch_size=batch_size,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
         ).data
         return pandas.read_csv(data)
 
@@ -104,7 +165,11 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         self,
         query: Union[QueryBase, str, int],
         max_age_hours: int = THREE_MONTHS_IN_HOURS,
-        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+        batch_size: Optional[int] = None,
+        columns: Optional[List[str]] = None,
+        sample_count: Optional[int] = None,
+        filters: Optional[str] = None,
+        sort_by: Optional[List[str]] = None,
     ) -> ResultsResponse:
         """
         GET the latest results for a query_id without re-executing the query
@@ -114,6 +179,14 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         :param max_age_hours: re-executes the query if result is older than max_age_hours
             https://dune.com/docs/api/api-reference/get-results/latest-results
         """
+        # Ensure we don't specify parameters that are incompatible:
+        assert (
+            # We are not sampling
+            sample_count is None
+            # We are sampling and don't use filters or pagination
+            or (batch_size is None and filters is None)
+        ), "sampling cannot be combined with filters or pagination"
+
         params, query_id = parse_query_object_or_id(query)
 
         # Only fetch the metadata first to determine if the result is fresh enough
@@ -126,6 +199,8 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
             params=params,
         )
         try:
+            if sample_count is None and batch_size is None:
+                batch_size = MAX_NUM_ROWS_PER_BATCH
             metadata = ResultsResponse.from_dict(response_json)
             last_run = metadata.times.execution_ended_at
 
@@ -135,12 +210,25 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
                     f"results (from {last_run}) older than {max_age_hours} hours, re-running query"
                 )
                 results = self.run_query(
-                    query if isinstance(query, QueryBase) else QueryBase(query_id)
+                    query if isinstance(query, QueryBase) else QueryBase(query_id),
+                    columns=columns,
+                    sample_count=sample_count,
+                    filters=filters,
+                    sort_by=sort_by,
+                    batch_size=batch_size,
                 )
             else:
                 # The results are fresh enough, retrieve the entire result
+                # pylint: disable=duplicate-code
                 results = self._fetch_entire_result(
-                    self.get_execution_results(metadata.execution_id, limit=batch_size),
+                    self.get_execution_results(
+                        metadata.execution_id,
+                        columns=columns,
+                        sample_count=sample_count,
+                        filters=filters,
+                        sort_by=sort_by,
+                        limit=batch_size,
+                    ),
                 )
             return results
         except KeyError as err:
@@ -149,7 +237,11 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
     def get_latest_result_dataframe(
         self,
         query: Union[QueryBase, str, int],
-        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+        batch_size: Optional[int] = None,
+        columns: Optional[List[str]] = None,
+        sample_count: Optional[int] = None,
+        filters: Optional[str] = None,
+        sort_by: Optional[List[str]] = None,
     ) -> Any:
         """
         GET the latest results for a query_id without re-executing the query
@@ -165,23 +257,49 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
                 "dependency failure, pandas is required but missing"
             ) from exc
 
-        data = self.download_csv(query, batch_size=batch_size).data
-        return pandas.read_csv(data)
+        results = self.download_csv(
+            query,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
+            batch_size=batch_size,
+        )
+        return pandas.read_csv(results.data)
 
     def download_csv(
         self,
         query: Union[QueryBase, str, int],
-        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+        batch_size: Optional[int] = None,
+        columns: Optional[List[str]] = None,
+        sample_count: Optional[int] = None,
+        filters: Optional[str] = None,
+        sort_by: Optional[List[str]] = None,
     ) -> ExecutionResultCSV:
         """
         Almost like an alias for `get_latest_result` but for the csv endpoint.
         https://dune.com/docs/api/api-reference/get-results/latest-results
         """
+        # Ensure we don't specify parameters that are incompatible:
+        assert (
+            # We are not sampling
+            sample_count is None
+            # We are sampling and don't use filters or pagination
+            or (batch_size is None and filters is None)
+        ), "sampling cannot be combined with filters or pagination"
+
         params, query_id = parse_query_object_or_id(query)
 
-        if params is None:
-            params = {}
-        params["limit"] = batch_size
+        params = self._build_parameters(
+            params=params,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
+            limit=batch_size,
+        )
+        if sample_count is None and batch_size is None:
+            params["limit"] = MAX_NUM_ROWS_PER_BATCH
 
         response = self._get(
             route=f"/query/{query_id}/results/csv", params=params, raw=True
