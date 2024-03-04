@@ -1,7 +1,7 @@
 """"
 Async Dune Client Class responsible for refreshing Dune Queries
 Framework built on Dune's API Documentation
-https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e003a
+https://docs.dune.com/api-reference/overview/introduction
 """
 
 from __future__ import annotations
@@ -308,7 +308,7 @@ class AsyncDuneClient(BaseDuneClient):
 
         :param query: :class:`Query` object OR query id as string | int
 
-        https://dune.com/docs/api/api-reference/latest_results/
+        https://docs.dune.com/api-reference/executions/endpoint/get-query-result
         """
         params, query_id = parse_query_object_or_id(query)
 

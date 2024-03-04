@@ -2,8 +2,8 @@
 Implementation of all Dune API query execution and get results routes.
 
 Further Documentation:
-    execution: https://dune.com/docs/api/api-reference/execute-queries/
-    get results: https://dune.com/docs/api/api-reference/get-results/
+    execution: https://docs.dune.com/api-reference/executions/endpoint/execute-query
+    get results: https://docs.dune.com/api-reference/executions/endpoint/get-execution-result
 """
 
 from io import BytesIO

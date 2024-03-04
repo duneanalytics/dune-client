@@ -17,7 +17,7 @@ from dune_client.types import QueryParameter
 class QueryAPI(BaseRouter):
     """
     Implementation of Query API (aka CRUD) Operations - Plus subscription only
-    https://dune.com/docs/api/api-reference/edit-queries/
+    https://docs.dune.com/api-reference/queries/endpoint/query-object
     """
 
     def create_query(
@@ -29,7 +29,7 @@ class QueryAPI(BaseRouter):
     ) -> DuneQuery:
         """
         Creates Dune Query by ID
-        https://dune.com/docs/api/api-reference/edit-queries/create-query/
+        https://docs.dune.com/api-reference/queries/endpoint/create
         """
         payload = {
             "name": name,
@@ -49,7 +49,7 @@ class QueryAPI(BaseRouter):
     def get_query(self, query_id: int) -> DuneQuery:
         """
         Retrieves Dune Query by ID
-        https://dune.com/docs/api/api-reference/edit-queries/get-query/
+        https://docs.dune.com/api-reference/queries/endpoint/read
         """
         response_json = self._get(route=f"/query/{query_id}")
         return DuneQuery.from_dict(response_json)
@@ -65,7 +65,7 @@ class QueryAPI(BaseRouter):
     ) -> int:
         """
         Updates Dune Query by ID
-        https://dune.com/docs/api/api-reference/edit-queries/update-query
+        https://docs.dune.com/api-reference/queries/endpoint/update
 
         The request body should contain all fields that need to be updated.
         Any omitted fields will be left untouched.
@@ -101,7 +101,7 @@ class QueryAPI(BaseRouter):
 
     def archive_query(self, query_id: int) -> bool:
         """
-        https://dune.com/docs/api/api-reference/edit-queries/archive-query
+        https://docs.dune.com/api-reference/queries/endpoint/archive
         returns resulting value of Query.is_archived
         """
         response_json = self._post(route=f"/query/{query_id}/archive")
@@ -113,7 +113,7 @@ class QueryAPI(BaseRouter):
 
     def unarchive_query(self, query_id: int) -> bool:
         """
-        https://dune.com/docs/api/api-reference/edit-queries/archive-query
+        https://docs.dune.com/api-reference/queries/endpoint/unarchive
         returns resulting value of Query.is_archived
         """
         response_json = self._post(route=f"/query/{query_id}/unarchive")
@@ -125,7 +125,7 @@ class QueryAPI(BaseRouter):
 
     def make_private(self, query_id: int) -> None:
         """
-        https://dune.com/docs/api/api-reference/edit-queries/private-query
+        https://docs.dune.com/api-reference/queries/endpoint/private
         """
         response_json = self._post(route=f"/query/{query_id}/private")
         try:
@@ -135,7 +135,7 @@ class QueryAPI(BaseRouter):
 
     def make_public(self, query_id: int) -> None:
         """
-        https://dune.com/docs/api/api-reference/edit-queries/private-query
+        https://docs.dune.com/api-reference/queries/endpoint/unprivate
         """
         response_json = self._post(route=f"/query/{query_id}/unprivate")
         try:
