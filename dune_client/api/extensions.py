@@ -69,7 +69,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         if sample_count is not None:
             limit = None
         else:
-            limit = 10 or batch_size or MAX_NUM_ROWS_PER_BATCH
+            limit = batch_size or MAX_NUM_ROWS_PER_BATCH
 
         # pylint: disable=duplicate-code
         job_id = self._refresh(query, ping_frequency, performance)
