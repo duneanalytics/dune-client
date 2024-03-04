@@ -177,7 +177,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
 
         :param query: :class:`Query` object OR query id as string or int
         :param max_age_hours: re-executes the query if result is older than max_age_hours
-            https://dune.com/docs/api/api-reference/get-results/latest-results
+            https://docs.dune.com/api-reference/executions/endpoint/get-query-result
         """
         # Ensure we don't specify parameters that are incompatible:
         assert (
@@ -278,7 +278,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
     ) -> ExecutionResultCSV:
         """
         Almost like an alias for `get_latest_result` but for the csv endpoint.
-        https://dune.com/docs/api/api-reference/get-results/latest-results
+        https://docs.dune.com/api-reference/executions/endpoint/get-query-result-csv
         """
         # Ensure we don't specify parameters that are incompatible:
         assert (
@@ -327,7 +327,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
         is_private: bool = False,
     ) -> bool:
         """
-        https://dune.com/docs/api/api-reference/upload-data/?h=data+upload#endpoint
+        https://docs.dune.com/api-reference/tables/endpoint/upload
         The write API allows you to upload any .csv file into Dune. The only limitations are:
 
         - File has to be < 200 MB
