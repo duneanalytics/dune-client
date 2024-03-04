@@ -353,40 +353,80 @@ class AsyncDuneClient(BaseDuneClient):
         query: QueryBase,
         ping_frequency: int = 5,
         performance: Optional[str] = None,
-        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+        batch_size: Optional[int] = None,
+        columns: Optional[List[str]] = None,
+        sample_count: Optional[int] = None,
+        filters: Optional[str] = None,
+        sort_by: Optional[List[str]] = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
+        assert (
+            # We are not sampling
+            sample_count is None
+            # We are sampling and don't use filters or pagination
+            or (batch_size is None and filters is None)
+        ), "sampling cannot be combined with filters or pagination"
+
         job_id = await self._refresh(
             query, ping_frequency=ping_frequency, performance=performance
         )
-        return await self.get_result(job_id, batch_size=batch_size)
+        return await self.get_result(
+            job_id,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
+            batch_size=batch_size,
+        )
 
     async def refresh_csv(
         self,
         query: QueryBase,
         ping_frequency: int = 5,
         performance: Optional[str] = None,
-        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+        batch_size: Optional[int] = None,
+        columns: Optional[List[str]] = None,
+        sample_count: Optional[int] = None,
+        filters: Optional[str] = None,
+        sort_by: Optional[List[str]] = None,
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
         fetches and the results in CSV format
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
+        assert (
+            # We are not sampling
+            sample_count is None
+            # We are sampling and don't use filters or pagination
+            or (batch_size is None and filters is None)
+        ), "sampling cannot be combined with filters or pagination"
+
         job_id = await self._refresh(
             query, ping_frequency=ping_frequency, performance=performance
         )
-        return await self.get_result_csv(job_id, batch_size=batch_size)
+        return await self.get_result_csv(
+            job_id,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
+            batch_size=batch_size,
+        )
 
     async def refresh_into_dataframe(
         self,
         query: QueryBase,
         performance: Optional[str] = None,
-        batch_size: int = MAX_NUM_ROWS_PER_BATCH,
+        batch_size: Optional[int] = None,
+        columns: Optional[List[str]] = None,
+        sample_count: Optional[int] = None,
+        filters: Optional[str] = None,
+        sort_by: Optional[List[str]] = None,
     ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
@@ -401,7 +441,13 @@ class AsyncDuneClient(BaseDuneClient):
                 "dependency failure, pandas is required but missing"
             ) from exc
         results = await self.refresh_csv(
-            query, performance=performance, batch_size=batch_size
+            query,
+            performance=performance,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
+            batch_size=batch_size,
         )
         return pandas.read_csv(results.data)
 
