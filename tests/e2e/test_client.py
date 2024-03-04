@@ -89,6 +89,22 @@ class TestDuneClient(unittest.TestCase):
             ],
         )
 
+    def test_run_query_with_filters(self):
+        # Arrange
+        dune = DuneClient(self.valid_api_key)
+
+        # Act
+        results = dune.run_query(self.multi_rows_query, filters="number < 3").get_rows()
+
+        # Assert
+        self.assertEqual(
+            results,
+            [
+                {"number": 1},
+                {"number": 2},
+            ],
+        )
+
     def test_run_query_performance_large(self):
         dune = DuneClient(self.valid_api_key)
         results = dune.run_query(self.query, performance="large").get_rows()
@@ -237,6 +253,26 @@ class TestDuneClient(unittest.TestCase):
                 {"number": 3},
                 {"number": 4},
                 {"number": 5},
+            ],
+        )
+
+    def test_download_csv_with_filters(self):
+        # Arrange
+        client = DuneClient(self.valid_api_key)
+        client.run_query(self.multi_rows_query)
+
+        # Act
+        result_csv = client.download_csv(
+            self.multi_rows_query.query_id,
+            filters="number < 3",
+        )
+
+        # Assert
+        self.assertEqual(
+            pandas.read_csv(result_csv.data).to_dict(orient="records"),
+            [
+                {"number": 1},
+                {"number": 2},
             ],
         )
 
