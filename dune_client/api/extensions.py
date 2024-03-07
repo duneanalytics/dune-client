@@ -189,10 +189,10 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
 
         params, query_id = parse_query_object_or_id(query)
 
-        # Only fetch the metadata first to determine if the result is fresh enough
+        # Only fetch 1 row to get metadata first to determine if the result is fresh enough
         if params is None:
             params = {}
-        params["limit"] = 0
+        params["limit"] = 1
 
         response_json = self._get(
             route=f"/query/{query_id}/results",
