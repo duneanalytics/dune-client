@@ -41,7 +41,6 @@ class TestDuneClient(aiounittest.AsyncTestCase):
     async def test_refresh_with_pagination(self):
         # Arrange
         async with AsyncDuneClient(self.valid_api_key) as cl:
-
             # Act
             results = (await cl.refresh(self.multi_rows_query, batch_size=1)).get_rows()
 
@@ -60,7 +59,6 @@ class TestDuneClient(aiounittest.AsyncTestCase):
     async def test_refresh_with_filters(self):
         # Arrange
         async with AsyncDuneClient(self.valid_api_key) as cl:
-
             # Act
             results = (
                 await cl.refresh(self.multi_rows_query, filters="number < 3")
@@ -78,7 +76,6 @@ class TestDuneClient(aiounittest.AsyncTestCase):
     async def test_refresh_csv_with_pagination(self):
         # Arrange
         async with AsyncDuneClient(self.valid_api_key) as cl:
-
             # Act
             result_csv = await cl.refresh_csv(self.multi_rows_query, batch_size=1)
 
@@ -97,7 +94,6 @@ class TestDuneClient(aiounittest.AsyncTestCase):
     async def test_refresh_csv_with_filters(self):
         # Arrange
         async with AsyncDuneClient(self.valid_api_key) as cl:
-
             # Act
             result_csv = await cl.refresh_csv(
                 self.multi_rows_query, filters="number < 3"
