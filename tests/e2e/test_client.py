@@ -236,6 +236,24 @@ class TestDuneClient(unittest.TestCase):
             True,
         )
 
+    @unittest.skip("This is a plus subscription endpoint.")
+    def test_create_table_success(self):
+        # Make sure the table doesn't already exist.
+        client = DuneClient(self.valid_api_key)
+        print(dir(DuneClient))
+        self.assertEqual(
+            client.create_table(
+                namespace="test",
+                table_name="dataset_e2e_test",
+                description="e2e test table",
+                schema=[
+                    {"name": "date", "type": "timestamp"},
+                    {"name": "dgs10", "type": "double"},
+                ],
+            ),
+            {},
+        )
+
     def test_download_csv_with_pagination(self):
         # Arrange
         client = DuneClient(self.valid_api_key)
