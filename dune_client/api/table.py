@@ -60,7 +60,6 @@ class TableAPI(BaseRouter):
         The create table endpoint allows you to create an empty table with a specifc schema in Dune.
 
         The only limitations are:
-        - A table must currently be created as public.
         - If a table already exists with the same name, the request will fail.
         - Column names in the table can’t start with a special character or a digit.
         """
