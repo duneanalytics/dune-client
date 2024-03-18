@@ -75,3 +75,41 @@ class TableAPI(BaseRouter):
             return response_json
         except KeyError as err:
             raise DuneError(response_json, "CreateTableResponse", err) from err
+
+    def insert_table(
+        self,
+        namespace: str,
+        table_name: str,
+        path: str,
+    ) -> Any:
+        """
+        https://docs.dune.com/api-reference/tables/endpoint/insert
+        The insert table endpoint allows you to insert data into an existing table in Dune.
+
+        The only limitations are:
+        - The file has to be in json or csv format
+        - The file has to have the same schema as the table
+        """
+
+        file_extension = path.split(".")[-1]
+
+        with open(path, "rb") as data:
+            response_json = self._post(
+                route=f"/table/{namespace}/{table_name}/insert",
+                headers={
+                    "Content-Type": (
+                        "text/csv"
+                        if file_extension == "csv"
+                        else (
+                            "application/x-ndjson"
+                            if file_extension in ["json", "jsonl"]
+                            else None
+                        )
+                    )
+                },
+                data=data,
+            )
+            try:
+                return response_json
+            except KeyError as err:
+                raise DuneError(response_json, "InsertTableResponse", err) from err
