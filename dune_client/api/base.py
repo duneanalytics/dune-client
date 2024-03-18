@@ -184,15 +184,16 @@ class BaseRouter(BaseDuneClient):
         route: str,
         params: Optional[Any] = None,
         data: Optional[IO[bytes]] = None,
-        headers: Optional[Dict[str, Optional[str]]] = None,
+        headers: Dict[str, str] = {},
     ) -> Any:
+        # pylint: disable=dangerous-default-value
         """Generic interface for the POST method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"POST received input url={url}, params={params}")
         response = self.http.post(
             url=url,
             json=params,
-            headers=dict(self.default_headers(), **(headers or {})),
+            headers=dict(self.default_headers(), **headers),
             timeout=self.request_timeout,
             data=data,
         )
