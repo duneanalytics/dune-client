@@ -239,8 +239,9 @@ class TestDuneClient(unittest.TestCase):
     @unittest.skip("This is a plus subscription endpoint.")
     def test_create_table_success(self):
         # Make sure the table doesn't already exist.
+        # You will need to change the namespace to your own.
         client = DuneClient(self.valid_api_key)
-        print(dir(DuneClient))
+
         self.assertEqual(
             client.create_table(
                 namespace="test",
@@ -251,7 +252,7 @@ class TestDuneClient(unittest.TestCase):
                     {"name": "dgs10", "type": "double"},
                 ],
             ),
-            {},
+            None,
         )
 
     @unittest.skip("This is a plus subscription endpoint.")
