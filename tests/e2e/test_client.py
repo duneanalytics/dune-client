@@ -260,30 +260,32 @@ class TestDuneClient(unittest.TestCase):
         # Make sure the table already exists and csv matches table schema.
         # You will need to change the namespace to your own.
         client = DuneClient(self.valid_api_key)
-
-        self.assertEqual(
-            client.insert_table(
-                namespace="test",
-                table_name="dataset_e2e_test",
-                path="./tests/fixtures/sample_table_insert.csv",
-            ),
-            None,
-        )
+        with open("./tests/fixtures/sample_table_insert.csv", "rb") as data:
+            self.assertEqual(
+                client.insert_table(
+                    namespace="test",
+                    table_name="dataset_e2e_test",
+                    data=data,
+                    content_type="text/csv",
+                ),
+                None,
+            )
 
     @unittest.skip("This is a plus subscription endpoint.")
     def test_insert_table_json_success(self):
         # Make sure the table already exists and json matches table schema.
         # You will need to change the namespace to your own.
         client = DuneClient(self.valid_api_key)
-
-        self.assertEqual(
-            client.insert_table(
-                namespace="test",
-                table_name="dataset_e2e_test",
-                path="./tests/fixtures/sample_table_insert.json",
-            ),
-            None,
-        )
+        with open("./tests/fixtures/sample_table_insert.json", "rb") as data:
+            self.assertEqual(
+                client.insert_table(
+                    namespace="test",
+                    table_name="dataset_e2e_test",
+                    data=data,
+                    content_type="application/x-ndjson",
+                ),
+                None,
+            )
 
     def test_download_csv_with_pagination(self):
         # Arrange

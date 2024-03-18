@@ -4,7 +4,7 @@ create and insert data into Dune.
 """
 
 from __future__ import annotations
-from typing import List, Dict, Any
+from typing import List, Dict, Any, IO
 
 from dune_client.api.base import BaseRouter
 from dune_client.models import DuneError
@@ -25,7 +25,7 @@ class TableAPI(BaseRouter):
     ) -> bool:
         """
         https://docs.dune.com/api-reference/tables/endpoint/upload
-        The write API allows you to upload any .csv file into Dune. The only limitations are:
+        This endpoint allows you to upload any .csv file into Dune. The only limitations are:
 
         - File has to be < 200 MB
         - Column names in the table can't start with a special character or digits.
@@ -60,7 +60,6 @@ class TableAPI(BaseRouter):
 
         The only limitations are:
         - A table must currently be created as public.
-        - If the request tries to create a private table, it will fail.
         - If a table already exists with the same name, the request will fail.
         - Column names in the table can’t start with a special character or a digit.
         """
@@ -80,7 +79,8 @@ class TableAPI(BaseRouter):
         self,
         namespace: str,
         table_name: str,
-        path: str,
+        data: IO[bytes],
+        content_type: str,
     ) -> Any:
         """
         https://docs.dune.com/api-reference/tables/endpoint/insert
@@ -91,25 +91,12 @@ class TableAPI(BaseRouter):
         - The file has to have the same schema as the table
         """
 
-        file_extension = path.split(".")[-1]
-
-        with open(path, "rb") as data:
-            response_json = self._post(
-                route=f"/table/{namespace}/{table_name}/insert",
-                headers={
-                    "Content-Type": (
-                        "text/csv"
-                        if file_extension == "csv"
-                        else (
-                            "application/x-ndjson"
-                            if file_extension in ["json", "jsonl"]
-                            else None
-                        )
-                    )
-                },
-                data=data,
-            )
-            try:
-                return response_json
-            except KeyError as err:
-                raise DuneError(response_json, "InsertTableResponse", err) from err
+        response_json = self._post(
+            route=f"/table/{namespace}/{table_name}/insert",
+            headers={"Content-Type": content_type},
+            data=data,
+        )
+        try:
+            return response_json
+        except KeyError as err:
+            raise DuneError(response_json, "InsertTableResponse", err) from err
