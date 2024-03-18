@@ -53,6 +53,7 @@ class TableAPI(BaseRouter):
         table_name: str,
         schema: List[Dict[str, str]],
         description: str = "",
+        is_private: bool = False,
     ) -> Any:
         """
         https://docs.dune.com/api-reference/tables/endpoint/create
@@ -63,13 +64,14 @@ class TableAPI(BaseRouter):
         - If a table already exists with the same name, the request will fail.
         - Column names in the table can’t start with a special character or a digit.
         """
-        payload = {
-            "schema": schema,
-            "description": description,
-        }
+
         return self._post(
             route=f"/table/{namespace}/{table_name}/create",
-            params=payload,
+            params={
+                "schema": schema,
+                "description": description,
+                "is_private": is_private,
+            },
         )
 
     def insert_table(

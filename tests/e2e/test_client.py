@@ -251,6 +251,7 @@ class TestDuneClient(unittest.TestCase):
                     {"name": "date", "type": "timestamp"},
                     {"name": "dgs10", "type": "double"},
                 ],
+                is_private=False,
             ),
             None,
         )
