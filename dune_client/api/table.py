@@ -67,13 +67,10 @@ class TableAPI(BaseRouter):
             "schema": schema,
             "description": description,
         }
-        response_json = self._post(
-            route=f"/table/{namespace}/{table_name}/create", params=payload
+        return self._post(
+            route=f"/table/{namespace}/{table_name}/create",
+            params=payload,
         )
-        try:
-            return response_json
-        except KeyError as err:
-            raise DuneError(response_json, "CreateTableResponse", err) from err
 
     def insert_table(
         self,
@@ -91,12 +88,8 @@ class TableAPI(BaseRouter):
         - The file has to have the same schema as the table
         """
 
-        response_json = self._post(
+        return self._post(
             route=f"/table/{namespace}/{table_name}/insert",
             headers={"Content-Type": content_type},
             data=data,
         )
-        try:
-            return response_json
-        except KeyError as err:
-            raise DuneError(response_json, "InsertTableResponse", err) from err
