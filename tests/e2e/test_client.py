@@ -236,16 +236,19 @@ class TestDuneClient(unittest.TestCase):
             True,
         )
 
-    @unittest.skip("This is a plus subscription endpoint.")
+    # @unittest.skip("This is a plus subscription endpoint.")
     def test_create_table_success(self):
         # Make sure the table doesn't already exist.
         # You will need to change the namespace to your own.
         client = DuneClient(self.valid_api_key)
 
+        namespace = "test"
+        table_name = "dataset_e2e_test"
+
         self.assertEqual(
             client.create_table(
-                namespace="test",
-                table_name="dataset_e2e_test",
+                namespace=namespace,
+                table_name=table_name,
                 description="e2e test table",
                 schema=[
                     {"name": "date", "type": "timestamp"},
@@ -253,7 +256,12 @@ class TestDuneClient(unittest.TestCase):
                 ],
                 is_private=False,
             ),
-            None,
+            {
+                "namespace": namespace,
+                "table_name": table_name,
+                "full_name": f"dune.{namespace}.{table_name}",
+                "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
+            },
         )
 
     @unittest.skip("This is a plus subscription endpoint.")
