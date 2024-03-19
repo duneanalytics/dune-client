@@ -57,7 +57,8 @@ class TableAPI(BaseRouter):
     ) -> Any:
         """
         https://docs.dune.com/api-reference/tables/endpoint/create
-        The create table endpoint allows you to create an empty table with a specific schema in Dune.
+        The create table endpoint allows you to create an empty table
+        with a specific schema in Dune.
 
         The only limitations are:
         - If a table already exists with the same name, the request will fail.
