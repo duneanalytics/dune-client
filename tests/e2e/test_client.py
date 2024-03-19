@@ -236,6 +236,66 @@ class TestDuneClient(unittest.TestCase):
             True,
         )
 
+    @unittest.skip("This is a plus subscription endpoint.")
+    def test_create_table_success(self):
+        # Make sure the table doesn't already exist.
+        # You will need to change the namespace to your own.
+        client = DuneClient(self.valid_api_key)
+
+        namespace = "test"
+        table_name = "dataset_e2e_test"
+
+        self.assertEqual(
+            client.create_table(
+                namespace=namespace,
+                table_name=table_name,
+                description="e2e test table",
+                schema=[
+                    {"name": "date", "type": "timestamp"},
+                    {"name": "dgs10", "type": "double"},
+                ],
+                is_private=False,
+            ),
+            {
+                "namespace": namespace,
+                "table_name": table_name,
+                "full_name": f"dune.{namespace}.{table_name}",
+                "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
+            },
+        )
+
+    @unittest.skip("This is a plus subscription endpoint.")
+    def test_insert_table_csv_success(self):
+        # Make sure the table already exists and csv matches table schema.
+        # You will need to change the namespace to your own.
+        client = DuneClient(self.valid_api_key)
+        with open("./tests/fixtures/sample_table_insert.csv", "rb") as data:
+            self.assertEqual(
+                client.insert_table(
+                    namespace="test",
+                    table_name="dataset_e2e_test",
+                    data=data,
+                    content_type="text/csv",
+                ),
+                None,
+            )
+
+    @unittest.skip("This is a plus subscription endpoint.")
+    def test_insert_table_json_success(self):
+        # Make sure the table already exists and json matches table schema.
+        # You will need to change the namespace to your own.
+        client = DuneClient(self.valid_api_key)
+        with open("./tests/fixtures/sample_table_insert.json", "rb") as data:
+            self.assertEqual(
+                client.insert_table(
+                    namespace="test",
+                    table_name="dataset_e2e_test",
+                    data=data,
+                    content_type="application/x-ndjson",
+                ),
+                None,
+            )
+
     def test_download_csv_with_pagination(self):
         # Arrange
         client = DuneClient(self.valid_api_key)

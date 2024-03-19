@@ -19,6 +19,7 @@ from dune_client.api.base import (
 )
 from dune_client.api.execution import ExecutionAPI
 from dune_client.api.query import QueryAPI
+from dune_client.api.table import TableAPI
 from dune_client.models import (
     ResultsResponse,
     DuneError,
@@ -36,7 +37,7 @@ THREE_MONTHS_IN_HOURS = 2191
 POLL_FREQUENCY_SECONDS = 1
 
 
-class ExtendedAPI(ExecutionAPI, QueryAPI):
+class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI):
     """
     Provides higher level helper methods for faster
     and easier development on top of the base ExecutionAPI.
@@ -315,40 +316,6 @@ class ExtendedAPI(ExecutionAPI, QueryAPI):
                 next_offset=next_offset,
             ),
         )
-
-    ############################
-    # Plus Subscription Features
-    ############################
-    def upload_csv(
-        self,
-        table_name: str,
-        data: str,
-        description: str = "",
-        is_private: bool = False,
-    ) -> bool:
-        """
-        https://docs.dune.com/api-reference/tables/endpoint/upload
-        The write API allows you to upload any .csv file into Dune. The only limitations are:
-
-        - File has to be < 200 MB
-        - Column names in the table can't start with a special character or digits.
-        - Private uploads require a Plus subscription.
-
-        Below are the specifics of how to work with the API.
-        """
-        response_json = self._post(
-            route="/table/upload/csv",
-            params={
-                "table_name": table_name,
-                "description": description,
-                "data": data,
-                "is_private": is_private,
-            },
-        )
-        try:
-            return bool(response_json["success"])
-        except KeyError as err:
-            raise DuneError(response_json, "UploadCsvResponse", err) from err
 
     ##############################################################################################
     # Plus Features: these features use APIs that are only available on paid subscription plans

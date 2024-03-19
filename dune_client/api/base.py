@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging.config
 import os
 from json import JSONDecodeError
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, IO
 
 from requests import Response, Session
 from requests.adapters import HTTPAdapter, Retry
@@ -179,15 +179,22 @@ class BaseRouter(BaseDuneClient):
             return response
         return self._handle_response(response)
 
-    def _post(self, route: str, params: Optional[Any] = None) -> Any:
+    def _post(
+        self,
+        route: str,
+        params: Optional[Any] = None,
+        data: Optional[IO[bytes]] = None,
+        headers: Optional[Dict[str, str]] = None,
+    ) -> Any:
         """Generic interface for the POST method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"POST received input url={url}, params={params}")
         response = self.http.post(
             url=url,
             json=params,
-            headers=self.default_headers(),
+            headers=dict(self.default_headers(), **headers if headers else {}),
             timeout=self.request_timeout,
+            data=data,
         )
         return self._handle_response(response)
 
