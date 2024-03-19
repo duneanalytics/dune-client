@@ -65,7 +65,7 @@ class TableAPI(BaseRouter):
         """
 
         return self._post(
-            route=f"/table/create",
+            route="/table/create",
             params={
                 "namespace": namespace,
                 "table_name": table_name,
