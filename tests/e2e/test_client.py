@@ -277,7 +277,7 @@ class TestDuneClient(unittest.TestCase):
                     data=data,
                     content_type="text/csv",
                 ),
-                None,
+                {"rows_written": 1},
             )
 
     @unittest.skip("This is a plus subscription endpoint.")
@@ -293,7 +293,7 @@ class TestDuneClient(unittest.TestCase):
                     data=data,
                     content_type="application/x-ndjson",
                 ),
-                None,
+                {"rows_written": 1},
             )
 
     def test_download_csv_with_pagination(self):
