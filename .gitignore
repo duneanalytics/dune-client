@@ -7,3 +7,4 @@ _version.py
 venv/
 tmp/
 .vscode/
+examples/.env.txt
