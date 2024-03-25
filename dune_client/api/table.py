@@ -4,10 +4,10 @@ create and insert data into Dune.
 """
 
 from __future__ import annotations
-from typing import List, Dict, Any, IO
+from typing import List, Dict, IO
 
 from dune_client.api.base import BaseRouter
-from dune_client.models import DuneError
+from dune_client.models import DuneError, InsertTableResult, CreateTableResponse
 
 
 class TableAPI(BaseRouter):
@@ -54,7 +54,7 @@ class TableAPI(BaseRouter):
         schema: List[Dict[str, str]],
         description: str = "",
         is_private: bool = False,
-    ) -> Any:
+    ) -> CreateTableResponse:
         """
         https://docs.dune.com/api-reference/tables/endpoint/create
         The create table endpoint allows you to create an empty table
@@ -65,7 +65,7 @@ class TableAPI(BaseRouter):
         - Column names in the table can’t start with a special character or a digit.
         """
 
-        return self._post(
+        result_json = self._post(
             route="/table/create",
             params={
                 "namespace": namespace,
@@ -76,13 +76,15 @@ class TableAPI(BaseRouter):
             },
         )
 
+        return CreateTableResponse.from_dict(result_json)
+
     def insert_table(
         self,
         namespace: str,
         table_name: str,
         data: IO[bytes],
         content_type: str,
-    ) -> Any:
+    ) -> InsertTableResult:
         """
         https://docs.dune.com/api-reference/tables/endpoint/insert
         The insert table endpoint allows you to insert data into an existing table in Dune.
@@ -92,8 +94,10 @@ class TableAPI(BaseRouter):
         - The file has to have the same schema as the table
         """
 
-        return self._post(
+        result_json = self._post(
             route=f"/table/{namespace}/{table_name}/insert",
             headers={"Content-Type": content_type},
             data=data,
         )
+        print(result_json)
+        return InsertTableResult.from_dict(result_json)

@@ -11,6 +11,8 @@ from dune_client.models import (
     ExecutionResponse,
     ExecutionStatusResponse,
     DuneError,
+    InsertTableResult,
+    CreateTableResponse,
 )
 from dune_client.types import QueryParameter
 from dune_client.client import DuneClient
@@ -256,12 +258,14 @@ class TestDuneClient(unittest.TestCase):
                 ],
                 is_private=False,
             ),
-            {
-                "namespace": namespace,
-                "table_name": table_name,
-                "full_name": f"dune.{namespace}.{table_name}",
-                "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
-            },
+            CreateTableResponse.from_dict(
+                {
+                    "namespace": namespace,
+                    "table_name": table_name,
+                    "full_name": f"dune.{namespace}.{table_name}",
+                    "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
+                }
+            ),
         )
 
     @unittest.skip("This is a plus subscription endpoint.")
@@ -277,7 +281,7 @@ class TestDuneClient(unittest.TestCase):
                     data=data,
                     content_type="text/csv",
                 ),
-                {"rows_written": 1},
+                InsertTableResult(rows_written=1),
             )
 
     @unittest.skip("This is a plus subscription endpoint.")
@@ -293,7 +297,7 @@ class TestDuneClient(unittest.TestCase):
                     data=data,
                     content_type="application/x-ndjson",
                 ),
-                {"rows_written": 1},
+                InsertTableResult(rows_written=1),
             )
 
     def test_download_csv_with_pagination(self):
