@@ -357,7 +357,7 @@ class ResultsResponse:
 
 
 @dataclass
-class CreateTableResponse(DataClassJsonMixin):
+class CreateTableResult(DataClassJsonMixin):
     """
     Data type returned by table/create operation
     """

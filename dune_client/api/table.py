@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import List, Dict, IO
 
 from dune_client.api.base import BaseRouter
-from dune_client.models import DuneError, InsertTableResult, CreateTableResponse
+from dune_client.models import DuneError, InsertTableResult, CreateTableResult
 
 
 class TableAPI(BaseRouter):
@@ -54,7 +54,7 @@ class TableAPI(BaseRouter):
         schema: List[Dict[str, str]],
         description: str = "",
         is_private: bool = False,
-    ) -> CreateTableResponse:
+    ) -> CreateTableResult:
         """
         https://docs.dune.com/api-reference/tables/endpoint/create
         The create table endpoint allows you to create an empty table
@@ -76,7 +76,7 @@ class TableAPI(BaseRouter):
             },
         )
 
-        return CreateTableResponse.from_dict(result_json)
+        return CreateTableResult.from_dict(result_json)
 
     def insert_table(
         self,

@@ -12,7 +12,7 @@ from dune_client.models import (
     ExecutionStatusResponse,
     DuneError,
     InsertTableResult,
-    CreateTableResponse,
+    CreateTableResult,
 )
 from dune_client.types import QueryParameter
 from dune_client.client import DuneClient
@@ -127,7 +127,7 @@ class TestDuneClient(unittest.TestCase):
                 {
                     "text_field": "different word",
                     "number_field": 22,
-                    "date_field": "1991-01-01T00:00:00Z",
+                    "date_field": "1991-01-01 00:00:000",
                     "list_field": "Option 2",
                 }
             ],
@@ -258,7 +258,7 @@ class TestDuneClient(unittest.TestCase):
                 ],
                 is_private=False,
             ),
-            CreateTableResponse.from_dict(
+            CreateTableResult.from_dict(
                 {
                     "namespace": namespace,
                     "table_name": table_name,
@@ -354,7 +354,7 @@ class TestDuneClient(unittest.TestCase):
                 {
                     "text_field": "different word",
                     "number_field": 22,
-                    "date_field": "1991-01-01T00:00:00Z",
+                    "date_field": "1991-01-01 00:00:00.000",
                     "list_field": "Option 2",
                 }
             ],
@@ -376,7 +376,7 @@ class TestDuneClient(unittest.TestCase):
             pandas.read_csv(result_csv.data).to_dict(orient="records"),
             [
                 {
-                    "date_field": "2022-05-04T00:00:00Z",
+                    "date_field": "2022-05-04 00:00:00.000",
                     "list_field": "Option 1",
                     "number_field": 3.1415926535,
                     "text_field": "Plain Text",
