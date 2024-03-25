@@ -75,7 +75,6 @@ class TableAPI(BaseRouter):
                 "is_private": is_private,
             },
         )
-
         return CreateTableResult.from_dict(result_json)
 
     def insert_table(
@@ -99,5 +98,4 @@ class TableAPI(BaseRouter):
             headers={"Content-Type": content_type},
             data=data,
         )
-        print(result_json)
         return InsertTableResult.from_dict(result_json)
