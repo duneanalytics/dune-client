@@ -11,7 +11,7 @@ from enum import Enum
 from io import BytesIO
 from os import SEEK_END
 from typing import Optional, Any, Union, List, Dict
-
+from dataclasses_json import DataClassJsonMixin
 from dateutil.parser import parse
 
 from dune_client.types import DuneRecord
@@ -354,3 +354,24 @@ class ResultsResponse:
         self.next_uri = other.next_uri
         self.next_offset = other.next_offset
         return self
+
+
+@dataclass
+class CreateTableResult(DataClassJsonMixin):
+    """
+    Data type returned by table/create operation
+    """
+
+    example_query: str
+    full_name: str
+    namespace: str
+    table_name: str
+
+
+@dataclass
+class InsertTableResult(DataClassJsonMixin):
+    """
+    Data type returned by table/insert operation
+    """
+
+    rows_written: int

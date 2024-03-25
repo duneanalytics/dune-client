@@ -11,6 +11,8 @@ from dune_client.models import (
     ExecutionResponse,
     ExecutionStatusResponse,
     DuneError,
+    InsertTableResult,
+    CreateTableResult,
 )
 from dune_client.types import QueryParameter
 from dune_client.client import DuneClient
@@ -125,7 +127,7 @@ class TestDuneClient(unittest.TestCase):
                 {
                     "text_field": "different word",
                     "number_field": 22,
-                    "date_field": "1991-01-01T00:00:00Z",
+                    "date_field": "1991-01-01 00:00:00.000",
                     "list_field": "Option 2",
                 }
             ],
@@ -256,12 +258,14 @@ class TestDuneClient(unittest.TestCase):
                 ],
                 is_private=False,
             ),
-            {
-                "namespace": namespace,
-                "table_name": table_name,
-                "full_name": f"dune.{namespace}.{table_name}",
-                "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
-            },
+            CreateTableResult.from_dict(
+                {
+                    "namespace": namespace,
+                    "table_name": table_name,
+                    "full_name": f"dune.{namespace}.{table_name}",
+                    "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
+                }
+            ),
         )
 
     @unittest.skip("This is a plus subscription endpoint.")
@@ -277,7 +281,7 @@ class TestDuneClient(unittest.TestCase):
                     data=data,
                     content_type="text/csv",
                 ),
-                {"rows_written": 1},
+                InsertTableResult(rows_written=1),
             )
 
     @unittest.skip("This is a plus subscription endpoint.")
@@ -293,7 +297,7 @@ class TestDuneClient(unittest.TestCase):
                     data=data,
                     content_type="application/x-ndjson",
                 ),
-                {"rows_written": 1},
+                InsertTableResult(rows_written=1),
             )
 
     def test_download_csv_with_pagination(self):
@@ -350,7 +354,7 @@ class TestDuneClient(unittest.TestCase):
                 {
                     "text_field": "different word",
                     "number_field": 22,
-                    "date_field": "1991-01-01T00:00:00Z",
+                    "date_field": "1991-01-01 00:00:00.000",
                     "list_field": "Option 2",
                 }
             ],
@@ -372,7 +376,7 @@ class TestDuneClient(unittest.TestCase):
             pandas.read_csv(result_csv.data).to_dict(orient="records"),
             [
                 {
-                    "date_field": "2022-05-04T00:00:00Z",
+                    "date_field": "2022-05-04 00:00:00.000",
                     "list_field": "Option 1",
                     "number_field": 3.1415926535,
                     "text_field": "Plain Text",
