@@ -7,7 +7,12 @@ from __future__ import annotations
 from typing import List, Dict, IO
 
 from dune_client.api.base import BaseRouter
-from dune_client.models import DuneError, InsertTableResult, CreateTableResult
+from dune_client.models import (
+    DuneError,
+    InsertTableResult,
+    CreateTableResult,
+    DeleteTableResult,
+)
 
 
 class TableAPI(BaseRouter):
@@ -99,3 +104,12 @@ class TableAPI(BaseRouter):
             data=data,
         )
         return InsertTableResult.from_dict(result_json)
+
+    def delete_table(self, namespace: str, table_name: str) -> DeleteTableResult:
+        """
+        https://docs.dune.com/api-reference/tables/endpoint/delete
+        The delete table endpoint allows you to delete an existing table in Dune.
+        """
+
+        response_json = self._delete(route=f"/table/{namespace}/{table_name}")
+        return DeleteTableResult.from_dict(response_json)

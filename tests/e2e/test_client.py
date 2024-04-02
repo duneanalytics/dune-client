@@ -13,6 +13,7 @@ from dune_client.models import (
     DuneError,
     InsertTableResult,
     CreateTableResult,
+    DeleteTableResult,
 )
 from dune_client.types import QueryParameter
 from dune_client.client import DuneClient
@@ -226,7 +227,7 @@ class TestDuneClient(unittest.TestCase):
         results = dune.get_latest_result(self.query.query_id).get_rows()
         self.assertGreater(len(results), 0)
 
-    @unittest.skip("This is a plus subscription endpoint.")
+    @unittest.skip("Requires custom namespace and table_name input.")
     def test_upload_csv_success(self):
         client = DuneClient(self.valid_api_key)
         self.assertEqual(
@@ -238,7 +239,7 @@ class TestDuneClient(unittest.TestCase):
             True,
         )
 
-    @unittest.skip("This is a plus subscription endpoint.")
+    @unittest.skip("Requires custom namespace and table_name input.")
     def test_create_table_success(self):
         # Make sure the table doesn't already exist.
         # You will need to change the namespace to your own.
@@ -268,7 +269,7 @@ class TestDuneClient(unittest.TestCase):
             ),
         )
 
-    @unittest.skip("This is a plus subscription endpoint.")
+    @unittest.skip("Requires custom namespace and table_name input.")
     def test_insert_table_csv_success(self):
         # Make sure the table already exists and csv matches table schema.
         # You will need to change the namespace to your own.
@@ -284,7 +285,7 @@ class TestDuneClient(unittest.TestCase):
                 InsertTableResult(rows_written=1),
             )
 
-    @unittest.skip("This is a plus subscription endpoint.")
+    @unittest.skip("Requires custom namespace and table_name input.")
     def test_insert_table_json_success(self):
         # Make sure the table already exists and json matches table schema.
         # You will need to change the namespace to your own.
@@ -299,6 +300,27 @@ class TestDuneClient(unittest.TestCase):
                 ),
                 InsertTableResult(rows_written=1),
             )
+
+    @unittest.skip("Requires custom namespace and table_name input.")
+    def test_delete_table_success(self):
+        # Make sure the table doesn't already exist.
+        # You will need to change the namespace to your own.
+        client = DuneClient(self.valid_api_key)
+
+        namespace = "test"
+        table_name = "dataset_e2e_test"
+
+        self.assertEqual(
+            client.delete_table(
+                namespace=namespace,
+                table_name=table_name,
+            ),
+            DeleteTableResult.from_dict(
+                {
+                    "message": "Table teamwaddah.waddah_test3 successfully deleted",
+                }
+            ),
+        )
 
     def test_download_csv_with_pagination(self):
         # Arrange
