@@ -375,3 +375,12 @@ class InsertTableResult(DataClassJsonMixin):
     """
 
     rows_written: int
+
+
+@dataclass
+class DeleteTableResult(DataClassJsonMixin):
+    """
+    Data type returned by table/delete operation
+    """
+
+    message: str
