@@ -100,7 +100,7 @@ class TableAPI(BaseRouter):
         )
         return InsertTableResult.from_dict(result_json)
     
-    def delete_table(self, namespace: str, table_name: str) -> bool:
+    def delete_table(self, namespace: str, table_name: str) -> DeleteTableResult:
         """
         https://docs.dune.com/api-reference/tables/endpoint/delete
         The delete table endpoint allows you to delete an existing table in Dune.
