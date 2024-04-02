@@ -13,7 +13,7 @@ from dune_client.models import (
     DuneError,
     InsertTableResult,
     CreateTableResult,
-    DeleteTableResult
+    DeleteTableResult,
 )
 from dune_client.types import QueryParameter
 from dune_client.client import DuneClient

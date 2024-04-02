@@ -209,7 +209,7 @@ class BaseRouter(BaseDuneClient):
             timeout=self.request_timeout,
         )
         return self._handle_response(response)
-    
+
     def _delete(self, route: str) -> Any:
         """Generic interface for the DELETE method of a Dune API request"""
         url = self._route_url(route)
