@@ -112,13 +112,7 @@ class BaseDuneClient:
 
         params = params or {}
         if columns is not None and len(columns) > 0:
-            output = []
-            for column in columns:
-                # Escape all quotes and add quotes around it
-                col = '"' + column.replace('"', '\\"') + '"'
-                output.append(col)
-
-            params["columns"] = ",".join(output)
+            params["columns"] = ",".join(columns)
         if sample_count is not None:
             params["sample_count"] = sample_count
         if filters is not None:
