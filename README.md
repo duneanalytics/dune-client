@@ -6,7 +6,7 @@
 # Dune Client
 
 A python framework for interacting with Dune Analytics' [officially supported API
-service](https://duneanalytics.notion.site/API-Documentation-1b93d16e0fa941398e15047f643e003a).
+service](https://docs.dune.com/api-reference/overview/introduction).
 
 ## Installation
 
