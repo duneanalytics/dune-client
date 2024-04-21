@@ -3,8 +3,6 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-import pkg_resources
-
 DUNE_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
@@ -18,7 +16,13 @@ def get_package_version(package_name: str) -> Optional[str]:
     Returns the package version by `package_name`
     """
     try:
+        # pylint: disable=import-outside-toplevel
+        import pkg_resources
+
         return pkg_resources.get_distribution(package_name).version
+    except ModuleNotFoundError:
+        # Python 3.12 does not have pkg_resources!
+        return None
     except pkg_resources.DistributionNotFound:
         return None
 
