@@ -1,6 +1,7 @@
 """Utility methods for package."""
 
 from datetime import datetime, timezone
+import importlib
 from typing import Optional
 
 DUNE_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -13,17 +14,12 @@ def postgres_date(date_str: str) -> datetime:
 
 def get_package_version(package_name: str) -> Optional[str]:
     """
-    Returns the package version by `package_name`
+    Returns the package version by `package_name` using the importlib.metadata module
+    which is available in Python 3.8 and later.
     """
     try:
-        # pylint: disable=import-outside-toplevel
-        import pkg_resources
-
-        return pkg_resources.get_distribution(package_name).version
-    except ModuleNotFoundError:
-        # Python 3.12 does not have pkg_resources!
-        return None
-    except pkg_resources.DistributionNotFound:
+        return importlib.metadata.version(package_name)
+    except importlib.metadata.PackageNotFoundError:
         return None
 
 
