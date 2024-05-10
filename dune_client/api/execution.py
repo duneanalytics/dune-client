@@ -22,6 +22,7 @@ from dune_client.models import (
     ResultsResponse,
     ExecutionResultCSV,
     DuneError,
+    ExecutionState,
 )
 from dune_client.query import QueryBase
 
@@ -128,9 +129,7 @@ class ExecutionAPI(BaseRouter):
         return self._get_execution_results_csv_by_url(url=url, params=params)
 
     def _get_execution_results_by_url(
-        self,
-        url: str,
-        params: Optional[Dict[str, Any]] = None,
+        self, url: str, params: Optional[Dict[str, Any]] = None, job_id=None
     ) -> ResultsResponse:
         """
         GET results from Dune API with a given URL. This is particularly useful for pagination.
@@ -139,7 +138,12 @@ class ExecutionAPI(BaseRouter):
 
         response_json = self._get(url=url, params=params)
         try:
-            return ResultsResponse.from_dict(response_json)
+            result = ResultsResponse.from_dict(response_json)
+            if result.state == ExecutionState.PARTIAL:
+                self.logger.warning(
+                    f"execution {job_id} resulted in a partial result set (i.e. results too large)."
+                )
+            return result
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 

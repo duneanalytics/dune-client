@@ -421,10 +421,6 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         if status.state == ExecutionState.FAILED:
             self.logger.error(status)
             raise QueryFailed(f"Error data: {status.error}")
-        if status.state == ExecutionState.PARTIAL:
-            self.logger.warning(
-                f"execution {job_id} resulted in a partial result set (i.e. results too large)."
-            )
         return job_id
 
     def _fetch_entire_result(
