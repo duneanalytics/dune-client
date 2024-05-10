@@ -96,6 +96,7 @@ class BaseDuneClient:
         sort_by: Optional[List[str]] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        allow_partial_results: bool = True,
     ) -> Dict[str, Union[str, int]]:
         """
         Utility function that builds a dictionary of parameters to be used
@@ -111,6 +112,7 @@ class BaseDuneClient:
         ), "sampling cannot be combined with filters or pagination"
 
         params = params or {}
+        params["allow_partial_results"] = allow_partial_results
         if columns is not None and len(columns) > 0:
             params["columns"] = ",".join(columns)
         if sample_count is not None:

@@ -47,7 +47,7 @@ class ExecutionState(Enum):
 
     COMPLETED = "QUERY_STATE_COMPLETED"
     EXECUTING = "QUERY_STATE_EXECUTING"
-    PARTIAL = "QUERY_STATE_PARTIAL"
+    PARTIAL = "QUERY_STATE_COMPLETED_PARTIAL"
     PENDING = "QUERY_STATE_PENDING"
     CANCELLED = "QUERY_STATE_CANCELLED"
     FAILED = "QUERY_STATE_FAILED"
@@ -58,7 +58,7 @@ class ExecutionState(Enum):
         """
         Returns the terminal states (i.e. when a query execution is no longer executing
         """
-        return {cls.COMPLETED, cls.CANCELLED, cls.FAILED, cls.EXPIRED}
+        return {cls.COMPLETED, cls.CANCELLED, cls.FAILED, cls.EXPIRED, cls.PARTIAL}
 
     def is_complete(self) -> bool:
         """Returns True is state is completed, otherwise False."""
