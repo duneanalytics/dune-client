@@ -128,7 +128,7 @@ class TestDuneClient(unittest.TestCase):
                 {
                     "text_field": "different word",
                     "number_field": 22,
-                    "date_field": "1991-01-01 00:00:00.000",
+                    "date_field": "1991-01-01 00:00:00",
                     "list_field": "Option 2",
                 }
             ],
@@ -376,7 +376,7 @@ class TestDuneClient(unittest.TestCase):
                 {
                     "text_field": "different word",
                     "number_field": 22,
-                    "date_field": "1991-01-01 00:00:00.000",
+                    "date_field": "1991-01-01 00:00:00",
                     "list_field": "Option 2",
                 }
             ],
@@ -391,14 +391,14 @@ class TestDuneClient(unittest.TestCase):
         # Note that we could compare results with
         #    ",".join([p.value for p in self.query.parameters()]) + "\n"
         # but there seems to be a discrepancy with the date string values.
-        # Specifically 1991-01-01 00:00:00.000
+        # Specifically 1991-01-01 00:00:00
         #           vs 1991-01-01 00:00:00
         #################################################################
         self.assertEqual(
             pandas.read_csv(result_csv.data).to_dict(orient="records"),
             [
                 {
-                    "date_field": "2022-05-04 00:00:00.000",
+                    "date_field": "2022-05-04 00:00:00",
                     "list_field": "Option 1",
                     "number_field": 3.1415926535,
                     "text_field": "Plain Text",
