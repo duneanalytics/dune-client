@@ -10,6 +10,7 @@ from dune_client.api.base import BaseRouter
 from dune_client.models import (
     DuneError,
     InsertTableResult,
+    InsertTableErrorResult,
     CreateTableResult,
     DeleteTableResult,
 )
@@ -88,7 +89,7 @@ class TableAPI(BaseRouter):
         table_name: str,
         data: IO[bytes],
         content_type: str,
-    ) -> InsertTableResult:
+    ) -> InsertTableResult | InsertTableErrorResult:
         """
         https://docs.dune.com/api-reference/tables/endpoint/insert
         The insert table endpoint allows you to insert data into an existing table in Dune.
@@ -103,7 +104,11 @@ class TableAPI(BaseRouter):
             headers={"Content-Type": content_type},
             data=data,
         )
-        return InsertTableResult.from_dict(result_json)
+        if "error" in result_json:
+            return InsertTableErrorResult.from_dict(result_json)
+        else:
+            return InsertTableResult.from_dict(result_json)
+        
 
     def delete_table(self, namespace: str, table_name: str) -> DeleteTableResult:
         """

@@ -375,6 +375,15 @@ class InsertTableResult(DataClassJsonMixin):
     """
 
     rows_written: int
+    bytes_written: int
+
+@dataclass
+class InsertTableErrorResult(DataClassJsonMixin):
+    """
+    Data type returned by table/insert operation error
+    """
+
+    error: str
 
 
 @dataclass
