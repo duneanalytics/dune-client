@@ -103,7 +103,6 @@ class TableAPI(BaseRouter):
             headers={"Content-Type": content_type},
             data=data,
         )
-        
         try:
             return InsertTableResult.from_dict(result_json)
         except KeyError as err:
