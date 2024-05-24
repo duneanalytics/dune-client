@@ -104,11 +104,12 @@ class TableAPI(BaseRouter):
             headers={"Content-Type": content_type},
             data=data,
         )
-        if "error" in result_json:
-            return InsertTableErrorResult.from_dict(result_json)
-        else:
-            return InsertTableResult.from_dict(result_json)
         
+            # return InsertTableErrorResult.from_dict(result_json)
+        try:
+            return InsertTableResult.from_dict(result_json)
+        except KeyError as err:
+            raise DuneError(result_json, "ResultsResponse", err) from err
 
     def delete_table(self, namespace: str, table_name: str) -> DeleteTableResult:
         """
