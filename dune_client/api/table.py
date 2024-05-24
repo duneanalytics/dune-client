@@ -10,7 +10,6 @@ from dune_client.api.base import BaseRouter
 from dune_client.models import (
     DuneError,
     InsertTableResult,
-    InsertTableErrorResult,
     CreateTableResult,
     DeleteTableResult,
 )
