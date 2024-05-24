@@ -88,7 +88,7 @@ class TableAPI(BaseRouter):
         table_name: str,
         data: IO[bytes],
         content_type: str,
-    ) -> InsertTableResult | InsertTableErrorResult:
+    ) -> InsertTableResult:
         """
         https://docs.dune.com/api-reference/tables/endpoint/insert
         The insert table endpoint allows you to insert data into an existing table in Dune.
@@ -104,7 +104,6 @@ class TableAPI(BaseRouter):
             data=data,
         )
         
-            # return InsertTableErrorResult.from_dict(result_json)
         try:
             return InsertTableResult.from_dict(result_json)
         except KeyError as err:
