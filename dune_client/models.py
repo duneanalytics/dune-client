@@ -375,6 +375,7 @@ class InsertTableResult(DataClassJsonMixin):
     """
 
     rows_written: int
+    bytes_written: int
 
 
 @dataclass
