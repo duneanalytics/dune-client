@@ -20,6 +20,7 @@ from dune_client.api.base import (
 from dune_client.api.execution import ExecutionAPI
 from dune_client.api.query import QueryAPI
 from dune_client.api.table import TableAPI
+from dune_client.api.custom import CustomEndpointAPI
 from dune_client.models import (
     ResultsResponse,
     DuneError,
@@ -37,7 +38,7 @@ THREE_MONTHS_IN_HOURS = 2191
 POLL_FREQUENCY_SECONDS = 1
 
 
-class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI):
+class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
     """
     Provides higher level helper methods for faster
     and easier development on top of the base ExecutionAPI.
