@@ -49,4 +49,4 @@ class CustomEndpointAPI(BaseRouter):
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
-   
+
