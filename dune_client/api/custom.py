@@ -15,7 +15,9 @@ from dune_client.models import (
 
 class CustomEndpointAPI(BaseRouter):
     """
-    
+    Custom endpoints API implementation.
+    Methods:
+        get_custom_endpoint_result(): returns the results of a custom endpoint.
     """
 
     def get_custom_endpoint_result(
@@ -30,7 +32,18 @@ class CustomEndpointAPI(BaseRouter):
         sort_by: Optional[List[str]] = None,
     ) -> ResultsResponse:
         """
+        Custom endpoints allow you to fetch and filter data from any custom endpoint you created.
+        More information on Custom Endpoints can be round here: https://docs.dune.com/api-reference/custom/overview
         
+        Args: 
+            handle (str): The handle of the team/user.
+            endpoint (str): The slug of the custom endpoint.
+            limit (int, optional): The maximum number of results to return.
+            offset (int, optional): The number of results to skip.
+            columns (List[str], optional): A list of columns to return.
+            sample_count (int, optional): The number of results to return.
+            filters (str, optional): The filters to apply.
+            sort_by (List[str], optional): The columns to sort by.
         """
         params = self._build_parameters(
             columns=columns,
@@ -49,4 +62,3 @@ class CustomEndpointAPI(BaseRouter):
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
 
-   
