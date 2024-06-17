@@ -32,8 +32,10 @@ class CustomEndpointAPI(BaseRouter):
         sort_by: Optional[List[str]] = None,
     ) -> ResultsResponse:
         """
-        Custom endpoints allow you to fetch and filter data from any custom endpoint you created.
-        More information on Custom Endpoints can be round here: https://docs.dune.com/api-reference/custom/overview
+        Custom endpoints allow you to fetch and filter data from any 
+        custom endpoint you created.
+        More information on Custom Endpoints can be round here: 
+        https://docs.dune.com/api-reference/custom/overview
         
         Args: 
             handle (str): The handle of the team/user.
@@ -61,4 +63,3 @@ class CustomEndpointAPI(BaseRouter):
             return ResultsResponse.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
-
