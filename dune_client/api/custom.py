@@ -12,7 +12,7 @@ from dune_client.models import (
     ResultsResponse,
 )
 
-
+# pylint: disable=duplicate-code
 class CustomEndpointAPI(BaseRouter):
     """
     Custom endpoints API implementation.
