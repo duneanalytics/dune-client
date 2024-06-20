@@ -19,5 +19,6 @@ class TestCustomEndpoints(unittest.TestCase):
         results = dune.get_custom_endpoint_result("dune", "new-test")
         self.assertEqual(len(results.get_rows()), 10)
 
+
 if __name__ == "__main__":
     unittest.main()

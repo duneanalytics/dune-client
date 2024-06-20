@@ -12,6 +12,7 @@ from dune_client.models import (
     ResultsResponse,
 )
 
+
 # pylint: disable=duplicate-code
 class CustomEndpointAPI(BaseRouter):
     """
@@ -32,12 +33,12 @@ class CustomEndpointAPI(BaseRouter):
         sort_by: Optional[List[str]] = None,
     ) -> ResultsResponse:
         """
-        Custom endpoints allow you to fetch and filter data from any 
+        Custom endpoints allow you to fetch and filter data from any
         custom endpoint you created.
-        More information on Custom Endpoints can be round here: 
+        More information on Custom Endpoints can be round here:
         https://docs.dune.com/api-reference/custom/overview
-        
-        Args: 
+
+        Args:
             handle (str): The handle of the team/user.
             endpoint (str): The slug of the custom endpoint.
             limit (int, optional): The maximum number of results to return.
