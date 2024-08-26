@@ -47,6 +47,7 @@ class ExecutionState(Enum):
 
     COMPLETED = "QUERY_STATE_COMPLETED"
     EXECUTING = "QUERY_STATE_EXECUTING"
+    PARTIAL = "QUERY_STATE_COMPLETED_PARTIAL"
     PENDING = "QUERY_STATE_PENDING"
     CANCELLED = "QUERY_STATE_CANCELLED"
     FAILED = "QUERY_STATE_FAILED"
@@ -57,7 +58,7 @@ class ExecutionState(Enum):
         """
         Returns the terminal states (i.e. when a query execution is no longer executing
         """
-        return {cls.COMPLETED, cls.CANCELLED, cls.FAILED, cls.EXPIRED}
+        return {cls.COMPLETED, cls.CANCELLED, cls.FAILED, cls.EXPIRED, cls.PARTIAL}
 
     def is_complete(self) -> bool:
         """Returns True is state is completed, otherwise False."""
@@ -311,6 +312,7 @@ class ResultsResponse:
     @classmethod
     def from_dict(cls, data: dict[str, str | int | ResultData]) -> ResultsResponse:
         """Constructor from dictionary. See unit test for sample input."""
+        print(data)
         assert isinstance(data["execution_id"], str)
         assert isinstance(data["query_id"], int)
         assert isinstance(data["state"], str)
