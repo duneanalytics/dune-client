@@ -96,7 +96,7 @@ class BaseDuneClient:
         sort_by: Optional[List[str]] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
-        allow_partial_results: bool = True,
+        allow_partial_results: str = "true",
     ) -> Dict[str, Union[str, int]]:
         """
         Utility function that builds a dictionary of parameters to be used

@@ -175,6 +175,7 @@ class AsyncDuneClient(BaseDuneClient):
                 headers=self.default_headers(),
                 params=params,
             )
+            print(response)
             if raw:
                 return response
             return await self._handle_response(response)

@@ -81,7 +81,7 @@ class ExecutionAPI(BaseRouter):
         sample_count: Optional[int] = None,
         filters: Optional[str] = None,
         sort_by: Optional[List[str]] = None,
-        allow_partial_results: bool = True,
+        allow_partial_results: str = "true",
     ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
         params = self._build_parameters(

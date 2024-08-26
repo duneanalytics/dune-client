@@ -54,7 +54,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         sample_count: Optional[int] = None,
         filters: Optional[str] = None,
         sort_by: Optional[List[str]] = None,
-        allow_partial_results: bool = True,
+        allow_partial_results: str = "true",
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
@@ -418,6 +418,8 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
             )
             time.sleep(ping_frequency)
             status = self.get_execution_status(job_id)
+        if status.state == ExecutionState.PENDING:
+            self.logger.warning("Partial result set retrieved.")
         if status.state == ExecutionState.FAILED:
             self.logger.error(status)
             raise QueryFailed(f"Error data: {status.error}")

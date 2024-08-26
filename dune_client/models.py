@@ -312,6 +312,7 @@ class ResultsResponse:
     @classmethod
     def from_dict(cls, data: dict[str, str | int | ResultData]) -> ResultsResponse:
         """Constructor from dictionary. See unit test for sample input."""
+        print(data)
         assert isinstance(data["execution_id"], str)
         assert isinstance(data["query_id"], int)
         assert isinstance(data["state"], str)
