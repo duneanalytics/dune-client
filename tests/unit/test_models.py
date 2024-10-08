@@ -44,6 +44,7 @@ class MyTestCase(unittest.TestCase):
         }
         self.result_metadata_data = {
             "column_names": ["ct", "TableName"],
+            "column_types": ["x", "y"],
             "row_count": 8,
             "result_set_bytes": 194,
             "total_result_set_bytes": 194,
@@ -143,6 +144,7 @@ eth_traces,4474223
             "execution_ended_at": "2022-10-07T10:53:20.729372559Z",
             "result_metadata": {
                 "column_names": ["token"],
+                "column_types": ["varchar"],
                 "result_set_bytes": 815,
                 "total_row_count": 18,
                 "datapoint_count": 18,
@@ -171,6 +173,7 @@ eth_traces,4474223
     def test_parse_result_metadata(self):
         expected = ResultMetadata(
             column_names=["ct", "TableName"],
+            column_types=["x", "y"],
             row_count=8,
             result_set_bytes=194,
             total_row_count=8,

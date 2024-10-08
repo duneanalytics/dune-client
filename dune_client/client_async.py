@@ -7,9 +7,11 @@ https://docs.dune.com/api-reference/overview/introduction
 from __future__ import annotations
 
 import asyncio
+import ssl
 from io import BytesIO
 from typing import Any, Callable, Dict, List, Optional, Union
 
+import certifi
 from aiohttp import (
     ClientResponseError,
     ClientSession,
@@ -83,7 +85,10 @@ class AsyncDuneClient(BaseDuneClient):
         self._session: Optional[ClientSession] = None
 
     async def _create_session(self) -> ClientSession:
-        conn = TCPConnector(limit=self._connection_limit)
+        # Create an SSL context using the certifi certificate store
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+
+        conn = TCPConnector(limit=self._connection_limit, ssl=ssl_context)
         return ClientSession(
             connector=conn,
             base_url=self.base_url,

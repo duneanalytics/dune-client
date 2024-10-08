@@ -1,4 +1,4 @@
 [MASTER]
-disable=fixme,logging-fstring-interpolation
+disable=fixme,logging-fstring-interpolation,too-many-positional-arguments
 [DESIGN]
 max-args=10
