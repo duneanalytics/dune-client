@@ -188,6 +188,7 @@ class ResultMetadata:
     # pylint: disable=too-many-instance-attributes
 
     column_names: list[str]
+    column_types: list[str]
     row_count: int
     result_set_bytes: int
     total_row_count: int
@@ -203,6 +204,7 @@ class ResultMetadata:
         pending_time = data.get("pending_time_millis", None)
         return cls(
             column_names=data["column_names"],
+            column_types=data["column_types"],
             row_count=int(data["total_row_count"]),
             result_set_bytes=int(data["result_set_bytes"]),
             total_row_count=int(data["total_row_count"]),
