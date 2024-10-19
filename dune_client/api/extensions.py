@@ -33,10 +33,13 @@ from dune_client.query import QueryBase, parse_query_object_or_id
 from dune_client.types import QueryParameter
 from dune_client.util import age_in_hours
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # This is the expiry time on old query results.
 THREE_MONTHS_IN_HOURS = 2191
 # Seconds between checking execution status
-POLL_FREQUENCY_SECONDS = os.getenv("POLL_FREQUENCY_SECONDS", 1)
+POLL_FREQUENCY_SECONDS = int(os.getenv("POLL_FREQUENCY_SECONDS", 1))
 
 
 class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
