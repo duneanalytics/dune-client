@@ -2,9 +2,9 @@
 Extended functionality for the ExecutionAPI
 """
 
-import os
 from __future__ import annotations
 
+import os
 import logging
 import time
 
