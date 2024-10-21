@@ -5,6 +5,7 @@ dist
 _version.py
 .idea/
 venv/
+.venv/
 tmp/
 .vscode/
 build/
