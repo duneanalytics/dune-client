@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import ssl
 from io import BytesIO
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 import certifi
 from aiohttp import (
@@ -232,13 +232,16 @@ class AsyncDuneClient(BaseDuneClient):
     async def get_result(
         self,
         job_id: str,
-        batch_size: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
+        if params is None:
+            params = {}
+        batch_size = params.get("batch_size", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_count", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
         assert (
             # We are not sampling
             sample_count is None
@@ -251,11 +254,13 @@ class AsyncDuneClient(BaseDuneClient):
 
         results = await self._get_result_page(
             job_id,
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            limit=batch_size,
+            params={
+                "columns": columns,
+                "sample_count": sample_count,
+                "filters": filters,
+                "sort_by": sort_by,
+                "limit": batch_size,
+            },
         )
         while results.next_uri is not None:
             batch = await self._get_result_by_url(results.next_uri)
@@ -266,11 +271,7 @@ class AsyncDuneClient(BaseDuneClient):
     async def get_result_csv(
         self,
         job_id: str,
-        batch_size: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
@@ -279,6 +280,13 @@ class AsyncDuneClient(BaseDuneClient):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
+        if params is None:
+            params = {}
+        batch_size = params.get("batch_size", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_count", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
         assert (
             # We are not sampling
             sample_count is None
@@ -291,11 +299,13 @@ class AsyncDuneClient(BaseDuneClient):
 
         results = await self._get_result_csv_page(
             job_id,
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            limit=batch_size,
+            params={
+                "columns": columns,
+                "sample_count": sample_count,
+                "filters": filters,
+                "sort_by": sort_by,
+                "limit": batch_size,
+            },
         )
         while results.next_uri is not None:
             batch = await self._get_result_csv_by_url(results.next_uri)
@@ -357,18 +367,21 @@ class AsyncDuneClient(BaseDuneClient):
         self,
         query: QueryBase,
         ping_frequency: int = 5,
-        performance: Optional[str] = None,
-        batch_size: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
+        if params is None:
+            params = {}
+        performance = params.get("performance", None)
+        batch_size = params.get("batch_size", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_count", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
         assert (
             # We are not sampling
             sample_count is None
@@ -381,29 +394,34 @@ class AsyncDuneClient(BaseDuneClient):
         )
         return await self.get_result(
             job_id,
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            batch_size=batch_size,
+            params={
+                "columns": columns,
+                "sample_count": sample_count,
+                "filters": filters,
+                "sort_by": sort_by,
+                "batch_size": batch_size,
+            },
         )
 
     async def refresh_csv(
         self,
         query: QueryBase,
         ping_frequency: int = 5,
-        performance: Optional[str] = None,
-        batch_size: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
         fetches and the results in CSV format
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
+        if params is None:
+            params = {}
+        performance = params.get("performance", None)
+        batch_size = params.get("batch_size", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_count", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
         assert (
             # We are not sampling
             sample_count is None
@@ -416,22 +434,19 @@ class AsyncDuneClient(BaseDuneClient):
         )
         return await self.get_result_csv(
             job_id,
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            batch_size=batch_size,
+            params={
+                "columns": columns,
+                "sample_count": sample_count,
+                "filters": filters,
+                "sort_by": sort_by,
+                "batch_size": batch_size,
+            },
         )
 
     async def refresh_into_dataframe(
         self,
         query: QueryBase,
-        performance: Optional[str] = None,
-        batch_size: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
@@ -439,6 +454,14 @@ class AsyncDuneClient(BaseDuneClient):
 
         This is a convenience method that uses refresh_csv underneath
         """
+        if params is None:
+            params = {}
+        performance = params.get("performance", None)
+        batch_size = params.get("batch_size", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_count", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
         try:
             import pandas  # pylint: disable=import-outside-toplevel
         except ImportError as exc:
@@ -446,13 +469,15 @@ class AsyncDuneClient(BaseDuneClient):
                 "dependency failure, pandas is required but missing"
             ) from exc
         results = await self.refresh_csv(
-            query,
-            performance=performance,
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            batch_size=batch_size,
+            query=query,
+            params={
+                "performance": performance,
+                "columns": columns,
+                "sample_count": sample_count,
+                "filters": filters,
+                "sort_by": sort_by,
+                "batch_size": batch_size,
+            },
         )
         return pandas.read_csv(results.data)
 
@@ -463,15 +488,17 @@ class AsyncDuneClient(BaseDuneClient):
     async def _get_result_page(
         self,
         job_id: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> ResultsResponse:
         """GET a page of results from Dune API for `job_id` (aka `execution_id`)"""
-
+        if params is None:
+            params = {}
+        limit = params.get("limit", None)
+        offset = params.get("offset", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_count", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
         if sample_count is None and limit is None and offset is None:
             limit = MAX_NUM_ROWS_PER_BATCH
             offset = 0
@@ -512,17 +539,19 @@ class AsyncDuneClient(BaseDuneClient):
     async def _get_result_csv_page(
         self,
         job_id: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> ExecutionResultCSV:
         """
         GET a page of results in CSV format from Dune API for `job_id` (aka `execution_id`)
         """
-
+        if params is None:
+            params = {}
+        limit = params.get("limit", None)
+        offset = params.get("offset", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_count", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
         if sample_count is None and limit is None and offset is None:
             limit = MAX_NUM_ROWS_PER_BATCH
             offset = 0

@@ -4,7 +4,7 @@ fetch and filter data from custom endpoints.
 """
 
 from __future__ import annotations
-from typing import List, Optional
+from typing import Dict, Optional, Any
 
 from dune_client.api.base import BaseRouter
 from dune_client.models import (
@@ -25,12 +25,7 @@ class CustomEndpointAPI(BaseRouter):
         self,
         handle: str,
         endpoint: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> ResultsResponse:
         """
         Custom endpoints allow you to fetch and filter data from any
@@ -48,7 +43,16 @@ class CustomEndpointAPI(BaseRouter):
             filters (str, optional): The filters to apply.
             sort_by (List[str], optional): The columns to sort by.
         """
-        params = self._build_parameters(
+        if params is None:
+            params = {}
+        limit = params.get("limit", None)
+        offset = params.get("offset", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_counts", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
+
+        build_params = self._build_parameters(
             columns=columns,
             sample_count=sample_count,
             filters=filters,
@@ -58,7 +62,7 @@ class CustomEndpointAPI(BaseRouter):
         )
         response_json = self._get(
             route=f"/endpoints/{handle}/{endpoint}/results",
-            params=params,
+            params=build_params,
         )
         try:
             return ResultsResponse.from_dict(response_json)

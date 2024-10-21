@@ -89,21 +89,25 @@ class BaseDuneClient:
 
     def _build_parameters(
         self,
-        params: Optional[Dict[str, Union[str, int]]] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
         allow_partial_results: str = "true",
+        params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Union[str, int]]:
+        #TODO: Change the function class for this function
         """
         Utility function that builds a dictionary of parameters to be used
         when retrieving advanced results (filters, pagination, sorting, etc.).
         This is shared between the sync and async client.
         """
         # Ensure we don't specify parameters that are incompatible:
+        if params is None:
+            params = {}
+        parameters = params.get("params", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_count", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
+        limit = params.get("limit", None)
+        offset = params.get("offset", None)
         assert (
             # We are not sampling
             sample_count is None
@@ -111,22 +115,22 @@ class BaseDuneClient:
             or (limit is None and offset is None and filters is None)
         ), "sampling cannot be combined with filters or pagination"
 
-        params = params or {}
-        params["allow_partial_results"] = allow_partial_results
+        parameters = parameters or {}
+        parameters["allow_partial_results"] = allow_partial_results
         if columns is not None and len(columns) > 0:
-            params["columns"] = ",".join(columns)
+            parameters["columns"] = ",".join(columns)
         if sample_count is not None:
-            params["sample_count"] = sample_count
+            parameters["sample_count"] = sample_count
         if filters is not None:
-            params["filters"] = filters
+            parameters["filters"] = filters
         if sort_by is not None and len(sort_by) > 0:
-            params["sort_by"] = ",".join(sort_by)
+            parameters["sort_by"] = ",".join(sort_by)
         if limit is not None:
-            params["limit"] = limit
+            parameters["limit"] = limit
         if offset is not None:
-            params["offset"] = offset
+            parameters["offset"] = offset
 
-        return params
+        return parameters
 
 
 class BaseRouter(BaseDuneClient):

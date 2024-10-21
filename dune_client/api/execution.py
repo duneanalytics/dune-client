@@ -7,7 +7,7 @@ Further Documentation:
 """
 
 from io import BytesIO
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from deprecated import deprecated
 
@@ -75,16 +75,20 @@ class ExecutionAPI(BaseRouter):
     def get_execution_results(
         self,
         job_id: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
-        allow_partial_results: str = "true",
+        params: Optional[Dict[str, Any]] = None,
     ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        params = self._build_parameters(
+        if params is None:
+            params = {}
+        limit = params.get("limit", None)
+        offset = params.get("offset", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_counts", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
+        allow_partial_results = params.get("allow_partial_results", None)
+
+        build_params = self._build_parameters(
             columns=columns,
             sample_count=sample_count,
             filters=filters,
@@ -96,17 +100,12 @@ class ExecutionAPI(BaseRouter):
 
         route = f"/execution/{job_id}/results"
         url = self._route_url(route)
-        return self._get_execution_results_by_url(url=url, params=params)
+        return self._get_execution_results_by_url(url=url, params=build_params)
 
     def get_execution_results_csv(
         self,
         job_id: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        filters: Optional[str] = None,
-        sample_count: Optional[int] = None,
-        sort_by: Optional[List[str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
@@ -115,7 +114,16 @@ class ExecutionAPI(BaseRouter):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
-        params = self._build_parameters(
+        if params is None:
+            params = {}
+        limit = params.get("limit", None)
+        offset = params.get("offset", None)
+        columns = params.get("columns", None)
+        sample_count = params.get("sample_counts", None)
+        filters = params.get("filters", None)
+        sort_by = params.get("sort_by", None)
+
+        build_params = self._build_parameters(
             columns=columns,
             sample_count=sample_count,
             filters=filters,
@@ -126,7 +134,7 @@ class ExecutionAPI(BaseRouter):
 
         route = f"/execution/{job_id}/results/csv"
         url = self._route_url(route)
-        return self._get_execution_results_csv_by_url(url=url, params=params)
+        return self._get_execution_results_csv_by_url(url=url, params=build_params)
 
     def _get_execution_results_by_url(
         self, url: str, params: Optional[Dict[str, Any]] = None

@@ -6,7 +6,7 @@ and freeing you from UI-exclusive query editing.
 """
 
 from __future__ import annotations
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 
 from dune_client.api.base import BaseRouter
 from dune_client.models import DuneError
@@ -57,11 +57,7 @@ class QueryAPI(BaseRouter):
     def update_query(  # pylint: disable=too-many-arguments
         self,
         query_id: int,
-        name: Optional[str] = None,
-        query_sql: Optional[str] = None,
-        params: Optional[list[QueryParameter]] = None,
-        description: Optional[str] = None,
-        tags: Optional[list[str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> int:
         """
         Updates Dune Query by ID
@@ -72,6 +68,14 @@ class QueryAPI(BaseRouter):
         If the tags or parameters are provided as an empty array,
         they will be deleted from the query.
         """
+        if params is None:
+            params = {}
+        name = params.get("name", None)
+        query_sql = params.get("query_sql", None)
+        query_parms = params.get("parameters", None)
+        description = params.get("description", None)
+        tags = params.get("tags", None)
+
         parameters: dict[str, Any] = {}
         if name is not None:
             parameters["name"] = name
@@ -81,8 +85,8 @@ class QueryAPI(BaseRouter):
             parameters["tags"] = tags
         if query_sql is not None:
             parameters["query_sql"] = query_sql
-        if params is not None:
-            parameters["parameters"] = [p.to_dict() for p in params]
+        if query_parms is not None:
+            parameters["parameters"] = [p.to_dict() for p in query_parms]
 
         if not bool(parameters):
             # Nothing to change no need to make reqeust
