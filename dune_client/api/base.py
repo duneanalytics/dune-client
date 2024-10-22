@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging.config
 import os
 from json import JSONDecodeError
-from typing import Any, Dict, List, Optional, Union, IO
+from typing import Any, Dict, Optional, Union, IO
 
 from requests import Response, Session
 from requests.adapters import HTTPAdapter, Retry
@@ -92,7 +92,6 @@ class BaseDuneClient:
         allow_partial_results: str = "true",
         params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Union[str, int]]:
-        #TODO: Change the function class for this function
         """
         Utility function that builds a dictionary of parameters to be used
         when retrieving advanced results (filters, pagination, sorting, etc.).

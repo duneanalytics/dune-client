@@ -7,7 +7,7 @@ Further Documentation:
 """
 
 from io import BytesIO
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from deprecated import deprecated
 
@@ -25,6 +25,19 @@ from dune_client.models import (
     ExecutionState,
 )
 from dune_client.query import QueryBase
+
+
+class GetExecutionResultsParams(NamedTuple):
+    """
+    Parameters for get execution result functions
+    """
+
+    limit: Optional[int]
+    columns: Optional[List[str]]
+    sample_count: Optional[int]
+    filters: Optional[str]
+    sort_by: Optional[List[str]]
+    offset: Optional[int]
 
 
 class ExecutionAPI(BaseRouter):
@@ -75,37 +88,30 @@ class ExecutionAPI(BaseRouter):
     def get_execution_results(
         self,
         job_id: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[GetExecutionResultsParams] = None,
+        allow_partial_results: str = "true",
     ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        if params is None:
-            params = {}
-        limit = params.get("limit", None)
-        offset = params.get("offset", None)
-        columns = params.get("columns", None)
-        sample_count = params.get("sample_counts", None)
-        filters = params.get("filters", None)
-        sort_by = params.get("sort_by", None)
-        allow_partial_results = params.get("allow_partial_results", None)
-
-        build_params = self._build_parameters(
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            limit=limit,
-            offset=offset,
-            allow_partial_results=allow_partial_results,
-        )
+        build_params = None
+        if params is not None:
+            build_params = self._build_parameters(
+                allow_partial_results=allow_partial_results,
+                params={
+                    "columns": params.columns,
+                    "sample_count": params.sample_count,
+                    "filters": params.filters,
+                    "sort_by": params.sort_by,
+                    "limit": params.limit,
+                    "offset": params.offset,
+                },
+            )
 
         route = f"/execution/{job_id}/results"
         url = self._route_url(route)
         return self._get_execution_results_by_url(url=url, params=build_params)
 
     def get_execution_results_csv(
-        self,
-        job_id: str,
-        params: Optional[Dict[str, Any]] = None,
+        self, job_id: str, params: Optional[GetExecutionResultsParams] = None
     ) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
@@ -114,23 +120,18 @@ class ExecutionAPI(BaseRouter):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
-        if params is None:
-            params = {}
-        limit = params.get("limit", None)
-        offset = params.get("offset", None)
-        columns = params.get("columns", None)
-        sample_count = params.get("sample_counts", None)
-        filters = params.get("filters", None)
-        sort_by = params.get("sort_by", None)
-
-        build_params = self._build_parameters(
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            limit=limit,
-            offset=offset,
-        )
+        build_params = None
+        if params is not None:
+            build_params = self._build_parameters(
+                params={
+                    "columns": params.columns,
+                    "sample_count": params.sample_count,
+                    "filters": params.filters,
+                    "sort_by": params.sort_by,
+                    "limit": params.limit,
+                    "offset": params.offset,
+                }
+            )
 
         route = f"/execution/{job_id}/results/csv"
         url = self._route_url(route)

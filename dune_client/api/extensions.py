@@ -17,7 +17,7 @@ from dune_client.api.base import (
     DUNE_CSV_NEXT_OFFSET_HEADER,
     MAX_NUM_ROWS_PER_BATCH,
 )
-from dune_client.api.execution import ExecutionAPI
+from dune_client.api.execution import ExecutionAPI, GetExecutionResultsParams
 from dune_client.api.query import QueryAPI
 from dune_client.api.table import TableAPI
 from dune_client.api.custom import CustomEndpointAPI
@@ -80,17 +80,14 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
 
         # pylint: disable=duplicate-code
         job_id = self._refresh(query, ping_frequency, performance)
+        params = GetExecutionResultsParams(
+            limit, columns, sample_count, filters, sort_by, None
+        )
         return self._fetch_entire_result(
             self.get_execution_results(
                 job_id,
-                params={
-                    "columns": columns,
-                    "sample_count": sample_count,
-                    "filters": filters,
-                    "sort_by": sort_by,
-                    "limit": limit,
-                    "allow_partial_results": allow_partial_results,
-                },
+                allow_partial_results=allow_partial_results,
+                params=params,
             ),
         )
 
@@ -128,16 +125,13 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
 
         # pylint: disable=duplicate-code
         job_id = self._refresh(query, ping_frequency, performance)
+        params = GetExecutionResultsParams(
+            limit, columns, sample_count, filters, sort_by, None
+        )
         return self._fetch_entire_result_csv(
             self.get_execution_results_csv(
                 job_id,
-                params={
-                    "columns": columns,
-                    "sample_count": sample_count,
-                    "filters": filters,
-                    "sort_by": sort_by,
-                    "limit": limit,
-                },
+                params=params,
             ),
         )
 
@@ -248,16 +242,13 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
             else:
                 # The results are fresh enough, retrieve the entire result
                 # pylint: disable=duplicate-code
+                params = GetExecutionResultsParams(
+                    batch_size, columns, sample_count, filters, sort_by, None
+                )
                 results = self._fetch_entire_result(
                     self.get_execution_results(
                         metadata.execution_id,
-                        params={
-                            "columns": columns,
-                            "sample_count": sample_count,
-                            "filters": filters,
-                            "sort_by": sort_by,
-                            "limit": batch_size,
-                        },
+                        params=params,
                     ),
                 )
             return results
@@ -330,12 +321,14 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         params, query_id = parse_query_object_or_id(query)
 
         params = self._build_parameters(
-            params=params,
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            limit=batch_size,
+            params={
+                "params": params,
+                "columns": columns,
+                "sample_count": sample_count,
+                "filters": filters,
+                "sort_by": sort_by,
+                "limit": batch_size,
+            }
         )
         if sample_count is None and batch_size is None:
             params["limit"] = MAX_NUM_ROWS_PER_BATCH

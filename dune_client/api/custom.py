@@ -53,12 +53,14 @@ class CustomEndpointAPI(BaseRouter):
         sort_by = params.get("sort_by", None)
 
         build_params = self._build_parameters(
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            limit=limit,
-            offset=offset,
+            params={
+                "columns": columns,
+                "sample_count": sample_count,
+                "filters": filters,
+                "sort_by": sort_by,
+                "limit": limit,
+                "offset": offset,
+            }
         )
         response_json = self._get(
             route=f"/endpoints/{handle}/{endpoint}/results",
