@@ -54,7 +54,7 @@ class QueryAPI(BaseRouter):
         response_json = self._get(route=f"/query/{query_id}")
         return DuneQuery.from_dict(response_json)
 
-    def update_query(  # pylint: disable=too-many-arguments
+    def update_query(
         self,
         query_id: int,
         params: Optional[Dict[str, Any]] = None,

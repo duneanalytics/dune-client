@@ -5,7 +5,7 @@ import aiounittest
 import dotenv
 import pandas
 
-from dune_client.client_async import AsyncDuneClient
+from dune_client.client_async import AsyncDuneClient, RefreshParams
 from dune_client.query import QueryBase
 
 
@@ -42,7 +42,10 @@ class TestDuneClient(aiounittest.AsyncTestCase):
         # Arrange
         async with AsyncDuneClient(self.valid_api_key) as cl:
             # Act
-            results = (await cl.refresh(self.multi_rows_query, batch_size=1)).get_rows()
+            params = RefreshParams(batch_size=1)
+            results = (
+                await cl.refresh(self.multi_rows_query, params=params)
+            ).get_rows()
 
         # Assert
         self.assertEqual(
@@ -60,8 +63,9 @@ class TestDuneClient(aiounittest.AsyncTestCase):
         # Arrange
         async with AsyncDuneClient(self.valid_api_key) as cl:
             # Act
+            params = RefreshParams(filters="number < 3")
             results = (
-                await cl.refresh(self.multi_rows_query, filters="number < 3")
+                await cl.refresh(self.multi_rows_query, params=params)
             ).get_rows()
 
         # Assert
@@ -77,7 +81,8 @@ class TestDuneClient(aiounittest.AsyncTestCase):
         # Arrange
         async with AsyncDuneClient(self.valid_api_key) as cl:
             # Act
-            result_csv = await cl.refresh_csv(self.multi_rows_query, batch_size=1)
+            params = RefreshParams(batch_size=1)
+            result_csv = await cl.refresh_csv(self.multi_rows_query, params=params)
 
         # Assert
         self.assertEqual(
@@ -95,9 +100,8 @@ class TestDuneClient(aiounittest.AsyncTestCase):
         # Arrange
         async with AsyncDuneClient(self.valid_api_key) as cl:
             # Act
-            result_csv = await cl.refresh_csv(
-                self.multi_rows_query, filters="number < 3"
-            )
+            params = RefreshParams(filters="number < 3")
+            result_csv = await cl.refresh_csv(self.multi_rows_query, params=params)
 
         # Assert
         self.assertEqual(
@@ -111,7 +115,8 @@ class TestDuneClient(aiounittest.AsyncTestCase):
     @unittest.skip("Large performance tier doesn't currently work.")
     async def test_refresh_context_manager_performance_large(self):
         async with AsyncDuneClient(self.valid_api_key) as cl:
-            results = (await cl.refresh(self.query, performance="large")).get_rows()
+            params = RefreshParams(performance="large")
+            results = (await cl.refresh(self.query, params=params)).get_rows()
         self.assertGreater(len(results), 0)
 
     async def test_get_latest_result_with_query_object(self):

@@ -32,12 +32,12 @@ class GetExecutionResultsParams(NamedTuple):
     Parameters for get execution result functions
     """
 
-    limit: Optional[int]
-    columns: Optional[List[str]]
-    sample_count: Optional[int]
-    filters: Optional[str]
-    sort_by: Optional[List[str]]
-    offset: Optional[int]
+    limit: Optional[int] = None
+    columns: Optional[List[str]] = None
+    sample_count: Optional[int] = None
+    filters: Optional[str] = None
+    sort_by: Optional[List[str]] = None
+    offset: Optional[int] = None
 
 
 class ExecutionAPI(BaseRouter):
