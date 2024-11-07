@@ -83,54 +83,6 @@ class BaseDuneClient:
             "User-Agent": f"dune-client/{client_version} (https://pypi.org/project/dune-client/)",
         }
 
-    ############
-    # Utilities:
-    ############
-
-    def _build_parameters(
-        self,
-        allow_partial_results: str = "true",
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Union[str, int]]:
-        """
-        Utility function that builds a dictionary of parameters to be used
-        when retrieving advanced results (filters, pagination, sorting, etc.).
-        This is shared between the sync and async client.
-        """
-        # Ensure we don't specify parameters that are incompatible:
-        if params is None:
-            params = {}
-        parameters = params.get("params", None)
-        columns = params.get("columns", None)
-        sample_count = params.get("sample_count", None)
-        filters = params.get("filters", None)
-        sort_by = params.get("sort_by", None)
-        limit = params.get("limit", None)
-        offset = params.get("offset", None)
-        assert (
-            # We are not sampling
-            sample_count is None
-            # We are sampling and don't use filters or pagination
-            or (limit is None and offset is None and filters is None)
-        ), "sampling cannot be combined with filters or pagination"
-
-        parameters = parameters or {}
-        parameters["allow_partial_results"] = allow_partial_results
-        if columns is not None and len(columns) > 0:
-            parameters["columns"] = ",".join(columns)
-        if sample_count is not None:
-            parameters["sample_count"] = sample_count
-        if filters is not None:
-            parameters["filters"] = filters
-        if sort_by is not None and len(sort_by) > 0:
-            parameters["sort_by"] = ",".join(sort_by)
-        if limit is not None:
-            parameters["limit"] = limit
-        if offset is not None:
-            parameters["offset"] = offset
-
-        return parameters
-
 
 class BaseRouter(BaseDuneClient):
     """Extending the Base Client with elementary api routing"""

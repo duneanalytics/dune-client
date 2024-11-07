@@ -45,11 +45,11 @@ class GetResultParams(NamedTuple):
     Parameters for get reult functions
     """
 
-    batch_size: Optional[int] = None
     columns: Optional[List[str]] = None
     sample_count: Optional[int] = None
     filters: Optional[str] = None
     sort_by: Optional[List[str]] = None
+    batch_size: Optional[int] = None
 
 
 class RefreshParams(NamedTuple):
@@ -59,10 +59,10 @@ class RefreshParams(NamedTuple):
 
     performance: Optional[str] = None
     batch_size: Optional[int] = None
-    columns: Optional[List[str]] = None
     sample_count: Optional[int] = None
     filters: Optional[str] = None
     sort_by: Optional[List[str]] = None
+    columns: Optional[List[str]] = None
 
 
 class ResultPageParams(NamedTuple):
@@ -70,12 +70,12 @@ class ResultPageParams(NamedTuple):
     Parameters for result page functions
     """
 
-    limit: Optional[int] = None
-    offset: Optional[int] = None
     columns: Optional[List[str]] = None
     sample_count: Optional[int] = None
     filters: Optional[str] = None
     sort_by: Optional[List[str]] = None
+    limit: Optional[int] = None
+    offset: Optional[int] = None
 
 
 class RetryableError(Exception):
@@ -289,12 +289,11 @@ class AsyncDuneClient(BaseDuneClient):
             batch_size = MAX_NUM_ROWS_PER_BATCH
 
         result_page_params = ResultPageParams(
-            batch_size,
-            None,
-            params.columns,
-            params.sample_count,
-            params.filters,
-            params.sort_by,
+            batch_size=batch_size,
+            columns=params.columns,
+            sample_count=params.sample_count,
+            filters=params.filters,
+            sort_by=params.sort_by,
         )
         results = await self._get_result_page(
             job_id,
@@ -334,12 +333,11 @@ class AsyncDuneClient(BaseDuneClient):
             batch_size = MAX_NUM_ROWS_PER_BATCH
 
         params = ResultPageParams(
-            batch_size,
-            None,
-            params.columns,
-            params.sample_count,
-            params.filters,
-            params.sort_by,
+            batch_size=batch_size,
+            columns=params.columns,
+            sample_count=params.sample_count,
+            filters=params.filters,
+            sort_by=params.sort_by,
         )
         results = await self._get_result_csv_page(
             job_id,
@@ -427,11 +425,11 @@ class AsyncDuneClient(BaseDuneClient):
             query, ping_frequency=ping_frequency, performance=params.performance
         )
         params = GetResultParams(
-            params.batch_size,
-            params.columns,
-            params.sample_count,
-            params.filters,
-            params.sort_by,
+            batch_size=params.batch_size,
+            columns=params.columns,
+            sample_count=params.sample_count,
+            filters=params.filters,
+            sort_by=params.sort_by,
         )
         return await self.get_result(
             job_id,
@@ -463,11 +461,11 @@ class AsyncDuneClient(BaseDuneClient):
             query, ping_frequency=ping_frequency, performance=params.performance
         )
         get_result_params = GetResultParams(
-            params.batch_size,
-            params.columns,
-            params.sample_count,
-            params.filters,
-            params.sort_by,
+            batch_size=params.batch_size,
+            columns=params.columns,
+            sample_count=params.sample_count,
+            filters=params.filters,
+            sort_by=params.sort_by,
         )
         return await self.get_result_csv(
             job_id,
@@ -495,12 +493,12 @@ class AsyncDuneClient(BaseDuneClient):
                 "dependency failure, pandas is required but missing"
             ) from exc
         params = RefreshParams(
-            params.performance,
-            params.batch_size,
-            params.columns,
-            params.sample_count,
-            params.filters,
-            params.sort_by,
+            performance=params.performance,
+            batch_size=params.batch_size,
+            columns=params.columns,
+            sample_count=params.sample_count,
+            filters=params.filters,
+            sort_by=params.sort_by,
         )
         results = await self.refresh_csv(
             query=query,
@@ -528,19 +526,14 @@ class AsyncDuneClient(BaseDuneClient):
             limit = MAX_NUM_ROWS_PER_BATCH
             offset = 0
 
-        build_params = self._build_parameters(
-            params={
-                "columns": params.columns,
-                "sample_count": params.sample_count,
-                "filters": params.filters,
-                "sort_by": params.sort_by,
-                "limit": limit,
-                "offset": offset,
-            }
-        )
+        params = params._asdict()
+
+        params["limit"] = limit
+        params["offset"] = offset
+
         response_json = await self._get(
             route=f"/execution/{job_id}/results",
-            params=build_params,
+            params=params,
         )
 
         try:
@@ -579,16 +572,10 @@ class AsyncDuneClient(BaseDuneClient):
             limit = MAX_NUM_ROWS_PER_BATCH
             offset = 0
 
-        params = self._build_parameters(
-            params={
-                "columns": params.columns,
-                "sample_count": params.sample_count,
-                "filters": params.filters,
-                "sort_by": params.sort_by,
-                "limit": limit,
-                "offset": offset,
-            }
-        )
+        params = params._asdict()
+
+        params["limit"] = limit
+        params["offset"] = offset
 
         route = f"/execution/{job_id}/results/csv"
         response = await self._get(route=route, params=params, raw=True)

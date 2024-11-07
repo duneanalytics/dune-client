@@ -38,6 +38,7 @@ class GetExecutionResultsParams(NamedTuple):
     filters: Optional[str] = None
     sort_by: Optional[List[str]] = None
     offset: Optional[int] = None
+    allow_partial_results: str = "true"
 
 
 class ExecutionAPI(BaseRouter):
@@ -89,26 +90,12 @@ class ExecutionAPI(BaseRouter):
         self,
         job_id: str,
         params: Optional[GetExecutionResultsParams] = None,
-        allow_partial_results: str = "true",
     ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        build_params = None
-        if params is not None:
-            build_params = self._build_parameters(
-                allow_partial_results=allow_partial_results,
-                params={
-                    "columns": params.columns,
-                    "sample_count": params.sample_count,
-                    "filters": params.filters,
-                    "sort_by": params.sort_by,
-                    "limit": params.limit,
-                    "offset": params.offset,
-                },
-            )
 
         route = f"/execution/{job_id}/results"
         url = self._route_url(route)
-        return self._get_execution_results_by_url(url=url, params=build_params)
+        return self._get_execution_results_by_url(url=url, params=params._asdict())
 
     def get_execution_results_csv(
         self, job_id: str, params: Optional[GetExecutionResultsParams] = None
@@ -120,22 +107,10 @@ class ExecutionAPI(BaseRouter):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
-        build_params = None
-        if params is not None:
-            build_params = self._build_parameters(
-                params={
-                    "columns": params.columns,
-                    "sample_count": params.sample_count,
-                    "filters": params.filters,
-                    "sort_by": params.sort_by,
-                    "limit": params.limit,
-                    "offset": params.offset,
-                }
-            )
 
         route = f"/execution/{job_id}/results/csv"
         url = self._route_url(route)
-        return self._get_execution_results_csv_by_url(url=url, params=build_params)
+        return self._get_execution_results_csv_by_url(url=url, params=params._asdict())
 
     def _get_execution_results_by_url(
         self, url: str, params: Optional[Dict[str, Any]] = None

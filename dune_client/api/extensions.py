@@ -105,17 +105,16 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         # pylint: disable=duplicate-code
         job_id = self._refresh(query, ping_frequency, params.performance)
         params = GetExecutionResultsParams(
-            limit,
-            params.columns,
-            params.sample_count,
-            params.filters,
-            params.sort_by,
-            None,
+            limti=limit,
+            compile=params.columns,
+            sample_count=params.sample_count,
+            filters=params.filters,
+            sort_by=params.sort_by,
+            allow_partial_results=allow_partial_results,
         )
         return self._fetch_entire_result(
             self.get_execution_results(
                 job_id,
-                allow_partial_results=allow_partial_results,
                 params=params,
             ),
         )
@@ -149,12 +148,11 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         # pylint: disable=duplicate-code
         job_id = self._refresh(query, ping_frequency, params.performance)
         params = GetExecutionResultsParams(
-            limit,
-            params.columns,
-            params.sample_count,
-            params.filters,
-            params.sort_by,
-            None,
+            limit=limit,
+            columns=params.columns,
+            sample_count=params.sample_count,
+            filters=params.filters,
+            sort_by=params.sort_by,
         )
         return self._fetch_entire_result_csv(
             self.get_execution_results_csv(
@@ -185,12 +183,12 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
                 "dependency failure, pandas is required but missing"
             ) from exc
         params = RunQueryParams(
-            params.performance,
-            params.batch_size,
-            params.columns,
-            params.sample_count,
-            params.filters,
-            params.sort_by,
+            performance=params.performance,
+            batch_size=params.batch_size,
+            columns=params.columns,
+            sample_count=params.sample_count,
+            filters=params.filters,
+            sort_by=params.sort_by,
         )
         data = self.run_query_csv(
             query,
@@ -248,12 +246,11 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
                     f"results (from {last_run}) older than {max_age_hours} hours, re-running query"
                 )
                 params = RunQueryParams(
-                    None,
-                    batch_size,
-                    params.columns,
-                    params.sample_count,
-                    params.filters,
-                    params.sort_by,
+                    batch_size=batch_size,
+                    columns=params.columns,
+                    sample_count=params.sample_count,
+                    filters=params.filters,
+                    sort_by=params.sort_by,
                 )
                 results = self.run_query(
                     query=(
@@ -265,12 +262,11 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
                 # The results are fresh enough, retrieve the entire result
                 # pylint: disable=duplicate-code
                 params = GetExecutionResultsParams(
-                    batch_size,
-                    params.columns,
-                    params.sample_count,
-                    params.filters,
-                    params.sort_by,
-                    None,
+                    batch_size=batch_size,
+                    columns=params.columns,
+                    sample_count=params.sample_count,
+                    filters=params.filters,
+                    sort_by=params.sort_by,
                 )
                 results = self._fetch_entire_result(
                     self.get_execution_results(
@@ -303,11 +299,11 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
                 "dependency failure, pandas is required but missing"
             ) from exc
         params = GetLatestResultParams(
-            params.batch_size,
-            params.columns,
-            params.sample_count,
-            params.filters,
-            params.sort_by,
+            batch_size=params.batch_size,
+            columns=params.columns,
+            sample_count=params.sample_count,
+            filters=params.filters,
+            sort_by=params.sort_by,
         )
         results = self.download_csv(
             query,
@@ -337,21 +333,15 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
 
         get_params, query_id = parse_query_object_or_id(query)
 
-        get_params = self._build_parameters(
-            params={
-                "params": get_params,
-                "columns": params.columns,
-                "sample_count": params.sample_count,
-                "filters": params.filters,
-                "sort_by": params.sort_by,
-                "limit": params.batch_size,
-            }
-        )
+        params = params._asdict()
+
+        params["params"] = get_params
+
         if params.sample_count is None and params.batch_size is None:
             get_params["limit"] = MAX_NUM_ROWS_PER_BATCH
 
         response = self._get(
-            route=f"/query/{query_id}/results/csv", params=get_params, raw=True
+            route=f"/query/{query_id}/results/csv", params=params, raw=True
         )
         response.raise_for_status()
 
@@ -387,7 +377,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         query = self.create_query(
             name, query_sql, params.query_params, params.is_private
         )
-        run_query_params = RunQueryParams(params.performance)
+        run_query_params = RunQueryParams(performance=params.performance)
         try:
             results = self.run_query(
                 query=query.base,
@@ -414,7 +404,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
-        params = RunQueryParams(performance)
+        params = RunQueryParams(performance=performance)
         return self.run_query(
             query=query,
             ping_frequency=ping_frequency,
@@ -433,7 +423,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         fetches and the results in CSV format
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
-        params = RunQueryParams(performance)
+        params = RunQueryParams(performance=performance)
         return self.run_query_csv(query, ping_frequency, params=params)
 
     @deprecated(version="1.2.1", reason="Please use run_query_dataframe")
