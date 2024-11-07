@@ -30,7 +30,6 @@ from dune_client.models import (
 )
 from dune_client.query import QueryBase, parse_query_object_or_id
 
-# from dune_client.types import QueryParameter
 from dune_client.types import QueryParameter
 from dune_client.util import age_in_hours
 

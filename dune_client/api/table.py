@@ -52,7 +52,7 @@ class TableAPI(BaseRouter):
         except KeyError as err:
             raise DuneError(response_json, "UploadCsvResponse", err) from err
 
-    def create_table(  # pylint: disable=too-many-instance-attributes
+    def create_table(  # pylint: disable=too-many-instance-attributes, too-many-positional-arguments
         self,
         namespace: str,
         table_name: str,

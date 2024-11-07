@@ -61,7 +61,7 @@ class CustomEndpointAPI(BaseRouter):
 
         response_json = self._get(
             route=f"/endpoints/{handle}/{endpoint}/results",
-            params=params.__dict__,
+            params=params._asdict(),
         )
         try:
             return ResultsResponse.from_dict(response_json)

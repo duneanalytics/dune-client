@@ -297,7 +297,7 @@ ResultData = Dict[str, Union[RowData, MetaData]]
 
 
 @dataclass
-class ResultsResponse:
+class ResultsResponse:  # pylint: disable=too-many-instance-attributes
     """
     Representation of Response from Dune's [Get] Query Results endpoint
     """

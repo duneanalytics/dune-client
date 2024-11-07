@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging.config
 import os
 from json import JSONDecodeError
-from typing import Any, Dict, Optional, Union, IO
+from typing import Any, Dict, Optional, IO
 
 from requests import Response, Session
 from requests.adapters import HTTPAdapter, Retry
@@ -30,7 +30,7 @@ class BaseDuneClient:
     and provides some convenient functions to use in other clients
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         api_key: str,
         base_url: str = "https://api.dune.com",
