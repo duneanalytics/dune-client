@@ -4,13 +4,26 @@ fetch and filter data from custom endpoints.
 """
 
 from __future__ import annotations
-from typing import Dict, Optional, Any
+from typing import List, NamedTuple, Optional
 
 from dune_client.api.base import BaseRouter
 from dune_client.models import (
     DuneError,
     ResultsResponse,
 )
+
+
+class CustomAPIParams(NamedTuple):
+    """
+    Params for Custom Endpoint API Function
+    """
+
+    limit: Optional[int] = None
+    offset: Optional[int] = None
+    columns: Optional[List[str]] = None
+    sample_count: Optional[int] = None
+    filters: Optional[str] = None
+    sort_by: Optional[List[str]] = None
 
 
 # pylint: disable=duplicate-code
@@ -25,7 +38,7 @@ class CustomEndpointAPI(BaseRouter):
         self,
         handle: str,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[CustomAPIParams] = None,
     ) -> ResultsResponse:
         """
         Custom endpoints allow you to fetch and filter data from any
@@ -44,27 +57,11 @@ class CustomEndpointAPI(BaseRouter):
             sort_by (List[str], optional): The columns to sort by.
         """
         if params is None:
-            params = {}
-        limit = params.get("limit", None)
-        offset = params.get("offset", None)
-        columns = params.get("columns", None)
-        sample_count = params.get("sample_counts", None)
-        filters = params.get("filters", None)
-        sort_by = params.get("sort_by", None)
+            params = CustomAPIParams()
 
-        build_params = self._build_parameters(
-            params={
-                "columns": columns,
-                "sample_count": sample_count,
-                "filters": filters,
-                "sort_by": sort_by,
-                "limit": limit,
-                "offset": offset,
-            }
-        )
         response_json = self._get(
             route=f"/endpoints/{handle}/{endpoint}/results",
-            params=build_params,
+            params=params.__dict__,
         )
         try:
             return ResultsResponse.from_dict(response_json)

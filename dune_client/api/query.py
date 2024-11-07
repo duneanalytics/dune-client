@@ -6,12 +6,21 @@ and freeing you from UI-exclusive query editing.
 """
 
 from __future__ import annotations
-from typing import Optional, Any, Dict
+from typing import NamedTuple, Optional, Any
 
 from dune_client.api.base import BaseRouter
 from dune_client.models import DuneError
 from dune_client.query import DuneQuery
 from dune_client.types import QueryParameter
+
+
+class UpdateQueryParams(NamedTuple):
+    "Params for Update Query function"
+    name: Optional[str] = None
+    query_sql: Optional[str] = None
+    params: Optional[list[QueryParameter]] = None
+    description: Optional[str] = None
+    tags: Optional[list[str]] = None
 
 
 class QueryAPI(BaseRouter):
@@ -57,7 +66,7 @@ class QueryAPI(BaseRouter):
     def update_query(
         self,
         query_id: int,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[UpdateQueryParams] = None,
     ) -> int:
         """
         Updates Dune Query by ID
@@ -69,24 +78,19 @@ class QueryAPI(BaseRouter):
         they will be deleted from the query.
         """
         if params is None:
-            params = {}
-        name = params.get("name", None)
-        query_sql = params.get("query_sql", None)
-        query_parms = params.get("parameters", None)
-        description = params.get("description", None)
-        tags = params.get("tags", None)
+            params = UpdateQueryParams()
 
         parameters: dict[str, Any] = {}
-        if name is not None:
-            parameters["name"] = name
-        if description is not None:
-            parameters["description"] = description
-        if tags is not None:
-            parameters["tags"] = tags
-        if query_sql is not None:
-            parameters["query_sql"] = query_sql
-        if query_parms is not None:
-            parameters["parameters"] = [p.to_dict() for p in query_parms]
+        if params.name is not None:
+            parameters["name"] = params.name
+        if params.description is not None:
+            parameters["description"] = params.description
+        if params.tags is not None:
+            parameters["tags"] = params.tags
+        if params.query_sql is not None:
+            parameters["query_sql"] = params.query_sql
+        if params.query_parms is not None:
+            parameters["parameters"] = [p.to_dict() for p in params.query_parms]
 
         if not bool(parameters):
             # Nothing to change no need to make reqeust

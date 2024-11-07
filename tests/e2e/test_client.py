@@ -6,6 +6,7 @@ import unittest
 import dotenv
 import pandas
 
+from dune_client.api.extensions import GetLatestResultParams, RunQueryParams
 from dune_client.models import (
     ExecutionState,
     ExecutionResponse,
@@ -78,7 +79,7 @@ class TestDuneClient(unittest.TestCase):
         dune = DuneClient(self.valid_api_key)
 
         # Act
-        params = {"batch_size": 1}
+        params = RunQueryParams(batch_size=1)
         results = dune.run_query(self.multi_rows_query, params=params).get_rows()
 
         # Assert
@@ -98,7 +99,7 @@ class TestDuneClient(unittest.TestCase):
         dune = DuneClient(self.valid_api_key)
 
         # Act
-        params = {"filters": "number < 3"}
+        params = RunQueryParams(filters="number < 3")
         results = dune.run_query(self.multi_rows_query, params=params).get_rows()
 
         # Assert
@@ -112,7 +113,7 @@ class TestDuneClient(unittest.TestCase):
 
     def test_run_query_performance_large(self):
         dune = DuneClient(self.valid_api_key)
-        params = {"performace": "large"}
+        params = RunQueryParams(performance="large")
         results = dune.run_query(self.query, params=params).get_rows()
         self.assertGreater(len(results), 0)
 
@@ -331,7 +332,7 @@ class TestDuneClient(unittest.TestCase):
         client.run_query(self.multi_rows_query)
 
         # Act
-        params = {"batch_size": 1}
+        params = GetLatestResultParams(batch_size=1)
         result_csv = client.download_csv(self.multi_rows_query.query_id, params=params)
 
         # Assert
@@ -352,7 +353,7 @@ class TestDuneClient(unittest.TestCase):
         client.run_query(self.multi_rows_query)
 
         # Act
-        params = {"filters": "number < 3"}
+        params = GetLatestResultParams(filters="number < 3")
         result_csv = client.download_csv(
             self.multi_rows_query.query_id,
             params=params,

@@ -8,7 +8,7 @@ import logging
 import time
 
 from io import BytesIO
-from typing import Any, Optional, Union, Dict
+from typing import Any, List, NamedTuple, Optional, Union
 
 from deprecated import deprecated
 
@@ -31,12 +31,41 @@ from dune_client.models import (
 from dune_client.query import QueryBase, parse_query_object_or_id
 
 # from dune_client.types import QueryParameter
+from dune_client.types import QueryParameter
 from dune_client.util import age_in_hours
 
 # This is the expiry time on old query results.
 THREE_MONTHS_IN_HOURS = 2191
 # Seconds between checking execution status
 POLL_FREQUENCY_SECONDS = 1
+
+
+class RunQueryParams(NamedTuple):
+    "Params for run query function"
+    performance: Optional[str] = None
+    batch_size: Optional[int] = None
+    columns: Optional[List[str]] = None
+    sample_count: Optional[int] = None
+    filters: Optional[str] = None
+    sort_by: Optional[List[str]] = None
+
+
+class GetLatestResultParams(NamedTuple):
+    "Params for get latest functions"
+    batch_size: Optional[int] = None
+    columns: Optional[List[str]] = None
+    sample_count: Optional[int] = None
+    filters: Optional[str] = None
+    sort_by: Optional[List[str]] = None
+
+
+class RunSQLParams(NamedTuple):
+    "Params for Run SQL function"
+    query_params: Optional[list[QueryParameter]] = None
+    is_private: bool = True
+    archive_after: bool = True
+    performance: Optional[str] = None
+    ping_frequency: int = POLL_FREQUENCY_SECONDS
 
 
 class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
@@ -50,7 +79,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         query: QueryBase,
         ping_frequency: int = POLL_FREQUENCY_SECONDS,
         allow_partial_results: str = "true",
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[RunQueryParams] = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
@@ -59,29 +88,29 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         """
         # Ensure we don't specify parameters that are incompatible:
         if params is None:
-            params = {}
-        performance = params.get("performance", None)
-        batch_size = params.get("batch_size", None)
-        columns = params.get("columns", None)
-        sample_count = params.get("sample_count", None)
-        filters = params.get("filters", None)
-        sort_by = params.get("sort_by", None)
+            params = RunQueryParams()
+
         assert (
             # We are not sampling
-            sample_count is None
+            params.sample_count is None
             # We are sampling and don't use filters or pagination
-            or (batch_size is None and filters is None)
+            or (params.batch_size is None and params.filters is None)
         ), "sampling cannot be combined with filters or pagination"
 
-        if sample_count is not None:
+        if params.sample_count is not None:
             limit = None
         else:
-            limit = batch_size or MAX_NUM_ROWS_PER_BATCH
+            limit = params.batch_size or MAX_NUM_ROWS_PER_BATCH
 
         # pylint: disable=duplicate-code
-        job_id = self._refresh(query, ping_frequency, performance)
+        job_id = self._refresh(query, ping_frequency, params.performance)
         params = GetExecutionResultsParams(
-            limit, columns, sample_count, filters, sort_by, None
+            limit,
+            params.columns,
+            params.sample_count,
+            params.filters,
+            params.sort_by,
+            None,
         )
         return self._fetch_entire_result(
             self.get_execution_results(
@@ -95,7 +124,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         self,
         query: QueryBase,
         ping_frequency: int = POLL_FREQUENCY_SECONDS,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[RunQueryParams] = None,
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
@@ -104,29 +133,28 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         """
         # Ensure we don't specify parameters that are incompatible:
         if params is None:
-            params = {}
-        performance = params.get("performance", None)
-        batch_size = params.get("batch_size", None)
-        columns = params.get("columns", None)
-        sample_count = params.get("sample_count", None)
-        filters = params.get("filters", None)
-        sort_by = params.get("sort_by", None)
+            params = RunQueryParams()
         assert (
             # We are not sampling
-            sample_count is None
+            params.sample_count is None
             # We are sampling and don't use filters or pagination
-            or (batch_size is None and filters is None)
+            or (params.batch_size is None and params.filters is None)
         ), "sampling cannot be combined with filters or pagination"
 
-        if sample_count is not None:
+        if params.sample_count is not None:
             limit = None
         else:
-            limit = batch_size or MAX_NUM_ROWS_PER_BATCH
+            limit = params.batch_size or MAX_NUM_ROWS_PER_BATCH
 
         # pylint: disable=duplicate-code
-        job_id = self._refresh(query, ping_frequency, performance)
+        job_id = self._refresh(query, ping_frequency, params.performance)
         params = GetExecutionResultsParams(
-            limit, columns, sample_count, filters, sort_by, None
+            limit,
+            params.columns,
+            params.sample_count,
+            params.filters,
+            params.sort_by,
+            None,
         )
         return self._fetch_entire_result_csv(
             self.get_execution_results_csv(
@@ -139,7 +167,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         self,
         query: QueryBase,
         ping_frequency: int = POLL_FREQUENCY_SECONDS,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[RunQueryParams] = None,
     ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
@@ -148,13 +176,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         This is a convenience method that uses run_query_csv() + pandas.read_csv() underneath
         """
         if params is None:
-            params = {}
-        performance = params.get("performance", None)
-        batch_size = params.get("batch_size", None)
-        columns = params.get("columns", None)
-        sample_count = params.get("sample_count", None)
-        filters = params.get("filters", None)
-        sort_by = params.get("sort_by", None)
+            params = RunQueryParams()
 
         try:
             import pandas  # pylint: disable=import-outside-toplevel
@@ -162,17 +184,18 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
             raise ImportError(
                 "dependency failure, pandas is required but missing"
             ) from exc
+        params = RunQueryParams(
+            params.performance,
+            params.batch_size,
+            params.columns,
+            params.sample_count,
+            params.filters,
+            params.sort_by,
+        )
         data = self.run_query_csv(
             query,
             ping_frequency,
-            params={
-                "performance": performance,
-                "batch_size": batch_size,
-                "columns": columns,
-                "sample_count": sample_count,
-                "filters": filters,
-                "sort_by": sort_by,
-            },
+            params=params,
         ).data
         return pandas.read_csv(data)
 
@@ -180,7 +203,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         self,
         query: Union[QueryBase, str, int],
         max_age_hours: int = THREE_MONTHS_IN_HOURS,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[GetLatestResultParams] = None,
     ) -> ResultsResponse:
         """
         GET the latest results for a query_id without re-executing the query
@@ -192,32 +215,29 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         """
         # Ensure we don't specify parameters that are incompatible:
         if params is None:
-            params = {}
-        batch_size = params.get("batch_size", None)
-        columns = params.get("columns", None)
-        sample_count = params.get("sample_count", None)
-        filters = params.get("filters", None)
-        sort_by = params.get("sort_by", None)
+            params = GetLatestResultParams()
+
+        batch_size = params.batch_size
         assert (
             # We are not sampling
-            sample_count is None
+            params.sample_count is None
             # We are sampling and don't use filters or pagination
-            or (batch_size is None and filters is None)
+            or (batch_size is None and params.filters is None)
         ), "sampling cannot be combined with filters or pagination"
 
-        params, query_id = parse_query_object_or_id(query)
+        get_params, query_id = parse_query_object_or_id(query)
 
         # Only fetch 1 row to get metadata first to determine if the result is fresh enough
-        if params is None:
-            params = {}
-        params["limit"] = 1
+        if get_params is None:
+            get_params = {}
+        get_params["limit"] = 1
 
         response_json = self._get(
             route=f"/query/{query_id}/results",
-            params=params,
+            params=get_params,
         )
         try:
-            if sample_count is None and batch_size is None:
+            if params.sample_count is None and batch_size is None:
                 batch_size = MAX_NUM_ROWS_PER_BATCH
             metadata = ResultsResponse.from_dict(response_json)
             last_run = metadata.times.execution_ended_at
@@ -227,23 +247,30 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
                 logging.info(
                     f"results (from {last_run}) older than {max_age_hours} hours, re-running query"
                 )
+                params = RunQueryParams(
+                    None,
+                    batch_size,
+                    params.columns,
+                    params.sample_count,
+                    params.filters,
+                    params.sort_by,
+                )
                 results = self.run_query(
                     query=(
                         query if isinstance(query, QueryBase) else QueryBase(query_id)
                     ),
-                    params={
-                        "columns": columns,
-                        "sample_count": sample_count,
-                        "filters": filters,
-                        "sort_by": sort_by,
-                        "batch_size": batch_size,
-                    },
+                    params=params,
                 )
             else:
                 # The results are fresh enough, retrieve the entire result
                 # pylint: disable=duplicate-code
                 params = GetExecutionResultsParams(
-                    batch_size, columns, sample_count, filters, sort_by, None
+                    batch_size,
+                    params.columns,
+                    params.sample_count,
+                    params.filters,
+                    params.sort_by,
+                    None,
                 )
                 results = self._fetch_entire_result(
                     self.get_execution_results(
@@ -258,7 +285,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
     def get_latest_result_dataframe(
         self,
         query: Union[QueryBase, str, int],
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[GetLatestResultParams] = None,
     ) -> Any:
         """
         GET the latest results for a query_id without re-executing the query
@@ -268,35 +295,30 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         This is a convenience method that uses get_latest_result() + pandas.read_csv() underneath
         """
         if params is None:
-            params = {}
-        batch_size = params.get("batch_size", None)
-        columns = params.get("columns", None)
-        sample_count = params.get("sample_count", None)
-        filters = params.get("filters", None)
-        sort_by = params.get("sort_by", None)
+            params = GetLatestResultParams()
         try:
             import pandas  # pylint: disable=import-outside-toplevel
         except ImportError as exc:
             raise ImportError(
                 "dependency failure, pandas is required but missing"
             ) from exc
-
+        params = GetLatestResultParams(
+            params.batch_size,
+            params.columns,
+            params.sample_count,
+            params.filters,
+            params.sort_by,
+        )
         results = self.download_csv(
             query,
-            params={
-                "columns": columns,
-                "sample_count": sample_count,
-                "filters": filters,
-                "sort_by": sort_by,
-                "batch_size": batch_size,
-            },
+            params=params,
         )
         return pandas.read_csv(results.data)
 
     def download_csv(
         self,
         query: Union[QueryBase, str, int],
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[GetLatestResultParams] = None,
     ) -> ExecutionResultCSV:
         """
         Almost like an alias for `get_latest_result` but for the csv endpoint.
@@ -304,37 +326,32 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         """
         # Ensure we don't specify parameters that are incompatible:
         if params is None:
-            params = {}
-        batch_size = params.get("batch_size", None)
-        columns = params.get("columns", None)
-        sample_count = params.get("sample_count", None)
-        filters = params.get("filters", None)
-        sort_by = params.get("sort_by", None)
+            params = GetLatestResultParams()
 
         assert (
             # We are not sampling
-            sample_count is None
+            params.sample_count is None
             # We are sampling and don't use filters or pagination
-            or (batch_size is None and filters is None)
+            or (params.batch_size is None and params.filters is None)
         ), "sampling cannot be combined with filters or pagination"
 
-        params, query_id = parse_query_object_or_id(query)
+        get_params, query_id = parse_query_object_or_id(query)
 
-        params = self._build_parameters(
+        get_params = self._build_parameters(
             params={
-                "params": params,
-                "columns": columns,
-                "sample_count": sample_count,
-                "filters": filters,
-                "sort_by": sort_by,
-                "limit": batch_size,
+                "params": get_params,
+                "columns": params.columns,
+                "sample_count": params.sample_count,
+                "filters": params.filters,
+                "sort_by": params.sort_by,
+                "limit": params.batch_size,
             }
         )
-        if sample_count is None and batch_size is None:
-            params["limit"] = MAX_NUM_ROWS_PER_BATCH
+        if params.sample_count is None and params.batch_size is None:
+            get_params["limit"] = MAX_NUM_ROWS_PER_BATCH
 
         response = self._get(
-            route=f"/query/{query_id}/results/csv", params=params, raw=True
+            route=f"/query/{query_id}/results/csv", params=get_params, raw=True
         )
         response.raise_for_status()
 
@@ -356,8 +373,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         self,
         query_sql: str,
         name: str = "API Query",
-        ping_frequency: int = POLL_FREQUENCY_SECONDS,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[RunSQLParams] = None,
     ) -> ResultsResponse:
         """
         Allows user to provide execute raw_sql via the CRUD interface
@@ -366,23 +382,20 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         Requires Plus subscription!
         """
         if params is None:
-            params = None
+            params = RunSQLParams()
 
-        query_params = params.get("query_params", None)
-        is_private = params.get("is_private", None)
-        archive_after = params.get("archive_after", None)
-        performance = params.get("performance", None)
-        query = self.create_query(name, query_sql, query_params, is_private)
+        query = self.create_query(
+            name, query_sql, params.query_params, params.is_private
+        )
+        run_query_params = RunQueryParams(params.performance)
         try:
             results = self.run_query(
                 query=query.base,
-                ping_frequency=ping_frequency,
-                params={
-                    "performance": performance,
-                },
+                ping_frequency=params.ping_frequency,
+                params=run_query_params,
             )
         finally:
-            if archive_after:
+            if params.archive_after:
                 self.archive_query(query.base.query_id)
         return results
 
@@ -401,10 +414,11 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
+        params = RunQueryParams(performance)
         return self.run_query(
             query=query,
             ping_frequency=ping_frequency,
-            params={"performance": performance},
+            params=params,
         )
 
     @deprecated(version="1.2.1", reason="Please use run_query_csv")
@@ -419,9 +433,8 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         fetches and the results in CSV format
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
-        return self.run_query_csv(
-            query, ping_frequency, params={"performance": performance}
-        )
+        params = RunQueryParams(performance)
+        return self.run_query_csv(query, ping_frequency, params=params)
 
     @deprecated(version="1.2.1", reason="Please use run_query_dataframe")
     def refresh_into_dataframe(
@@ -436,9 +449,8 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
 
         This is a convenience method that uses refresh_csv underneath
         """
-        return self.run_query_dataframe(
-            query, ping_frequency, params={"performance": performance}
-        )
+        params = RunQueryParams(performance=performance)
+        return self.run_query_dataframe(query, ping_frequency, params=params)
 
     #################
     # Private Methods
