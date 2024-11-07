@@ -76,6 +76,7 @@ class ResultPageParams(NamedTuple):
     sort_by: Optional[List[str]] = None
     limit: Optional[int] = None
     offset: Optional[int] = None
+    batch_size: Optional[int] = None
 
 
 class RetryableError(Exception):

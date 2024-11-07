@@ -34,6 +34,7 @@ class GetExecutionResultsParams(NamedTuple):
 
     limit: Optional[int] = None
     columns: Optional[List[str]] = None
+    batch_size: Optional[int] = None
     sample_count: Optional[int] = None
     filters: Optional[str] = None
     sort_by: Optional[List[str]] = None
@@ -93,6 +94,9 @@ class ExecutionAPI(BaseRouter):
     ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
 
+        if params is None:
+            params = GetExecutionResultsParams()
+
         route = f"/execution/{job_id}/results"
         url = self._route_url(route)
         return self._get_execution_results_by_url(url=url, params=params._asdict())
@@ -107,6 +111,9 @@ class ExecutionAPI(BaseRouter):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
+
+        if params is None:
+            params = GetExecutionResultsParams()
 
         route = f"/execution/{job_id}/results/csv"
         url = self._route_url(route)

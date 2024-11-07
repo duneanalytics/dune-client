@@ -104,8 +104,8 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         # pylint: disable=duplicate-code
         job_id = self._refresh(query, ping_frequency, params.performance)
         params = GetExecutionResultsParams(
-            limti=limit,
-            compile=params.columns,
+            limit=limit,
+            columns=params.columns,
             sample_count=params.sample_count,
             filters=params.filters,
             sort_by=params.sort_by,

@@ -18,7 +18,7 @@ class UpdateQueryParams(NamedTuple):
     "Params for Update Query function"
     name: Optional[str] = None
     query_sql: Optional[str] = None
-    params: Optional[list[QueryParameter]] = None
+    query_params: Optional[list[QueryParameter]] = None
     description: Optional[str] = None
     tags: Optional[list[str]] = None
 
@@ -89,8 +89,8 @@ class QueryAPI(BaseRouter):
             parameters["tags"] = params.tags
         if params.query_sql is not None:
             parameters["query_sql"] = params.query_sql
-        if params.query_parms is not None:
-            parameters["parameters"] = [p.to_dict() for p in params.query_parms]
+        if params.query_params is not None:
+            parameters["parameters"] = [p.to_dict() for p in params.query_params]
 
         if not bool(parameters):
             # Nothing to change no need to make reqeust
