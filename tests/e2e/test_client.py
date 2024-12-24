@@ -204,7 +204,7 @@ class TestDuneClient(unittest.TestCase):
             dune.execute_query(query)
         self.assertEqual(
             str(err.exception),
-            "Can't build ExecutionResponse from {'error': 'An internal error occured'}",
+            "Can't build ExecutionResponse from {'error': 'An internal error occurred'}",
         )
 
     def test_invalid_job_id_error(self):
