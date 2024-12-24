@@ -122,7 +122,7 @@ This project's makefile comes equipped with sufficient commands for local develo
 
 ```shell
 make install
-````
+```
 
 ### Format, Lint & Types
 ```shell
