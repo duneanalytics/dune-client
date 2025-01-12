@@ -12,6 +12,7 @@ from dune_client.models import (
     InsertTableResult,
     CreateTableResult,
     DeleteTableResult,
+    ClearTableResult,
 )
 
 
@@ -106,7 +107,20 @@ class TableAPI(BaseRouter):
         try:
             return InsertTableResult.from_dict(result_json)
         except KeyError as err:
-            raise DuneError(result_json, "ResultsResponse", err) from err
+            raise DuneError(result_json, "InsertTable", err) from err
+
+    def clear_data(self, namespace: str, table_name: str) -> ClearTableResult:
+        """
+        https://docs.dune.com/api-reference/tables/endpoint/clear
+        The Clear endpoint removes all the data in the specified table,
+        but does not delete the table.
+        """
+
+        result_json = self._post(route=f"/table/{namespace}/{table_name}/clear")
+        try:
+            return ClearTableResult.from_dict(result_json)
+        except KeyError as err:
+            raise DuneError(result_json, "ClearData", err) from err
 
     def delete_table(self, namespace: str, table_name: str) -> DeleteTableResult:
         """
@@ -115,4 +129,7 @@ class TableAPI(BaseRouter):
         """
 
         response_json = self._delete(route=f"/table/{namespace}/{table_name}")
-        return DeleteTableResult.from_dict(response_json)
+        try:
+            return DeleteTableResult.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "DeleteTable", err) from err

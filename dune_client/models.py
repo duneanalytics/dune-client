@@ -365,10 +365,12 @@ class CreateTableResult(DataClassJsonMixin):
     Data type returned by table/create operation
     """
 
-    example_query: str
-    full_name: str
     namespace: str
     table_name: str
+    full_name: str
+    example_query: str
+    already_existed: bool
+    message: str
 
 
 @dataclass
@@ -385,6 +387,15 @@ class InsertTableResult(DataClassJsonMixin):
 class DeleteTableResult(DataClassJsonMixin):
     """
     Data type returned by table/delete operation
+    """
+
+    message: str
+
+
+@dataclass
+class ClearTableResult(DataClassJsonMixin):
+    """
+    Data type returned by table/clear operation
     """
 
     message: str
