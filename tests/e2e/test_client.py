@@ -14,6 +14,7 @@ from dune_client.models import (
     InsertTableResult,
     CreateTableResult,
     DeleteTableResult,
+    ClearTableResult,
 )
 from dune_client.types import QueryParameter
 from dune_client.client import DuneClient
@@ -274,16 +275,38 @@ class TestDuneClient(unittest.TestCase):
         # Make sure the table already exists and csv matches table schema.
         # You will need to change the namespace to your own.
         client = DuneClient(self.valid_api_key)
+        namespace = "bh2smith"
+        table_name = "dataset_e2e_test"
+        client.create_table(
+            namespace,
+            table_name,
+            schema=[
+                {"name": "date", "type": "timestamp"},
+                {"name": "dgs10", "type": "double"},
+            ],
+        )
         with open("./tests/fixtures/sample_table_insert.csv", "rb") as data:
             self.assertEqual(
                 client.insert_table(
-                    namespace="test",
-                    table_name="dataset_e2e_test",
+                    namespace,
+                    table_name,
                     data=data,
                     content_type="text/csv",
                 ),
-                InsertTableResult(rows_written=1),
+                InsertTableResult(rows_written=1, bytes_written=33),
             )
+
+    @unittest.skip("Requires custom namespace and table_name input.")
+    def test_clear_data(self):
+        client = DuneClient(self.valid_api_key)
+        namespace = "bh2smith"
+        table_name = "dataset_e2e_test"
+        self.assertEqual(
+            client.clear_data(namespace, table_name),
+            ClearTableResult(
+                message="Table dune.bh2smith.dataset_e2e_test successfully cleared"
+            ),
+        )
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_insert_table_json_success(self):
@@ -298,7 +321,7 @@ class TestDuneClient(unittest.TestCase):
                     data=data,
                     content_type="application/x-ndjson",
                 ),
-                InsertTableResult(rows_written=1),
+                InsertTableResult(rows_written=1, bytes_written=33),
             )
 
     @unittest.skip("Requires custom namespace and table_name input.")
