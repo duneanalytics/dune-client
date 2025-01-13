@@ -246,7 +246,7 @@ class TestDuneClient(unittest.TestCase):
         # You will need to change the namespace to your own.
         client = DuneClient(self.valid_api_key)
 
-        namespace = "test"
+        namespace = "bh2smith"
         table_name = "dataset_e2e_test"
 
         self.assertEqual(
@@ -269,6 +269,23 @@ class TestDuneClient(unittest.TestCase):
                 }
             ),
         )
+
+    # @unittest.skip("Requires custom namespace and table_name input.")
+    def test_create_table_error(self):
+        client = DuneClient("Invalid Key")
+
+        namespace = "test"
+        table_name = "table"
+        with self.assertRaises(DuneError) as err:
+            client.create_table(
+                namespace=namespace,
+                table_name=table_name,
+                description="",
+                schema=[
+                    {"name": "ALL_CAPS", "type": "timestamp"},
+                ],
+                is_private=False,
+            )
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_insert_table_csv_success(self):
