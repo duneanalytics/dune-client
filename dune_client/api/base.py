@@ -22,6 +22,7 @@ DUNE_CSV_NEXT_OFFSET_HEADER = "x-dune-next-offset"
 # Default maximum number of rows to retrieve per batch of results
 MAX_NUM_ROWS_PER_BATCH = 32_000
 
+T = TypeVar("T", bound=BaseDuneClient)
 
 # pylint: disable=too-few-public-methods
 class BaseDuneClient:
@@ -58,7 +59,7 @@ class BaseDuneClient:
         self.http.mount("http://", adapter)
 
     @classmethod
-    def from_env(cls) -> BaseDuneClient:
+    def from_env(cls: type[T]) -> T:
         """
         Constructor allowing user to instantiate a client from environment variable
         without having to import dotenv or os manually
