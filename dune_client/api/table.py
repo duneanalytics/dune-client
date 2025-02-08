@@ -81,10 +81,7 @@ class TableAPI(BaseRouter):
                 "is_private": is_private,
             },
         )
-        try:
-            return CreateTableResult.from_dict(result_json)
-        except KeyError as err:
-            raise DuneError(result_json, "CreateTableResult", err) from err
+        return CreateTableResult.from_dict(result_json)
 
     def insert_table(
         self,
@@ -110,7 +107,7 @@ class TableAPI(BaseRouter):
         try:
             return InsertTableResult.from_dict(result_json)
         except KeyError as err:
-            raise DuneError(result_json, "InsertTableResult", err) from err
+            raise DuneError(result_json, "InsertTable", err) from err
 
     def clear_data(self, namespace: str, table_name: str) -> ClearTableResult:
         """
@@ -123,7 +120,7 @@ class TableAPI(BaseRouter):
         try:
             return ClearTableResult.from_dict(result_json)
         except KeyError as err:
-            raise DuneError(result_json, "ClearTableResult", err) from err
+            raise DuneError(result_json, "ClearData", err) from err
 
     def delete_table(self, namespace: str, table_name: str) -> DeleteTableResult:
         """
@@ -135,4 +132,4 @@ class TableAPI(BaseRouter):
         try:
             return DeleteTableResult.from_dict(response_json)
         except KeyError as err:
-            raise DuneError(response_json, "DeleteTableResult", err) from err
+            raise DuneError(response_json, "DeleteTable", err) from err
