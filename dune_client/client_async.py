@@ -1,4 +1,4 @@
-""""
+""" "
 Async Dune Client Class responsible for refreshing Dune Queries
 Framework built on Dune's API Documentation
 https://docs.dune.com/api-reference/overview/introduction
@@ -73,14 +73,22 @@ class AsyncDuneClient(BaseDuneClient):
     _connection_limit = 3
 
     def __init__(
-        self, api_key: str, connection_limit: int = 3, performance: str = "medium"
+        self,
+        api_key: str,
+        base_url: str = "https://api.dune.com",
+        request_timeout: float = 10,
+        client_version: str = "v1",
+        performance: str = "medium",
+        connection_limit: int = 3,
     ):
         """
         api_key - Dune API key
         connection_limit - number of parallel requests to execute.
         For non-pro accounts Dune allows only up to 3 requests but that number can be increased.
         """
-        super().__init__(api_key=api_key, performance=performance)
+        super().__init__(
+            api_key, base_url, request_timeout, client_version, performance
+        )
         self._connection_limit = connection_limit
         self._session: Optional[ClientSession] = None
 

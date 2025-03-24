@@ -1,4 +1,4 @@
-""""
+""" "
 Basic Dune Client Class responsible for refreshing Dune Queries
 Framework built on Dune's API Documentation
 https://docs.dune.com/api-reference/overview/introduction
