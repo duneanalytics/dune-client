@@ -17,6 +17,7 @@ from dune_client.models import (
     ExecutionResult,
     ResultMetadata,
     DuneError,
+    CreateTableResult,
 )
 from dune_client.types import QueryParameter
 from dune_client.query import DuneQuery, QueryMeta, QueryBase
@@ -278,6 +279,33 @@ eth_traces,4474223
             sql="select block_number from ethereum.transactions limit {{limit}};",
         )
         self.assertEqual(expected, DuneQuery.from_dict(json.loads(example_response)))
+
+    def test_create_table_result_with_already_existed_field(self):
+        """Test CreateTableResult parsing when API response includes already_existed field"""
+        response_data = {
+            "namespace": "test_namespace",
+            "table_name": "test_table",
+            "full_name": "dune.test_namespace.test_table",
+            "example_query": "select * from dune.test_namespace.test_table limit 10",
+            "already_existed": False,
+            "message": "Table created successfully",
+        }
+        result = CreateTableResult.from_dict(response_data)
+        self.assertFalse(result.already_existed)
+
+    def test_create_table_result_missing_already_existed_field(self):
+        """Test CreateTableResult parsing when API response lacks already_existed field (verify default value)"""
+        response_data = {
+            "namespace": "test_namespace",
+            "table_name": "test_table",
+            "full_name": "dune.test_namespace.test_table",
+            "example_query": "select * from dune.test_namespace.test_table limit 10",
+            "message": "Table created successfully",
+            # Note: intentionally omitting already_existed field
+        }
+        result = CreateTableResult.from_dict(response_data)
+        # Verify default value is False
+        self.assertFalse(result.already_existed)
 
 
 if __name__ == "__main__":
