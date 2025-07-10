@@ -369,8 +369,9 @@ class CreateTableResult(DataClassJsonMixin):
     table_name: str
     full_name: str
     example_query: str
-    already_existed: bool
     message: str
+    # kept for backward compatibility, always False, unreliable
+    already_existed: Optional[bool] = False
 
 
 @dataclass

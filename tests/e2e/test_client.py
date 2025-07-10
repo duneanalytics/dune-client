@@ -248,7 +248,6 @@ class TestDuneClient(unittest.TestCase):
 
         namespace = "bh2smith"
         table_name = "dataset_e2e_test"
-
         self.assertEqual(
             client.create_table(
                 namespace=namespace,
@@ -266,6 +265,7 @@ class TestDuneClient(unittest.TestCase):
                     "table_name": table_name,
                     "full_name": f"dune.{namespace}.{table_name}",
                     "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
+                    "message": "Table created successfully",
                 }
             ),
         )
@@ -357,7 +357,7 @@ class TestDuneClient(unittest.TestCase):
             ),
             DeleteTableResult.from_dict(
                 {
-                    "message": "Table teamwaddah.waddah_test3 successfully deleted",
+                    "message": f"Table {namespace}.{table_name} successfully deleted",
                 }
             ),
         )
