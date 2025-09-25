@@ -38,10 +38,9 @@ Issues = "https://github.com/duneanalytics/dune-client/issues"
 
 [project.optional-dependencies]
 dev = [
-    "black>=23.7.0",
+    "ruff>=0.13.0",
     "pandas>=1.0.0",
     "pandas-stubs>=1.0.0",
-    "pylint>=2.17.5",
     "pytest>=7.4.1",
     "python-dotenv>=1.0.0",
     "mypy>=1.5.1",
@@ -60,3 +59,79 @@ packages = ["dune_client"]
 dev = [
     "pyyaml>=6.0.2",
 ]
+
+[tool.ruff]
+# Increase the maximum line length to 100 characters.
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+# Enable a comprehensive set of rules
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "SIM",    # flake8-simplify
+    "I",      # isort
+    "N",      # pep8-naming
+    "C4",     # flake8-comprehensions
+    "ICN",    # flake8-import-conventions
+    "PIE",    # flake8-pie
+    "T20",    # flake8-print
+    "PYI",    # flake8-pyi
+    "PT",     # flake8-pytest-style
+    "Q",      # flake8-quotes
+    "RSE",    # flake8-raise
+    "RET",    # flake8-return
+    "SLF",    # flake8-self
+    "SLOT",   # flake8-slots
+    "TID",    # flake8-tidy-imports
+    "TCH",    # flake8-type-checking
+    "INT",    # flake8-gettext
+    "ARG",    # flake8-unused-arguments
+    "PTH",    # flake8-use-pathlib
+    "ERA",    # eradicate
+    "PGH",    # pygrep-hooks
+    "PL",     # pylint
+    "TRY",    # tryceratops
+    "FLY",    # flynt
+    "PERF",   # perflint
+    "FURB",   # refurb
+    "LOG",    # flake8-logging
+    "RUF",    # Ruff-specific rules
+]
+
+# Disable specific rules that might be too strict for this codebase
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "PLR",    # pylint refactor rules (can be overly strict)
+    "PGH003", # Use specific rule codes when ignoring type issues
+    "TRY003", # Avoid specifying long messages outside the exception class
+    "ARG002", # Unused method argument (common in overrides)
+    "PYI041", # Use float instead of int | float (we want explicit int | float for clarity)
+    "PT011",  # pytest.raises should specify expected exception
+    "SLF001", # Private member accessed (useful for testing)
+]
+
+[tool.ruff.format]
+# Use double quotes for strings.
+quote-style = "double"
+# Indent with spaces, rather than tabs.
+indent-style = "space"
+# Respect magic trailing commas.
+skip-magic-trailing-comma = false
+# Automatically detect the appropriate line ending.
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+# Import order: stdlib, third-party, first-party, local
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+known-first-party = ["dune_client"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can use magic values, assertions, and print statements
+"tests/**/*.py" = ["PLR2004", "S101", "T201"]
+# Type stubs can use unused imports
+"*.pyi" = ["F401"]

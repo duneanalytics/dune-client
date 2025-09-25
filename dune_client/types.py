@@ -7,16 +7,17 @@ with small adjustments (removing Options from QueryParameter)
 from __future__ import annotations
 
 import re
-from datetime import datetime
 from enum import Enum
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 from dune_client.util import postgres_date
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 DuneRecord = Dict[str, Any]
 
 
-# pylint: disable=too-few-public-methods
 class Address:
     """
     Class representing Ethereum Address as a hexadecimal string of length 42.
@@ -66,9 +67,7 @@ class Address:
 
     @staticmethod
     def _is_valid(address: str) -> bool:
-        match_result = re.match(
-            pattern=r"^(0x)?[0-9a-f]{40}$", string=address, flags=re.IGNORECASE
-        )
+        match_result = re.match(pattern=r"^(0x)?[0-9a-f]{40}$", string=address, flags=re.IGNORECASE)
         return match_result is not None
 
 
@@ -124,6 +123,9 @@ class QueryParameter:
                 self.type.value == other.type.value,
             ]
         )
+
+    def __hash__(self) -> int:
+        return hash((self.key, self.value, self.type.value))
 
     @classmethod
     def text_type(cls, name: str, value: str) -> QueryParameter:
@@ -191,12 +193,7 @@ class QueryParameter:
 
     def __str__(self) -> str:
         # For less cryptic logging.
-        return (
-            f"Parameter("
-            f"name={self.key}, "
-            f"value={self.value}, "
-            f"type={self.type.value})"
-        )
+        return f"Parameter(name={self.key}, value={self.value}, type={self.type.value})"
 
     def __repr__(self) -> str:
         return str(self)

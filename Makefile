@@ -13,10 +13,13 @@ clean:
 	rm -rf __pycache__
 
 fmt:
-	uv run black ./
+	uv run ruff format
 
 lint:
-	uv run pylint dune_client/
+	uv run ruff check
+
+lint-fix:
+	uv run ruff check --fix
 
 types:
 	uv run mypy dune_client/ --strict

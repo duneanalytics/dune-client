@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import logging
-import os.path
-from os.path import exists
 from pathlib import Path
 from typing import Callable, List
 
-from dune_client.file.base import FileRWInterface, CSVFile, JSONFile, NDJSONFile
+from dune_client.file.base import CSVFile, FileRWInterface, JSONFile, NDJSONFile
 from dune_client.types import DuneRecord
 
 logger = logging.getLogger(__name__)
@@ -29,15 +27,16 @@ class FileIO:
         path: Path | str,
         encoding: str = "utf-8",
     ):
-        if not os.path.exists(path):
+        path_obj = Path(path)
+        if not path_obj.exists():
             logger.info(f"creating write path {path}")
-            os.makedirs(path)
+            path_obj.mkdir(parents=True, exist_ok=True)
         self.path = path
         self.encoding: str = encoding
 
     def _write(
         self,
-        data: List[DuneRecord],
+        data: list[DuneRecord],
         writer: FileRWInterface,
         skip_empty: bool,
     ) -> None:
@@ -46,14 +45,14 @@ class FileIO:
         # We will continue to support python < 3.10 until ~3.13, this issue will remain open.
         if skip_empty and len(data) == 0:
             logger.info(f"Nothing to write to {writer.filename}... skipping")
-            return None
-        with open(writer.filepath, "w", encoding=self.encoding) as out_file:
+            return
+        with Path(writer.filepath).open("w", encoding=self.encoding) as out_file:
             writer.write(out_file, data)
-        return None
+        return
 
     def _append(
         self,
-        data: List[DuneRecord],
+        data: list[DuneRecord],
         writer: FileRWInterface,
         skip_empty: bool,
     ) -> None:
@@ -61,10 +60,8 @@ class FileIO:
         if skip_empty and len(data) == 0:
             logger.info(f"Nothing to write to {fname}... skipping")
             return None
-        if not exists(writer.filepath):
-            logger.warning(
-                f"File {fname} does not exist, using write instead of append!"
-            )
+        if not Path(writer.filepath).exists():
+            logger.warning(f"File {fname} does not exist, using write instead of append!")
             return self._write(data, writer, skip_empty)
 
         return writer.append(data)
@@ -80,9 +77,7 @@ class FileIO:
         # Additionally, we may want to validate that the headers actually coincide.
         self._append(data, CSVFile(self.path, name, self.encoding), skip_empty)
 
-    def append_json(
-        self, data: list[DuneRecord], name: str, skip_empty: bool = True
-    ) -> None:
+    def append_json(self, data: list[DuneRecord], name: str, skip_empty: bool = True) -> None:
         """
         Appends `data` to json file `name`
         This is the least efficient of all, since we have to load the entire file,
@@ -91,33 +86,25 @@ class FileIO:
         """
         self._append(data, JSONFile(self.path, name, self.encoding), skip_empty)
 
-    def append_ndjson(
-        self, data: list[DuneRecord], name: str, skip_empty: bool = True
-    ) -> None:
+    def append_ndjson(self, data: list[DuneRecord], name: str, skip_empty: bool = True) -> None:
         """Appends `data` to ndjson file `name`"""
         self._append(data, NDJSONFile(self.path, name, self.encoding), skip_empty)
 
-    def write_csv(
-        self, data: list[DuneRecord], name: str, skip_empty: bool = True
-    ) -> None:
+    def write_csv(self, data: list[DuneRecord], name: str, skip_empty: bool = True) -> None:
         """Writes `data` to csv file `name`"""
         self._write(data, CSVFile(self.path, name, self.encoding), skip_empty)
 
-    def write_json(
-        self, data: list[DuneRecord], name: str, skip_empty: bool = True
-    ) -> None:
+    def write_json(self, data: list[DuneRecord], name: str, skip_empty: bool = True) -> None:
         """Writes `data` to json file `name`"""
         self._write(data, JSONFile(self.path, name, self.encoding), skip_empty)
 
-    def write_ndjson(
-        self, data: list[DuneRecord], name: str, skip_empty: bool = True
-    ) -> None:
+    def write_ndjson(self, data: list[DuneRecord], name: str, skip_empty: bool = True) -> None:
         """Writes `data` to ndjson file `name`"""
         self._write(data, NDJSONFile(self.path, name, self.encoding), skip_empty)
 
     def _load(self, reader: FileRWInterface) -> list[DuneRecord]:
         """Loads DuneRecords from file `name`"""
-        with open(reader.filepath, "r", encoding=self.encoding) as file:
+        with Path(reader.filepath).open(encoding=self.encoding) as file:
             return reader.load(file)
 
     def load_csv(self, name: str) -> list[DuneRecord]:
@@ -144,9 +131,7 @@ class FileIO:
             raise ValueError(f"Could not determine file type from {ftype}!")
         return ftype
 
-    def load_singleton(
-        self, name: str, ftype: FileRWInterface | str, index: int = 0
-    ) -> DuneRecord:
+    def load_singleton(self, name: str, ftype: FileRWInterface | str, index: int = 0) -> DuneRecord:
         """Loads and returns single entry by index (default 0)"""
         reader = self._parse_ftype(name, ftype)
         return self._load(reader)[index]

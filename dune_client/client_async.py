@@ -9,34 +9,34 @@ from __future__ import annotations
 import asyncio
 import ssl
 from io import BytesIO
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable
 
 import certifi
 from aiohttp import (
+    ClientResponse,
     ClientResponseError,
     ClientSession,
-    ClientResponse,
+    ClientTimeout,
     ContentTypeError,
     TCPConnector,
-    ClientTimeout,
 )
+from typing_extensions import Self
 
 from dune_client.api.base import (
-    BaseDuneClient,
-    DUNE_CSV_NEXT_URI_HEADER,
     DUNE_CSV_NEXT_OFFSET_HEADER,
+    DUNE_CSV_NEXT_URI_HEADER,
     MAX_NUM_ROWS_PER_BATCH,
+    BaseDuneClient,
 )
 from dune_client.models import (
+    DuneError,
     ExecutionResponse,
     ExecutionResultCSV,
-    DuneError,
-    QueryFailed,
-    ExecutionStatusResponse,
-    ResultsResponse,
     ExecutionState,
+    ExecutionStatusResponse,
+    QueryFailedError,
+    ResultsResponse,
 )
-
 from dune_client.query import QueryBase, parse_query_object_or_id
 
 
@@ -63,7 +63,6 @@ class MaxRetryError(Exception):
         super().__init__(message)
 
 
-# pylint: disable=duplicate-code
 class AsyncDuneClient(BaseDuneClient):
     """
     An asynchronous interface for Dune API with a few convenience methods
@@ -86,11 +85,9 @@ class AsyncDuneClient(BaseDuneClient):
         connection_limit - number of parallel requests to execute.
         For non-pro accounts Dune allows only up to 3 requests but that number can be increased.
         """
-        super().__init__(
-            api_key, base_url, request_timeout, client_version, performance
-        )
+        super().__init__(api_key, base_url, request_timeout, client_version, performance)
         self._connection_limit = connection_limit
-        self._session: Optional[ClientSession] = None
+        self._session: ClientSession | None = None
 
     async def _create_session(self) -> ClientSession:
         # Create an SSL context using the certifi certificate store
@@ -112,11 +109,11 @@ class AsyncDuneClient(BaseDuneClient):
         if self._session:
             await self._session.close()
 
-    async def __aenter__(self) -> AsyncDuneClient:
+    async def __aenter__(self) -> Self:
         self._session = await self._create_session()
         return self
 
-    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object) -> None:
         await self.disconnect()
 
     async def _handle_response(self, response: ClientResponse) -> Any:
@@ -131,16 +128,17 @@ class AsyncDuneClient(BaseDuneClient):
             # Some responses can be decoded and converted to DuneErrors
             response_json = await response.json()
             self.logger.debug(f"received response {response_json}")
-            return response_json
         except ContentTypeError as err:
             # Others can't. Only raise HTTP error for not decodable errors
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
+        else:
+            return response_json
 
     def _route_url(
         self,
-        route: Optional[str] = None,
-        url: Optional[str] = None,
+        route: str | None = None,
+        url: str | None = None,
     ) -> str:
         if route is not None:
             final_route = f"{self.api_version}{route}"
@@ -157,11 +155,11 @@ class AsyncDuneClient(BaseDuneClient):
         or server side errors, it will retry it up to five times, sleeping i * 5s in between
         """
         backoff_factor = 0.5
-        error: Optional[ClientResponseError] = None
+        error: ClientResponseError | None = None
         for i in range(5):
             try:
                 return await call()
-            except RetryableError as e:
+            except RetryableError as e:  # noqa: PERF203
                 self.logger.warning(
                     f"Rate limited or internal error. Retrying in {i * 5} seconds..."
                 )
@@ -172,10 +170,10 @@ class AsyncDuneClient(BaseDuneClient):
 
     async def _get(
         self,
-        route: Optional[str] = None,
-        params: Optional[Any] = None,
+        route: str | None = None,
+        params: Any | None = None,
         raw: bool = False,
-        url: Optional[str] = None,
+        url: str | None = None,
     ) -> Any:
         final_route = self._route_url(route=route, url=url)
         self.logger.debug(f"GET received input route={final_route}")
@@ -210,16 +208,12 @@ class AsyncDuneClient(BaseDuneClient):
 
         return await self._handle_ratelimit(_post, route)
 
-    async def execute(
-        self, query: QueryBase, performance: Optional[str] = None
-    ) -> ExecutionResponse:
+    async def execute(self, query: QueryBase, performance: str | None = None) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         params = query.request_format()
         params["performance"] = performance or self.performance
 
-        self.logger.info(
-            f"executing {query.query_id} on {performance or self.performance} cluster"
-        )
+        self.logger.info(f"executing {query.query_id} on {performance or self.performance} cluster")
         response_json = await self._post(
             route=f"/query/{query.query_id}/execute",
             params=params,
@@ -240,11 +234,11 @@ class AsyncDuneClient(BaseDuneClient):
     async def get_result(
         self,
         job_id: str,
-        batch_size: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        batch_size: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
     ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
         assert (
@@ -274,11 +268,11 @@ class AsyncDuneClient(BaseDuneClient):
     async def get_result_csv(
         self,
         job_id: str,
-        batch_size: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        batch_size: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
     ) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
@@ -313,7 +307,7 @@ class AsyncDuneClient(BaseDuneClient):
 
     async def get_latest_result(
         self,
-        query: Union[QueryBase, str, int],
+        query: QueryBase | str | int,
         batch_size: int = MAX_NUM_ROWS_PER_BATCH,
     ) -> ResultsResponse:
         """
@@ -339,10 +333,10 @@ class AsyncDuneClient(BaseDuneClient):
             while results.next_uri is not None:
                 batch = await self._get_result_by_url(results.next_uri)
                 results += batch
-
-            return results
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
+        else:
+            return results
 
     async def cancel_execution(self, job_id: str) -> bool:
         """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
@@ -353,9 +347,10 @@ class AsyncDuneClient(BaseDuneClient):
         try:
             # No need to make a dataclass for this since it's just a boolean.
             success: bool = response_json["success"]
-            return success
         except KeyError as err:
             raise DuneError(response_json, "CancellationResponse", err) from err
+        else:
+            return success
 
     ########################
     # Higher level functions
@@ -365,12 +360,12 @@ class AsyncDuneClient(BaseDuneClient):
         self,
         query: QueryBase,
         ping_frequency: int = 5,
-        performance: Optional[str] = None,
-        batch_size: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        performance: str | None = None,
+        batch_size: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
     ) -> ResultsResponse:
         """
         Executes a Dune `query`, waits until execution completes,
@@ -384,9 +379,7 @@ class AsyncDuneClient(BaseDuneClient):
             or (batch_size is None and filters is None)
         ), "sampling cannot be combined with filters or pagination"
 
-        job_id = await self._refresh(
-            query, ping_frequency=ping_frequency, performance=performance
-        )
+        job_id = await self._refresh(query, ping_frequency=ping_frequency, performance=performance)
         return await self.get_result(
             job_id,
             columns=columns,
@@ -400,12 +393,12 @@ class AsyncDuneClient(BaseDuneClient):
         self,
         query: QueryBase,
         ping_frequency: int = 5,
-        performance: Optional[str] = None,
-        batch_size: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        performance: str | None = None,
+        batch_size: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
     ) -> ExecutionResultCSV:
         """
         Executes a Dune query, waits till execution completes,
@@ -419,9 +412,7 @@ class AsyncDuneClient(BaseDuneClient):
             or (batch_size is None and filters is None)
         ), "sampling cannot be combined with filters or pagination"
 
-        job_id = await self._refresh(
-            query, ping_frequency=ping_frequency, performance=performance
-        )
+        job_id = await self._refresh(query, ping_frequency=ping_frequency, performance=performance)
         return await self.get_result_csv(
             job_id,
             columns=columns,
@@ -434,12 +425,12 @@ class AsyncDuneClient(BaseDuneClient):
     async def refresh_into_dataframe(
         self,
         query: QueryBase,
-        performance: Optional[str] = None,
-        batch_size: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        performance: str | None = None,
+        batch_size: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
     ) -> Any:
         """
         Execute a Dune Query, waits till execution completes,
@@ -448,11 +439,9 @@ class AsyncDuneClient(BaseDuneClient):
         This is a convenience method that uses refresh_csv underneath
         """
         try:
-            import pandas  # pylint: disable=import-outside-toplevel
+            import pandas as pd  # noqa: PLC0415
         except ImportError as exc:
-            raise ImportError(
-                "dependency failure, pandas is required but missing"
-            ) from exc
+            raise ImportError("dependency failure, pandas is required but missing") from exc
         results = await self.refresh_csv(
             query,
             performance=performance,
@@ -462,7 +451,7 @@ class AsyncDuneClient(BaseDuneClient):
             sort_by=sort_by,
             batch_size=batch_size,
         )
-        return pandas.read_csv(results.data)
+        return pd.read_csv(results.data)
 
     #################
     # Private Methods
@@ -471,12 +460,12 @@ class AsyncDuneClient(BaseDuneClient):
     async def _get_result_page(
         self,
         job_id: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
     ) -> ResultsResponse:
         """GET a page of results from Dune API for `job_id` (aka `execution_id`)"""
 
@@ -505,7 +494,7 @@ class AsyncDuneClient(BaseDuneClient):
     async def _get_result_by_url(
         self,
         url: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> ResultsResponse:
         """
         GET results from Dune API with a given URL. This is particularly useful for pagination.
@@ -520,12 +509,12 @@ class AsyncDuneClient(BaseDuneClient):
     async def _get_result_csv_page(
         self,
         job_id: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
     ) -> ExecutionResultCSV:
         """
         GET a page of results in CSV format from Dune API for `job_id` (aka `execution_id`)
@@ -559,7 +548,7 @@ class AsyncDuneClient(BaseDuneClient):
     async def _get_result_csv_by_url(
         self,
         url: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API with a given URL.
@@ -580,7 +569,7 @@ class AsyncDuneClient(BaseDuneClient):
         self,
         query: QueryBase,
         ping_frequency: int = 5,
-        performance: Optional[str] = None,
+        performance: str | None = None,
     ) -> str:
         """
         Executes a Dune `query`, waits until execution completes,
@@ -590,13 +579,11 @@ class AsyncDuneClient(BaseDuneClient):
         job_id = (await self.execute(query=query, performance=performance)).execution_id
         status = await self.get_status(job_id)
         while status.state not in ExecutionState.terminal_states():
-            self.logger.info(
-                f"waiting for query execution {job_id} to complete: {status}"
-            )
+            self.logger.info(f"waiting for query execution {job_id} to complete: {status}")
             await asyncio.sleep(ping_frequency)
             status = await self.get_status(job_id)
         if status.state == ExecutionState.FAILED:
             self.logger.error(status)
-            raise QueryFailed(f"Error data: {status.error}")
+            raise QueryFailedError(f"Error data: {status.error}")
 
         return job_id
