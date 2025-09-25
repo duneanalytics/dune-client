@@ -140,11 +140,9 @@ dune.make_public(query_id)
 
 # Developer Usage & Deployment
 
-This project supports both traditional pip/venv workflows and modern uv workflows.
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management and development workflows.
 
-## Using uv (Recommended)
-
-### Setup
+## Setup
 ```shell
 # Clone the repository
 git clone https://github.com/duneanalytics/dune-client.git
@@ -154,7 +152,7 @@ cd dune-client
 uv sync --extra dev
 ```
 
-### Development Commands
+## Development Commands
 ```shell
 # Format code
 uv run black ./
@@ -170,13 +168,9 @@ uv run python -m pytest tests/unit      # Unit tests
 uv run python -m pytest tests/e2e       # E2E tests (requires DUNE_API_KEY)
 ```
 
-## Using Traditional Tools
-
-### Makefile
-This project's makefile works with both uv and traditional pip workflows.
+## Makefile Shortcuts
 
 ### Installation
-
 ```shell
 make install        # Uses uv sync
 # or
