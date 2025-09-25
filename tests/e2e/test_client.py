@@ -2,6 +2,7 @@ import copy
 import os
 import time
 import unittest
+import warnings
 from pathlib import Path
 
 import dotenv
@@ -58,9 +59,23 @@ class TestDuneClient(unittest.TestCase):
 
     def test_from_env_constructor(self):
         try:
-            DuneClient.from_env()
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                DuneClient.from_env()
+                # Verify that a deprecation warning was raised
+                assert len(w) == 1
+                assert issubclass(w[-1].category, DeprecationWarning)
+                assert "deprecated" in str(w[-1].message).lower()
         except KeyError:
             self.fail("DuneClient.from_env raised unexpectedly!")
+
+    def test_default_constructor_reads_env(self):
+        """Test that the default constructor automatically reads from environment variables"""
+        try:
+            # This should work the same as from_env() but without the warning
+            DuneClient()
+        except KeyError:
+            self.fail("DuneClient() without arguments should read from environment variables")
 
     def test_get_execution_status(self):
         query = QueryBase(name="No Name", query_id=1276442, params=[])
