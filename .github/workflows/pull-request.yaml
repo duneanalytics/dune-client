@@ -11,36 +11,36 @@ jobs:
         python-version: ["3.8", "3.13"]
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install Requirements
-        run: pip install -r requirements/dev.txt
+          version: "latest"
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: uv sync --extra dev
       - name: Pylint
-        run: pylint dune_client/
+        run: uv run pylint dune_client/
       - name: Black
-        run: black --check ./
+        run: uv run black --check ./
       - name: Type Check (mypy)
-        run: mypy dune_client --strict
+        run: uv run mypy dune_client --strict
       - name: Unit Tests
-        run: python -m pytest tests/unit
+        run: uv run python -m pytest tests/unit
 
   e2e-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: 3.12
-
-      - name: Install Requirements
-        run:
-          pip install -r requirements/dev.txt
+          version: "latest"
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --extra dev
       - name: End to End Tests
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
-        run:
-          python -m pytest tests/e2e
+        run: uv run python -m pytest tests/e2e
