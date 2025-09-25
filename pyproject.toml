@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "aiohttp>=3.8.5",
-    "dataclasses-json==0.6.4",
+    "dataclasses-json>=0.6.4",
     "types-python-dateutil>=2.8.19.14",
     "types-PyYAML>=6.0.12.11",
     "types-requests>=2.28.0",
@@ -27,7 +27,7 @@ dependencies = [
     "requests>=2.28.0",
     "ndjson>=0.3.1",
     "Deprecated>=1.2.14",
-    "types-Deprecated==1.2.9.3",
+    "types-Deprecated>=1.2.9.3",
 ]
 dynamic = ["version"]
 
@@ -57,4 +57,6 @@ source = "vcs"
 packages = ["dune_client"]
 
 [dependency-groups]
-dev = []
+dev = [
+    "pyyaml>=6.0.2",
+]
