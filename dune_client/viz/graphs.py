@@ -37,9 +37,7 @@ def create_sankey(
 
     # preprocess query result dataframe
     all_nodes = list(
-        pd.concat(
-            [query_result[columns["source"]], query_result[columns["target"]]]
-        ).unique()
+        pd.concat([query_result[columns["source"]], query_result[columns["target"]]]).unique()
     )
     # In Sankey, 'source' and 'target' must be indices. Thus, you need to map projects to indices.
     query_result["source_idx"] = query_result[columns["source"]].map(all_nodes.index)
@@ -54,9 +52,7 @@ def create_sankey(
                 color_map[node] = color
                 break
         else:
-            color_map[node] = colors[
-                len(color_map) % len(colors)
-            ]  # default color assignment
+            color_map[node] = colors[len(color_map) % len(colors)]  # default color assignment
 
     fig = go.Figure(
         go.Sankey(

@@ -4,7 +4,6 @@ fetch and filter data from custom endpoints.
 """
 
 from __future__ import annotations
-from typing import List, Optional
 
 from dune_client.api.base import BaseRouter
 from dune_client.models import (
@@ -13,7 +12,6 @@ from dune_client.models import (
 )
 
 
-# pylint: disable=duplicate-code
 class CustomEndpointAPI(BaseRouter):
     """
     Custom endpoints API implementation.
@@ -25,12 +23,12 @@ class CustomEndpointAPI(BaseRouter):
         self,
         handle: str,
         endpoint: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
     ) -> ResultsResponse:
         """
         Custom endpoints allow you to fetch and filter data from any

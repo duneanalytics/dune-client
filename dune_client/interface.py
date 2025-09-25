@@ -5,11 +5,10 @@ Abstract class for a basic Dune Interface with refresh method used by Query Runn
 import abc
 from typing import Any
 
-from dune_client.models import ResultsResponse, ExecutionResultCSV
+from dune_client.models import ExecutionResultCSV, ResultsResponse
 from dune_client.query import QueryBase
 
 
-# pylint: disable=too-few-public-methods
 class DuneInterface(abc.ABC):
     """
     User Facing Methods for a Dune Client

@@ -1,7 +1,7 @@
 """Utility methods for package."""
 
-from datetime import datetime, timezone
 import importlib
+from datetime import datetime, timezone
 from typing import Optional
 
 DUNE_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"

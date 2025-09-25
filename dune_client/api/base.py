@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging.config
 import os
 from json import JSONDecodeError
-from typing import Any, Dict, List, Optional, Union, IO
+from typing import IO, Any
 
 from requests import Response, Session
 from requests.adapters import HTTPAdapter, Retry
@@ -23,14 +23,13 @@ DUNE_CSV_NEXT_OFFSET_HEADER = "x-dune-next-offset"
 MAX_NUM_ROWS_PER_BATCH = 32_000
 
 
-# pylint: disable=too-few-public-methods
 class BaseDuneClient:
     """
     A Base Client for Dune which sets up default values
     and provides some convenient functions to use in other clients
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         api_key: str,
         base_url: str = "https://api.dune.com",
@@ -67,7 +66,7 @@ class BaseDuneClient:
         return cls(
             api_key=os.environ["DUNE_API_KEY"],
             base_url=os.environ.get("DUNE_API_BASE_URL", "https://api.dune.com"),
-            request_timeout=float(os.environ.get("DUNE_API_REQUEST_TIMEOUT", 10)),
+            request_timeout=float(os.environ.get("DUNE_API_REQUEST_TIMEOUT", "10")),
         )
 
     @property
@@ -75,7 +74,7 @@ class BaseDuneClient:
         """Returns client version string"""
         return f"/api/{self.client_version}"
 
-    def default_headers(self) -> Dict[str, str]:
+    def default_headers(self) -> dict[str, str]:
         """Return default headers containing Dune Api token"""
         client_version = get_package_version("dune-client") or "1.3.0"
         return {
@@ -89,15 +88,15 @@ class BaseDuneClient:
 
     def _build_parameters(
         self,
-        params: Optional[Dict[str, Union[str, int]]] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        params: dict[str, str | int] | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
         allow_partial_results: str = "true",
-    ) -> Dict[str, Union[str, int]]:
+    ) -> dict[str, str | int]:
         """
         Utility function that builds a dictionary of parameters to be used
         when retrieving advanced results (filters, pagination, sorting, etc.).
@@ -138,13 +137,14 @@ class BaseRouter(BaseDuneClient):
             # Some responses can be decoded and converted to DuneErrors
             response_json = response.json()
             self.logger.debug(f"received response {response_json}")
-            return response_json
         except JSONDecodeError as err:
             # Others can't. Only raise HTTP error for not decodable errors
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
+        else:
+            return response_json
 
-    def _route_url(self, route: Optional[str] = None, url: Optional[str] = None) -> str:
+    def _route_url(self, route: str | None = None, url: str | None = None) -> str:
         if route is not None:
             final_url = f"{self.base_url}{self.api_version}{route}"
         elif url is not None:
@@ -156,10 +156,10 @@ class BaseRouter(BaseDuneClient):
 
     def _get(
         self,
-        route: Optional[str] = None,
-        params: Optional[Any] = None,
+        route: str | None = None,
+        params: Any | None = None,
         raw: bool = False,
-        url: Optional[str] = None,
+        url: str | None = None,
     ) -> Any:
         """Generic interface for the GET method of a Dune API request"""
         final_url = self._route_url(route=route, url=url)
@@ -178,9 +178,9 @@ class BaseRouter(BaseDuneClient):
     def _post(
         self,
         route: str,
-        params: Optional[Any] = None,
-        data: Optional[IO[bytes]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        params: Any | None = None,
+        data: IO[bytes] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         """Generic interface for the POST method of a Dune API request"""
         url = self._route_url(route)

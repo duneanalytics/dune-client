@@ -2,23 +2,25 @@ import copy
 import os
 import time
 import unittest
+from pathlib import Path
 
 import dotenv
-import pandas
+import pandas as pd
+import pytest
 
+from dune_client.client import DuneClient
 from dune_client.models import (
-    ExecutionState,
-    ExecutionResponse,
-    ExecutionStatusResponse,
-    DuneError,
-    InsertTableResult,
+    ClearTableResult,
     CreateTableResult,
     DeleteTableResult,
-    ClearTableResult,
+    DuneError,
+    ExecutionResponse,
+    ExecutionState,
+    ExecutionStatusResponse,
+    InsertTableResult,
 )
-from dune_client.types import QueryParameter
-from dune_client.client import DuneClient
 from dune_client.query import QueryBase
+from dune_client.types import QueryParameter
 
 dotenv.load_dotenv()
 
@@ -51,7 +53,7 @@ class TestDuneClient(unittest.TestCase):
             QueryParameter.date_type(name="DateField", value="1991-01-01 00:00:00"),
             QueryParameter.enum_type(name="ListField", value="Option 2"),
         ]
-        self.assertNotEqual(self.query.parameters(), new_query.parameters())
+        assert self.query.parameters() != new_query.parameters()
         return new_query
 
     def test_from_env_constructor(self):
@@ -65,14 +67,12 @@ class TestDuneClient(unittest.TestCase):
         dune = DuneClient(self.valid_api_key)
         job_id = dune.execute_query(query).execution_id
         status = dune.get_execution_status(job_id)
-        self.assertTrue(
-            status.state in [ExecutionState.EXECUTING, ExecutionState.PENDING]
-        )
+        assert status.state in [ExecutionState.EXECUTING, ExecutionState.PENDING]
 
     def test_run_query(self):
         dune = DuneClient(self.valid_api_key)
         results = dune.run_query(self.query).get_rows()
-        self.assertGreater(len(results), 0)
+        assert len(results) > 0
 
     def test_run_query_paginated(self):
         # Arrange
@@ -82,16 +82,7 @@ class TestDuneClient(unittest.TestCase):
         results = dune.run_query(self.multi_rows_query, batch_size=1).get_rows()
 
         # Assert
-        self.assertEqual(
-            results,
-            [
-                {"number": 1},
-                {"number": 2},
-                {"number": 3},
-                {"number": 4},
-                {"number": 5},
-            ],
-        )
+        assert results == [{"number": 1}, {"number": 2}, {"number": 3}, {"number": 4}, {"number": 5}]
 
     def test_run_query_with_filters(self):
         # Arrange
@@ -101,51 +92,35 @@ class TestDuneClient(unittest.TestCase):
         results = dune.run_query(self.multi_rows_query, filters="number < 3").get_rows()
 
         # Assert
-        self.assertEqual(
-            results,
-            [
-                {"number": 1},
-                {"number": 2},
-            ],
-        )
+        assert results == [{"number": 1}, {"number": 2}]
 
     def test_run_query_performance_large(self):
         dune = DuneClient(self.valid_api_key)
         results = dune.run_query(self.query, performance="large").get_rows()
-        self.assertGreater(len(results), 0)
+        assert len(results) > 0
 
     def test_run_query_dataframe(self):
         dune = DuneClient(self.valid_api_key)
         pd = dune.run_query_dataframe(self.query)
-        self.assertGreater(len(pd), 0)
+        assert len(pd) > 0
 
     def test_parameters_recognized(self):
         new_query = self.copy_query_and_change_parameters()
         dune = DuneClient(self.valid_api_key)
         results = dune.run_query(new_query)
-        self.assertEqual(
-            results.get_rows(),
-            [
-                {
-                    "text_field": "different word",
-                    "number_field": 22,
-                    "date_field": "1991-01-01 00:00:00",
-                    "list_field": "Option 2",
-                }
-            ],
-        )
+        assert results.get_rows() == [{"text_field": "different word", "number_field": 22, "date_field": "1991-01-01 00:00:00", "list_field": "Option 2"}]
 
     def test_endpoints(self):
         dune = DuneClient(self.valid_api_key)
         execution_response = dune.execute_query(self.query)
-        self.assertIsInstance(execution_response, ExecutionResponse)
+        assert isinstance(execution_response, ExecutionResponse)
         job_id = execution_response.execution_id
         status = dune.get_execution_status(job_id)
-        self.assertIsInstance(status, ExecutionStatusResponse)
+        assert isinstance(status, ExecutionStatusResponse)
         while dune.get_execution_status(job_id).state != ExecutionState.COMPLETED:
             time.sleep(1)
         results = dune.get_execution_results(job_id).result.rows
-        self.assertGreater(len(results), 0)
+        assert len(results) > 0
 
     def test_cancel_execution(self):
         dune = DuneClient(self.valid_api_key)
@@ -157,43 +132,31 @@ class TestDuneClient(unittest.TestCase):
         job_id = execution_response.execution_id
         # POST Cancellation
         success = dune.cancel_execution(job_id)
-        self.assertTrue(success)
+        assert success
 
         results = dune.get_execution_results(job_id)
-        self.assertEqual(results.state, ExecutionState.CANCELLED)
+        assert results.state == ExecutionState.CANCELLED
 
     def test_invalid_api_key_error(self):
         dune = DuneClient(api_key="Invalid Key")
-        with self.assertRaises(DuneError) as err:
+        with pytest.raises(DuneError) as err:
             dune.execute_query(self.query)
-        self.assertEqual(
-            str(err.exception),
-            "Can't build ExecutionResponse from {'error': 'invalid API Key'}",
-        )
-        with self.assertRaises(DuneError) as err:
+        assert str(err.value) == "Can't build ExecutionResponse from {'error': 'invalid API Key'}"
+        with pytest.raises(DuneError) as err:
             dune.get_execution_status("wonky job_id")
-        self.assertEqual(
-            str(err.exception),
-            "Can't build ExecutionStatusResponse from {'error': 'invalid API Key'}",
-        )
-        with self.assertRaises(DuneError) as err:
+        assert str(err.value) == "Can't build ExecutionStatusResponse from {'error': 'invalid API Key'}"
+        with pytest.raises(DuneError) as err:
             dune.get_execution_results("wonky job_id")
-        self.assertEqual(
-            str(err.exception),
-            "Can't build ResultsResponse from {'error': 'invalid API Key'}",
-        )
+        assert str(err.value) == "Can't build ResultsResponse from {'error': 'invalid API Key'}"
 
     def test_query_not_found_error(self):
         dune = DuneClient(self.valid_api_key)
         query = copy.copy(self.query)
         query.query_id = 99999999  # Invalid Query Id.
 
-        with self.assertRaises(DuneError) as err:
+        with pytest.raises(DuneError) as err:
             dune.execute_query(query)
-        self.assertEqual(
-            str(err.exception),
-            "Can't build ExecutionResponse from {'error': 'Query not found'}",
-        )
+        assert str(err.value) == "Can't build ExecutionResponse from {'error': 'Query not found'}"
 
     def test_internal_error(self):
         dune = DuneClient(self.valid_api_key)
@@ -201,44 +164,30 @@ class TestDuneClient(unittest.TestCase):
         # This query ID is too large!
         query.query_id = 9999999999999
 
-        with self.assertRaises(DuneError) as err:
+        with pytest.raises(DuneError) as err:
             dune.execute_query(query)
-        self.assertEqual(
-            str(err.exception),
-            "Can't build ExecutionResponse from {'error': 'An internal error occured'}",
-        )
+        assert str(err.value) == "Can't build ExecutionResponse from {'error': 'An internal error occured'}"
 
     def test_invalid_job_id_error(self):
         dune = DuneClient(self.valid_api_key)
-        with self.assertRaises(DuneError) as err:
+        with pytest.raises(DuneError) as err:
             dune.get_execution_status("Wonky Job ID")
-        self.assertEqual(
-            str(err.exception),
-            "Can't build ExecutionStatusResponse from "
-            "{'error': 'The requested execution ID (ID: Wonky Job ID) is invalid.'}",
-        )
+        assert str(err.value) == "Can't build ExecutionStatusResponse from " "{'error': 'The requested execution ID (ID: Wonky Job ID) is invalid.'}"
 
     def test_get_latest_result_with_query_object(self):
         dune = DuneClient(self.valid_api_key)
         results = dune.get_latest_result(self.query).get_rows()
-        self.assertGreater(len(results), 0)
+        assert len(results) > 0
 
     def test_get_latest_result_with_query_id(self):
         dune = DuneClient(self.valid_api_key)
         results = dune.get_latest_result(self.query.query_id).get_rows()
-        self.assertGreater(len(results), 0)
+        assert len(results) > 0
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_upload_csv_success(self):
         client = DuneClient(self.valid_api_key)
-        self.assertEqual(
-            client.upload_csv(
-                table_name="e2e-test",
-                description="best data",
-                data="column1,column2\nvalue1,value2\nvalue3,value4",
-            ),
-            True,
-        )
+        assert client.upload_csv(table_name="e2e-test", description="best data", data="column1,column2\nvalue1,value2\nvalue3,value4")
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_create_table_success(self):
@@ -248,27 +197,7 @@ class TestDuneClient(unittest.TestCase):
 
         namespace = "bh2smith"
         table_name = "dataset_e2e_test"
-        self.assertEqual(
-            client.create_table(
-                namespace=namespace,
-                table_name=table_name,
-                description="e2e test table",
-                schema=[
-                    {"name": "date", "type": "timestamp"},
-                    {"name": "dgs10", "type": "double"},
-                ],
-                is_private=False,
-            ),
-            CreateTableResult.from_dict(
-                {
-                    "namespace": namespace,
-                    "table_name": table_name,
-                    "full_name": f"dune.{namespace}.{table_name}",
-                    "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
-                    "message": "Table created successfully",
-                }
-            ),
-        )
+        assert client.create_table(namespace=namespace, table_name=table_name, description="e2e test table", schema=[{"name": "date", "type": "timestamp"}, {"name": "dgs10", "type": "double"}], is_private=False) == CreateTableResult.from_dict({"namespace": namespace, "table_name": table_name, "full_name": f"dune.{namespace}.{table_name}", "example_query": f"select * from dune.{namespace}.{table_name} limit 10", "message": "Table created successfully"})
 
     # @unittest.skip("Requires custom namespace and table_name input.")
     def test_create_table_error(self):
@@ -276,7 +205,7 @@ class TestDuneClient(unittest.TestCase):
 
         namespace = "test"
         table_name = "table"
-        with self.assertRaises(DuneError) as err:
+        with pytest.raises(DuneError):
             client.create_table(
                 namespace=namespace,
                 table_name=table_name,
@@ -302,44 +231,23 @@ class TestDuneClient(unittest.TestCase):
                 {"name": "dgs10", "type": "double"},
             ],
         )
-        with open("./tests/fixtures/sample_table_insert.csv", "rb") as data:
-            self.assertEqual(
-                client.insert_table(
-                    namespace,
-                    table_name,
-                    data=data,
-                    content_type="text/csv",
-                ),
-                InsertTableResult(rows_written=1, bytes_written=33),
-            )
+        with Path("./tests/fixtures/sample_table_insert.csv").open("rb") as data:
+            assert client.insert_table(namespace, table_name, data=data, content_type="text/csv") == InsertTableResult(rows_written=1, bytes_written=33)
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_clear_data(self):
         client = DuneClient(self.valid_api_key)
         namespace = "bh2smith"
         table_name = "dataset_e2e_test"
-        self.assertEqual(
-            client.clear_data(namespace, table_name),
-            ClearTableResult(
-                message="Table dune.bh2smith.dataset_e2e_test successfully cleared"
-            ),
-        )
+        assert client.clear_data(namespace, table_name) == ClearTableResult(message="Table dune.bh2smith.dataset_e2e_test successfully cleared")
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_insert_table_json_success(self):
         # Make sure the table already exists and json matches table schema.
         # You will need to change the namespace to your own.
         client = DuneClient(self.valid_api_key)
-        with open("./tests/fixtures/sample_table_insert.json", "rb") as data:
-            self.assertEqual(
-                client.insert_table(
-                    namespace="test",
-                    table_name="dataset_e2e_test",
-                    data=data,
-                    content_type="application/x-ndjson",
-                ),
-                InsertTableResult(rows_written=1, bytes_written=33),
-            )
+        with Path("./tests/fixtures/sample_table_insert.json").open("rb") as data:
+            assert client.insert_table(namespace="test", table_name="dataset_e2e_test", data=data, content_type="application/x-ndjson") == InsertTableResult(rows_written=1, bytes_written=33)
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_delete_table_success(self):
@@ -350,17 +258,7 @@ class TestDuneClient(unittest.TestCase):
         namespace = "test"
         table_name = "dataset_e2e_test"
 
-        self.assertEqual(
-            client.delete_table(
-                namespace=namespace,
-                table_name=table_name,
-            ),
-            DeleteTableResult.from_dict(
-                {
-                    "message": f"Table {namespace}.{table_name} successfully deleted",
-                }
-            ),
-        )
+        assert client.delete_table(namespace=namespace, table_name=table_name) == DeleteTableResult.from_dict({"message": f"Table {namespace}.{table_name} successfully deleted"})
 
     def test_download_csv_with_pagination(self):
         # Arrange
@@ -371,16 +269,7 @@ class TestDuneClient(unittest.TestCase):
         result_csv = client.download_csv(self.multi_rows_query.query_id, batch_size=1)
 
         # Assert
-        self.assertEqual(
-            pandas.read_csv(result_csv.data).to_dict(orient="records"),
-            [
-                {"number": 1},
-                {"number": 2},
-                {"number": 3},
-                {"number": 4},
-                {"number": 5},
-            ],
-        )
+        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [{"number": 1}, {"number": 2}, {"number": 3}, {"number": 4}, {"number": 5}]
 
     def test_download_csv_with_filters(self):
         # Arrange
@@ -394,13 +283,7 @@ class TestDuneClient(unittest.TestCase):
         )
 
         # Assert
-        self.assertEqual(
-            pandas.read_csv(result_csv.data).to_dict(orient="records"),
-            [
-                {"number": 1},
-                {"number": 2},
-            ],
-        )
+        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [{"number": 1}, {"number": 2}]
 
     def test_download_csv_success_by_id(self):
         client = DuneClient(self.valid_api_key)
@@ -410,17 +293,7 @@ class TestDuneClient(unittest.TestCase):
         # Download CSV by query_id
         result_csv = client.download_csv(self.query.query_id)
         # Expect that the csv returns the latest execution results (i.e. those that were just run)
-        self.assertEqual(
-            pandas.read_csv(result_csv.data).to_dict(orient="records"),
-            [
-                {
-                    "text_field": "different word",
-                    "number_field": 22,
-                    "date_field": "1991-01-01 00:00:00",
-                    "list_field": "Option 2",
-                }
-            ],
-        )
+        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [{"text_field": "different word", "number_field": 22, "date_field": "1991-01-01 00:00:00", "list_field": "Option 2"}]
 
     def test_download_csv_success_with_params(self):
         client = DuneClient(self.valid_api_key)
@@ -428,23 +301,11 @@ class TestDuneClient(unittest.TestCase):
         result_csv = client.download_csv(self.query)
         # Expect the result to be relative to values of given parameters.
         #################################################################
-        # Note that we could compare results with
-        #    ",".join([p.value for p in self.query.parameters()]) + "\n"
+        # Note that we could compare results with the query parameters
         # but there seems to be a discrepancy with the date string values.
-        # Specifically 1991-01-01 00:00:00
-        #           vs 1991-01-01 00:00:00
+        # Specifically 1991-01-01 00:00:00 vs 1991-01-01 00:00:00
         #################################################################
-        self.assertEqual(
-            pandas.read_csv(result_csv.data).to_dict(orient="records"),
-            [
-                {
-                    "date_field": "2022-05-04 00:00:00",
-                    "list_field": "Option 1",
-                    "number_field": 3.1415926535,
-                    "text_field": "Plain Text",
-                }
-            ],
-        )
+        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [{"date_field": "2022-05-04 00:00:00", "list_field": "Option 1", "number_field": 3.1415926535, "text_field": "Plain Text"}]
 
 
 @unittest.skip("This is an enterprise only endpoint that can no longer be tested.")
@@ -457,42 +318,42 @@ class TestCRUDOps(unittest.TestCase):
     @unittest.skip("Works fine, but creates too many queries")
     def test_create(self):
         new_query = self.client.create_query(name="test_create", query_sql="")
-        self.assertGreater(new_query.base.query_id, 0)
+        assert new_query.base.query_id > 0
 
     def test_get(self):
         q_id = 12345
         query = self.client.get_query(q_id)
-        self.assertEqual(query.base.query_id, q_id)
+        assert query.base.query_id == q_id
 
     def test_update(self):
         test_id = self.existing_query_id
         current_sql = self.client.get_query(test_id).sql
         self.client.update_query(query_id=test_id, query_sql="")
-        self.assertEqual(self.client.get_query(test_id).sql, "")
+        assert self.client.get_query(test_id).sql == ""
         # Reset:
         self.client.update_query(query_id=test_id, query_sql=current_sql)
 
     def test_make_private_and_public(self):
         q_id = self.existing_query_id
         self.client.make_private(q_id)
-        self.assertEqual(self.client.get_query(q_id).meta.is_private, True)
+        assert self.client.get_query(q_id).meta.is_private
         self.client.make_public(q_id)
-        self.assertEqual(self.client.get_query(q_id).meta.is_private, False)
+        assert not self.client.get_query(q_id).meta.is_private
 
     def test_archive(self):
-        self.assertEqual(self.client.archive_query(self.existing_query_id), True)
-        self.assertEqual(self.client.unarchive_query(self.existing_query_id), False)
+        assert self.client.archive_query(self.existing_query_id)
+        assert not self.client.unarchive_query(self.existing_query_id)
 
     @unittest.skip("Works fine, but creates too many queries!")
     def test_run_sql(self):
         query_sql = "select 85"
         results = self.client.run_sql(query_sql)
-        self.assertEqual(results.get_rows(), [{"_col0": 85}])
+        assert results.get_rows() == [{"_col0": 85}]
 
         # The default functionality is meant to create a private query and then archive it.
         query = self.client.get_query(results.query_id)
-        self.assertTrue(query.meta.is_archived)
-        self.assertTrue(query.meta.is_private)
+        assert query.meta.is_archived
+        assert query.meta.is_private
 
 
 if __name__ == "__main__":

@@ -4,15 +4,16 @@ create and insert data into Dune.
 """
 
 from __future__ import annotations
-from typing import List, Dict, IO
+
+from typing import IO
 
 from dune_client.api.base import BaseRouter
 from dune_client.models import (
-    DuneError,
-    InsertTableResult,
+    ClearTableResult,
     CreateTableResult,
     DeleteTableResult,
-    ClearTableResult,
+    DuneError,
+    InsertTableResult,
 )
 
 
@@ -57,7 +58,7 @@ class TableAPI(BaseRouter):
         self,
         namespace: str,
         table_name: str,
-        schema: List[Dict[str, str]],
+        schema: list[dict[str, str]],
         description: str = "",
         is_private: bool = False,
     ) -> CreateTableResult:
@@ -68,7 +69,7 @@ class TableAPI(BaseRouter):
 
         The only limitations are:
         - If a table already exists with the same name, the request will fail.
-        - Column names in the table can’t start with a special character or a digit.
+        - Column names in the table can't start with a special character or a digit.
         """
 
         result_json = self._post(

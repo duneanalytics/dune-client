@@ -1,6 +1,4 @@
-import copy
 import os
-import time
 import unittest
 
 import dotenv
@@ -18,7 +16,7 @@ class TestCustomEndpoints(unittest.TestCase):
     def test_getting_custom_endpoint_results(self):
         dune = DuneClient(self.valid_api_key)
         results = dune.get_custom_endpoint_result("dune", "new-test")
-        self.assertEqual(len(results.get_rows()), 10)
+        assert len(results.get_rows()) == 10
 
 
 if __name__ == "__main__":
