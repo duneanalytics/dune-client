@@ -75,9 +75,9 @@ class AsyncDuneClient(BaseDuneClient):
 
     def __init__(
         self,
-        api_key: str,
-        base_url: str = "https://api.dune.com",
-        request_timeout: float = 10,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        request_timeout: float | None = None,
         client_version: str = "v1",
         performance: str = "medium",
         connection_limit: int = 3,
