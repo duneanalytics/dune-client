@@ -1,4 +1,4 @@
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3102/)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build](https://github.com/duneanalytics/dune-client/actions/workflows/pull-request.yaml/badge.svg)](https://github.com/duneanalytics/dune-client/actions/workflows/pull-request.yaml)
@@ -10,10 +10,30 @@ service](https://docs.dune.com/api-reference/overview/introduction).
 
 ## Installation
 
-Import as a project dependency
+### Using pip
 
 ```shell
 pip install dune-client
+```
+
+### Using uv (recommended)
+
+[uv](https://docs.astral.sh/uv/) is a fast Python package and project manager written in Rust. It provides:
+- ⚡ 10-100x faster dependency resolution
+- 🔒 Reproducible builds with lockfiles
+- 🐍 Automatic Python version management
+- 📦 Zero-configuration virtual environments
+
+Install uv first, then:
+
+```shell
+# Add to an existing project
+uv add dune-client
+
+# Or create a new project
+uv init my-dune-project
+cd my-dune-project
+uv add dune-client
 ```
 
 # Example Usage
@@ -22,6 +42,11 @@ pip install dune-client
 
 Export your `DUNE_API_KEY` (or place it in a `.env` file - as in
 here [.env.sample](./.env.sample) and `source .env`).
+
+> 💡 **Tip**: If using uv, you can run examples directly without activating a virtual environment:
+> ```shell
+> uv run python your_script.py
+> ```
 
 ```python
 from dune_client.types import QueryParameter
@@ -115,13 +140,41 @@ dune.make_public(query_id)
 
 # Developer Usage & Deployment
 
-## Makefile
-This project's makefile comes equipped with sufficient commands for local development.
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management and development workflows.
+
+## Setup
+```shell
+# Clone the repository
+git clone https://github.com/duneanalytics/dune-client.git
+cd dune-client
+
+# Install dependencies
+uv sync --extra dev
+```
+
+## Development Commands
+```shell
+# Format code
+uv run black ./
+
+# Lint code  
+uv run pylint dune_client/
+
+# Type checking
+uv run mypy dune_client/ --strict
+
+# Run tests
+uv run python -m pytest tests/unit      # Unit tests
+uv run python -m pytest tests/e2e       # E2E tests (requires DUNE_API_KEY)
+```
+
+## Makefile Shortcuts
 
 ### Installation
-
 ```shell
-make install
+make install        # Uses uv sync
+# or
+make install-dev    # Uses uv sync --extra dev
 ````
 
 ### Format, Lint & Types

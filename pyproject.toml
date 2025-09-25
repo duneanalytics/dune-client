@@ -1,12 +1,62 @@
 [build-system]
-requires = [
-    "setuptools >= 48",
-    "setuptools_scm[toml] >= 6.2",
-    "setuptools_scm_git_archive",
-    "wheel >= 0.29.0",
-]
-build-backend = 'setuptools.build_meta'
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
-[tool.setuptools_scm]
-write_to = "_version.py"
-git_describe_command = "git describe --dirty --tags --long --match v* --first-parent"
+[project]
+name = "dune_client"
+description = "A simple framework for interacting with Dune Analytics official API service."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache License Version 2.0"}
+authors = [
+    {name = "Benjamin H. Smith & Dune Analytics", email = "ben@cow.fi"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "aiohttp~=3.10.0",
+    "dataclasses-json~=0.6.4",
+    "types-python-dateutil>=2.8.19.14",
+    "types-PyYAML>=6.0.12.11",
+    "types-requests>=2.28.0",
+    "types-setuptools>=68.2.0.0",
+    "python-dateutil~=2.8.2",
+    "requests~=2.31.0",
+    "ndjson~=0.3.1",
+    "Deprecated~=1.2.14",
+    "types-Deprecated>=1.2.9.3",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/duneanalytics/dune-client"
+Repository = "https://github.com/duneanalytics/dune-client"
+Issues = "https://github.com/duneanalytics/dune-client/issues"
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.7.0",
+    "pandas>=1.0.0",
+    "pandas-stubs>=1.0.0",
+    "pylint>=2.17.5",
+    "pytest>=7.4.1",
+    "python-dotenv>=1.0.0",
+    "mypy>=1.5.1",
+    "aiounittest>=1.4.2",
+    "colorlover>=0.3.0",
+    "plotly>=5.9.0",
+]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["dune_client"]
+
+[dependency-groups]
+dev = [
+    "pyyaml>=6.0.2",
+]
