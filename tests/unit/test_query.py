@@ -13,6 +13,7 @@ class TestQueryBase(unittest.TestCase):
             QueryParameter.text_type("Text", "plain text"),
             QueryParameter.number_type("Number", 12),
             QueryParameter.date_type("Date", "2021-01-01 12:34:56"),
+            QueryParameter.enum_type("Multi", ["a1", "a2"]),
         ]
         self.query = QueryBase(name="", query_id=0, params=self.query_params)
 
@@ -22,7 +23,7 @@ class TestQueryBase(unittest.TestCase):
     def test_url(self):
         assert (
             self.query.url()
-            == "https://dune.com/queries/0?Enum=option1&Text=plain+text&Number=12&Date=2021-01-01+12%3A34%3A56"
+            == "https://dune.com/queries/0?Enum=option1&Text=plain+text&Number=12&Date=2021-01-01+12%3A34%3A56&Multi=%5B%22a1%22%2C%22a2%22%5D"
         )
         assert QueryBase(0, "", []).url() == "https://dune.com/queries/0"
 
@@ -36,6 +37,7 @@ class TestQueryBase(unittest.TestCase):
                 "Text": "plain text",
                 "Number": "12",
                 "Date": "2021-01-01 12:34:56",
+                "Multi": ["a1", "a2"],
             }
         }
         assert self.query.request_format() == expected_answer
@@ -62,6 +64,7 @@ class TestQueryBase(unittest.TestCase):
             "params.Enum": "option1",
             "params.Number": "12",
             "params.Text": "plain text",
+            "params.Multi": ["a1", "a2"],
         }
         expected_query_id = self.query.query_id
         # Query Object

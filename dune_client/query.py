@@ -4,27 +4,34 @@ Data Classes Representing a Dune Query
 
 from __future__ import annotations
 
+import json
 import urllib.parse
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeAlias
 
 from dune_client.types import QueryParameter
+
+QueryParameterValue: TypeAlias = str | list[str]
+SerializedParameterValue: TypeAlias = QueryParameterValue | int
+QueryParameterPayload: TypeAlias = dict[str, QueryParameterValue]
+SerializedParameters: TypeAlias = dict[str, SerializedParameterValue]
+RequestPayload: TypeAlias = dict[str, str | QueryParameterPayload]
 
 
 def parse_query_object_or_id(
     query: QueryBase | str | int,
-) -> tuple[dict[str, Any] | None, int]:
+) -> tuple[SerializedParameters | None, int]:
     """
     Users are allowed to pass QueryBase or ID into some functions.
     This method handles both scenarios, returning a pair of the form (params, query_id)
     """
     if isinstance(query, QueryBase):
-        params = {f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()}
-        query_id = query.query_id
-    else:
-        params = None
-        query_id = int(query)
-    return params, query_id
+        params: SerializedParameters = {
+            f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()
+        }
+        return params, query.query_id
+
+    return None, int(query)
 
 
 @dataclass
@@ -46,9 +53,17 @@ class QueryBase:
     def url(self) -> str:
         """Returns a parameterized link to the query"""
         # Include variable parameters in the URL so they are set
-        params = "&".join([f"{p.key}={p.value}" for p in self.parameters()])
-        if params:
-            return "?".join([self.base_url(), urllib.parse.quote_plus(params, safe="=&?")])
+        params = []
+        for parameter in self.parameters():
+            value = parameter.to_dict()["value"]
+            if isinstance(value, list):
+                serialized_value = json.dumps(value, separators=(",", ":"))
+            else:
+                serialized_value = value
+            params.append(f"{parameter.key}={serialized_value}")
+        param_string = "&".join(params)
+        if param_string:
+            return "?".join([self.base_url(), urllib.parse.quote_plus(param_string, safe="=&?")])
         return self.base_url()
 
     def __hash__(self) -> int:
@@ -58,7 +73,7 @@ class QueryBase:
         """
         return self.url().__hash__()
 
-    def request_format(self) -> dict[str, dict[str, str] | str | None]:
+    def request_format(self) -> RequestPayload:
         """Transforms Query objects to params to pass in API"""
         return {"query_parameters": {p.key: p.to_dict()["value"] for p in self.parameters()}}
 

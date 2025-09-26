@@ -88,7 +88,7 @@ class BaseDuneClient:
 
     def _build_parameters(
         self,
-        params: dict[str, str | int] | None = None,
+        params: dict[str, str | int | list[str]] | None = None,
         columns: list[str] | None = None,
         sample_count: int | None = None,
         filters: str | None = None,
@@ -96,7 +96,7 @@ class BaseDuneClient:
         limit: int | None = None,
         offset: int | None = None,
         allow_partial_results: str = "true",
-    ) -> dict[str, str | int]:
+    ) -> dict[str, str | int | list[str]]:
         """
         Utility function that builds a dictionary of parameters to be used
         when retrieving advanced results (filters, pagination, sorting, etc.).

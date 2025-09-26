@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 from dune_client.util import postgres_date
 
@@ -125,7 +125,12 @@ class QueryParameter:
         )
 
     def __hash__(self) -> int:
-        return hash((self.key, self.value, self.type.value))
+        value = (
+            tuple(self.value)
+            if isinstance(self.value, Sequence) and not isinstance(self.value, str)
+            else self.value
+        )
+        return hash((self.key, value, self.type.value))
 
     @classmethod
     def text_type(cls, name: str, value: str) -> QueryParameter:
@@ -148,25 +153,31 @@ class QueryParameter:
         return cls(name, ParameterType.DATE, value)
 
     @classmethod
-    def enum_type(cls, name: str, value: str) -> QueryParameter:
-        """Constructs a Query parameter of type number"""
-        return cls(name, ParameterType.ENUM, value)
+    def enum_type(cls, name: str, value: str | Sequence[str]) -> QueryParameter:
+        """Constructs a Query parameter of type enum or multi-select"""
+        if isinstance(value, str):
+            return cls(name, ParameterType.ENUM, value)
+        if isinstance(value, Sequence):
+            return cls(name, ParameterType.ENUM, tuple(value))
+        raise TypeError(f"Unsupported enum value type for parameter '{name}': {type(value)!r}")
 
-    def value_str(self) -> str:
-        """Returns string value of parameter"""
+    def serialized_value(self) -> str | list[str]:
+        """Returns JSON-ready value of parameter"""
         if self.type in (ParameterType.TEXT, ParameterType.NUMBER, ParameterType.ENUM):
+            if isinstance(self.value, Sequence) and not isinstance(self.value, str):
+                return [str(v) for v in self.value]
             return str(self.value)
         if self.type == ParameterType.DATE:
             # This is the postgres string format of timestamptz
             return str(self.value.strftime("%Y-%m-%d %H:%M:%S"))
         raise TypeError(f"Type {self.type} not recognized!")
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, str | list[str]]:
         """Converts QueryParameter into string json format accepted by Dune API"""
-        results: dict[str, str] = {
+        results: dict[str, str | list[str]] = {
             "key": self.key,
             "type": self.type.value,
-            "value": self.value_str(),
+            "value": self.serialized_value(),
         }
         return results
 
