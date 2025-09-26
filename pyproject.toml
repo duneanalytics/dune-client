@@ -6,28 +6,26 @@ build-backend = "hatchling.build"
 name = "dune_client"
 description = "A simple framework for interacting with Dune Analytics official API service."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 license = {text = "Apache License Version 2.0"}
 authors = [
     {name = "Benjamin H. Smith & Dune Analytics", email = "ben@cow.fi"},
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
     "aiohttp~=3.10.0",
     "dataclasses-json~=0.6.4",
-    "types-python-dateutil>=2.8.19.14",
-    "types-PyYAML>=6.0.12.11",
-    "types-requests>=2.28.0",
-    "types-setuptools>=68.2.0.0",
     "python-dateutil~=2.8.2",
     "requests~=2.31.0",
     "ndjson~=0.3.1",
     "Deprecated~=1.2.14",
-    "types-Deprecated>=1.2.9.3",
 ]
 dynamic = ["version"]
 
@@ -38,12 +36,19 @@ Issues = "https://github.com/duneanalytics/dune-client/issues"
 
 [project.optional-dependencies]
 dev = [
+    "pytest>=7.4.1",
     "ruff>=0.13.0",
+    "mypy>=1.5.1",
+    "tox>=4.0.0",
+    "tox-uv>=1.28.0",
+    # Type stubs
+    "types-python-dateutil>=2.8.19.14",
+    "types-requests>=2.28.0",
+    "types-Deprecated>=1.2.9.3",
+    # Optional features
     "pandas>=1.0.0",
     "pandas-stubs>=1.0.0",
-    "pytest>=7.4.1",
     "python-dotenv>=1.0.0",
-    "mypy>=1.5.1",
     "aiounittest>=1.4.2",
     "colorlover>=0.3.0",
     "plotly>=5.9.0",
@@ -55,15 +60,11 @@ source = "vcs"
 [tool.hatch.build.targets.wheel]
 packages = ["dune_client"]
 
-[dependency-groups]
-dev = [
-    "pyyaml>=6.0.2",
-]
 
 [tool.ruff]
 # Increase the maximum line length to 100 characters.
 line-length = 100
-target-version = "py38"
+target-version = "py313"
 
 [tool.ruff.lint]
 # Enable a comprehensive set of rules
