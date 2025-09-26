@@ -11,6 +11,7 @@ import os
 from json import JSONDecodeError
 from typing import IO, Any
 
+from deprecated import deprecated
 from requests import Response, Session
 from requests.adapters import HTTPAdapter, Retry
 
@@ -31,12 +32,17 @@ class BaseDuneClient:
 
     def __init__(
         self,
-        api_key: str,
-        base_url: str = "https://api.dune.com",
-        request_timeout: float = 10,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        request_timeout: float | None = None,
         client_version: str = "v1",
         performance: str = "medium",
     ):
+        # Read from environment variables if not provided
+        api_key = api_key or os.environ["DUNE_API_KEY"]
+        base_url = base_url or os.environ.get("DUNE_API_BASE_URL", "https://api.dune.com")
+        request_timeout = request_timeout or float(os.environ.get("DUNE_API_REQUEST_TIMEOUT", "10"))
+
         self.token = api_key
         self.base_url = base_url
         self.request_timeout = request_timeout
@@ -57,17 +63,17 @@ class BaseDuneClient:
         self.http.mount("http://", adapter)
 
     @classmethod
+    @deprecated(
+        version="1.8.0",
+        reason="Use DuneClient() without any arguments instead, which will automatically read from environment variables",
+    )
     def from_env(cls) -> BaseDuneClient:
         """
         Constructor allowing user to instantiate a client from environment variable
         without having to import dotenv or os manually
         We use `DUNE_API_KEY` as the environment variable that holds the API key.
         """
-        return cls(
-            api_key=os.environ["DUNE_API_KEY"],
-            base_url=os.environ.get("DUNE_API_BASE_URL", "https://api.dune.com"),
-            request_timeout=float(os.environ.get("DUNE_API_REQUEST_TIMEOUT", "10")),
-        )
+        return cls()
 
     @property
     def api_version(self) -> str:
