@@ -8,14 +8,14 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 from dune_client.util import postgres_date
 
 if TYPE_CHECKING:
     from datetime import datetime
 
-DuneRecord = Dict[str, Any]
+DuneRecord = dict[str, Any]
 
 
 class Address:

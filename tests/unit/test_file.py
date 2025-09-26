@@ -1,5 +1,4 @@
 import contextlib
-import sys
 import unittest
 from pathlib import Path
 
@@ -103,7 +102,7 @@ class TestFileIO(unittest.TestCase):
             "json",
             "csv",
         ]
-        for weird_file, ext in zip(weird_files, extensions):
+        for weird_file, ext in zip(weird_files, extensions, strict=False):
             self.file_manager._write(self.dune_records, weird_file, True)
             self.file_manager._load(weird_file)
             entry_0 = self.file_manager.load_singleton(weird_name, ext)
@@ -125,17 +124,8 @@ class TestFileIO(unittest.TestCase):
                     # CSV empty files won't have any headers!
                     self.file_manager._write([], writer, False)
             else:
-                if sys.version_info < (3, 10):
-                    with pytest.raises(FileNotFoundError):
-                        self.file_manager._load(writer)
-                    # assertNoLogs didn't exist till python 3.10, but we still support lower versions.
-                    # This is a bit of a hack, we write and then load to ensure the empty file was written.
+                with self.assertNoLogs():
                     self.file_manager._write([], writer, False)
-                    # _load would return FileNotFoundError if it hadn't been written
-                    assert len(self.file_manager._load(writer)) == 0
-                else:
-                    with self.assertNoLogs():
-                        self.file_manager._write([], writer, False)
 
             self.file_manager._load(writer)
 
