@@ -6,6 +6,9 @@ on:
 jobs:
   lint-format-types:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -13,16 +16,16 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
-      - name: Set up Python 3.13
-        run: uv python install 3.13
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
         run: uv sync --extra dev
       - name: Format Check
         run: make fmt-check
       - name: Lint
-        run: uv run ruff check
+        run: make lint
       - name: Type Check (mypy)
-        run: uv run mypy dune_client/ --strict
+        run: make types
 
   tests:
     runs-on: ubuntu-latest
