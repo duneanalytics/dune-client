@@ -34,7 +34,7 @@ Homepage = "https://github.com/duneanalytics/dune-client"
 Repository = "https://github.com/duneanalytics/dune-client"
 Issues = "https://github.com/duneanalytics/dune-client/issues"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest>=7.4.1",
     "ruff>=0.13.1",
