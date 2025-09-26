@@ -10,7 +10,7 @@ install-dev:
 	uv sync --extra dev
 
 clean:
-	rm -rf __pycache__
+	rm -rf __pycache__ .tox dist
 
 fmt:
 	uv run ruff format
@@ -33,3 +33,6 @@ test-e2e:
 	uv run python -m pytest tests/e2e
 
 test-all: test-unit test-e2e
+
+test-tox:
+	uv run tox
