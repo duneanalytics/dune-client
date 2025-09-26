@@ -7,26 +7,20 @@ from __future__ import annotations
 import json
 import urllib.parse
 from dataclasses import dataclass
-from typing import Any, TypeAlias
+from typing import Any
 
 from dune_client.types import QueryParameter
-
-QueryParameterValue: TypeAlias = str | list[str]
-SerializedParameterValue: TypeAlias = QueryParameterValue | int
-QueryParameterPayload: TypeAlias = dict[str, QueryParameterValue]
-SerializedParameters: TypeAlias = dict[str, SerializedParameterValue]
-RequestPayload: TypeAlias = dict[str, str | QueryParameterPayload]
 
 
 def parse_query_object_or_id(
     query: QueryBase | str | int,
-) -> tuple[SerializedParameters | None, int]:
+) -> tuple[dict[str, str | list[str] | int] | None, int]:
     """
     Users are allowed to pass QueryBase or ID into some functions.
     This method handles both scenarios, returning a pair of the form (params, query_id)
     """
     if isinstance(query, QueryBase):
-        params: SerializedParameters = {
+        params: dict[str, str | list[str] | int] = {
             f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()
         }
         return params, query.query_id
@@ -73,7 +67,7 @@ class QueryBase:
         """
         return self.url().__hash__()
 
-    def request_format(self) -> RequestPayload:
+    def request_format(self) -> dict[str, str | dict[str, str | list[str]]]:
         """Transforms Query objects to params to pass in API"""
         return {"query_parameters": {p.key: p.to_dict()["value"] for p in self.parameters()}}
 

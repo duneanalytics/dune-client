@@ -7,8 +7,9 @@ with small adjustments (removing Options from QueryParameter)
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 from dune_client.util import postgres_date
 
