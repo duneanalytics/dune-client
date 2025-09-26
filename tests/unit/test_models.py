@@ -1,6 +1,6 @@
+import csv
 import json
 import unittest
-import csv
 from datetime import datetime
 from io import BytesIO, TextIOWrapper
 
@@ -8,19 +8,19 @@ from dateutil.parser import parse
 from dateutil.tz import tzutc
 
 from dune_client.models import (
+    CreateTableResult,
+    DuneError,
     ExecutionResponse,
+    ExecutionResult,
     ExecutionResultCSV,
-    ExecutionStatusResponse,
     ExecutionState,
+    ExecutionStatusResponse,
+    ResultMetadata,
     ResultsResponse,
     TimeData,
-    ExecutionResult,
-    ResultMetadata,
-    DuneError,
-    CreateTableResult,
 )
+from dune_client.query import DuneQuery, QueryBase, QueryMeta
 from dune_client.types import QueryParameter
-from dune_client.query import DuneQuery, QueryMeta, QueryBase
 
 
 class MyTestCase(unittest.TestCase):
@@ -92,9 +92,7 @@ eth_traces,4474223
             state=ExecutionState.PENDING,
         )
 
-        self.assertEqual(
-            expected, ExecutionResponse.from_dict(self.execution_response_data)
-        )
+        assert expected == ExecutionResponse.from_dict(self.execution_response_data)
 
     def test_parse_time_data(self):
         expected_with_end = TimeData(
@@ -104,9 +102,7 @@ eth_traces,4474223
             execution_ended_at=parse(self.execution_end_str),
             cancelled_at=None,
         )
-        self.assertEqual(
-            expected_with_end, TimeData.from_dict(self.results_response_data)
-        )
+        assert expected_with_end == TimeData.from_dict(self.results_response_data)
 
         expected_with_empty_optionals = TimeData(
             submitted_at=parse(self.submission_time_str),
@@ -115,9 +111,7 @@ eth_traces,4474223
             execution_ended_at=parse(self.execution_end_str),
             cancelled_at=None,
         )
-        self.assertEqual(
-            expected_with_empty_optionals, TimeData.from_dict(self.status_response_data)
-        )
+        assert expected_with_empty_optionals == TimeData.from_dict(self.status_response_data)
 
     def test_parse_status_response(self):
         expected = ExecutionStatusResponse(
@@ -129,9 +123,7 @@ eth_traces,4474223
             queue_position=None,
             error=None,
         )
-        self.assertEqual(
-            expected, ExecutionStatusResponse.from_dict(self.status_response_data)
-        )
+        assert expected == ExecutionStatusResponse.from_dict(self.status_response_data)
 
     def test_parse_known_status_response(self):
         # For context: https://github.com/cowprotocol/dune-client/issues/22
@@ -158,18 +150,7 @@ eth_traces,4474223
             self.fail(f"Unexpected error {err}")
 
     def test_parse_status_response_completed(self):
-        self.assertEqual(
-            ExecutionStatusResponse(
-                execution_id="01GBM4W2N0NMCGPZYW8AYK4YF1",
-                query_id=980708,
-                state=ExecutionState.COMPLETED,
-                times=TimeData.from_dict(self.status_response_data),
-                result_metadata=ResultMetadata.from_dict(self.result_metadata_data),
-                queue_position=None,
-                error=None,
-            ),
-            ExecutionStatusResponse.from_dict(self.status_response_data_completed),
-        )
+        assert ExecutionStatusResponse(execution_id="01GBM4W2N0NMCGPZYW8AYK4YF1", query_id=980708, state=ExecutionState.COMPLETED, times=TimeData.from_dict(self.status_response_data), result_metadata=ResultMetadata.from_dict(self.result_metadata_data), queue_position=None, error=None) == ExecutionStatusResponse.from_dict(self.status_response_data_completed)
 
     def test_parse_result_metadata(self):
         expected = ResultMetadata(
@@ -183,16 +164,8 @@ eth_traces,4474223
             pending_time_millis=54,
             execution_time_millis=900,
         )
-        self.assertEqual(
-            expected,
-            ResultMetadata.from_dict(self.results_response_data["result"]["metadata"]),
-        )
-        self.assertEqual(
-            expected,
-            ResultMetadata.from_dict(
-                self.status_response_data_completed["result_metadata"]
-            ),
-        )
+        assert expected == ResultMetadata.from_dict(self.results_response_data["result"]["metadata"])
+        assert expected == ResultMetadata.from_dict(self.status_response_data_completed["result_metadata"])
 
     def test_parse_execution_result(self):
         expected = ExecutionResult(
@@ -201,14 +174,10 @@ eth_traces,4474223
                 {"TableName": "eth_traces", "ct": 4474223},
             ],
             # Parsing tested above in test_result_metadata_parsing
-            metadata=ResultMetadata.from_dict(
-                self.results_response_data["result"]["metadata"]
-            ),
+            metadata=ResultMetadata.from_dict(self.results_response_data["result"]["metadata"]),
         )
 
-        self.assertEqual(
-            expected, ExecutionResult.from_dict(self.results_response_data["result"])
-        )
+        assert expected == ExecutionResult.from_dict(self.results_response_data["result"])
 
     def test_parse_result_response(self):
         # Time data parsing tested above in test_time_data_parsing.
@@ -223,23 +192,14 @@ eth_traces,4474223
             next_uri=None,
             next_offset=None,
         )
-        self.assertEqual(
-            expected, ResultsResponse.from_dict(self.results_response_data)
-        )
+        assert expected == ResultsResponse.from_dict(self.results_response_data)
 
     def test_execution_result_csv(self):
         # document the expected output data from DuneAPI result/csv endpoint
         csv_response = ExecutionResultCSV(data=self.execution_result_csv_data)
         result = csv.reader(TextIOWrapper(csv_response.data))
         # note that CSV is non-typed, up to the reader to do type inference
-        self.assertEqual(
-            [
-                ["TableName", "ct"],
-                ["eth_blocks", "6296"],
-                ["eth_traces", "4474223"],
-            ],
-            [r for r in result],
-        )
+        assert list(result) == [["TableName", "ct"], ["eth_blocks", "6296"], ["eth_traces", "4474223"]]
 
     def test_dune_query_from_dict(self):
         example_response = """{
@@ -260,11 +220,7 @@ eth_traces,4474223
             base=QueryBase(
                 query_id=60066,
                 name="Ethereum transactions",
-                params=[
-                    QueryParameter.from_dict(
-                        {"key": "limit", "value": "5", "type": "number"}
-                    )
-                ],
+                params=[QueryParameter.from_dict({"key": "limit", "value": "5", "type": "number"})],
             ),
             meta=QueryMeta(
                 description="Returns ethereum transactions starting from the oldest by block time",
@@ -278,7 +234,7 @@ eth_traces,4474223
             ),
             sql="select block_number from ethereum.transactions limit {{limit}};",
         )
-        self.assertEqual(expected, DuneQuery.from_dict(json.loads(example_response)))
+        assert expected == DuneQuery.from_dict(json.loads(example_response))
 
     def test_create_table_result_with_already_existed_field(self):
         """Test CreateTableResult parsing when API response includes already_existed field"""
@@ -291,7 +247,7 @@ eth_traces,4474223
             "message": "Table created successfully",
         }
         result = CreateTableResult.from_dict(response_data)
-        self.assertFalse(result.already_existed)
+        assert not result.already_existed
 
     def test_create_table_result_missing_already_existed_field(self):
         """Test CreateTableResult parsing when API response lacks already_existed field (verify default value)"""
@@ -305,7 +261,7 @@ eth_traces,4474223
         }
         result = CreateTableResult.from_dict(response_data)
         # Verify default value is False
-        self.assertFalse(result.already_existed)
+        assert not result.already_existed
 
 
 if __name__ == "__main__":

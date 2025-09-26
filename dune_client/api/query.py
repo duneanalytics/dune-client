@@ -6,12 +6,15 @@ and freeing you from UI-exclusive query editing.
 """
 
 from __future__ import annotations
-from typing import Optional, Any
+
+from typing import TYPE_CHECKING, Any
 
 from dune_client.api.base import BaseRouter
 from dune_client.models import DuneError
 from dune_client.query import DuneQuery
-from dune_client.types import QueryParameter
+
+if TYPE_CHECKING:
+    from dune_client.types import QueryParameter
 
 
 class QueryAPI(BaseRouter):
@@ -24,7 +27,7 @@ class QueryAPI(BaseRouter):
         self,
         name: str,
         query_sql: str,
-        params: Optional[list[QueryParameter]] = None,
+        params: list[QueryParameter] | None = None,
         is_private: bool = False,
     ) -> DuneQuery:
         """
@@ -54,14 +57,14 @@ class QueryAPI(BaseRouter):
         response_json = self._get(route=f"/query/{query_id}")
         return DuneQuery.from_dict(response_json)
 
-    def update_query(  # pylint: disable=too-many-arguments
+    def update_query(
         self,
         query_id: int,
-        name: Optional[str] = None,
-        query_sql: Optional[str] = None,
-        params: Optional[list[QueryParameter]] = None,
-        description: Optional[str] = None,
-        tags: Optional[list[str]] = None,
+        name: str | None = None,
+        query_sql: str | None = None,
+        params: list[QueryParameter] | None = None,
+        description: str | None = None,
+        tags: list[str] | None = None,
     ) -> int:
         """
         Updates Dune Query by ID

@@ -1,6 +1,9 @@
 import unittest
 from unittest.mock import patch
+
 import pandas as pd
+import pytest
+
 from dune_client.viz.graphs import create_sankey
 
 
@@ -37,16 +40,14 @@ class TestCreateSankey(unittest.TestCase):
     def test_missing_column(self):
         # Remove a required column from dataframe
         df_without_target = self.df.drop(columns=["target_col"])
-        with self.assertRaises(ValueError):
-            create_sankey(
-                df_without_target, self.predefined_colors, self.columns, self.viz_config
-            )
+        with pytest.raises(ValueError):
+            create_sankey(df_without_target, self.predefined_colors, self.columns, self.viz_config)
 
     def test_value_column_not_numeric(self):
         # Change the 'value' column to a non-numeric type
         df_with_str_values = self.df.copy()
         df_with_str_values["value_col"] = ["10", "11"]
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             create_sankey(
                 df_with_str_values,
                 self.predefined_colors,
@@ -56,13 +57,13 @@ class TestCreateSankey(unittest.TestCase):
 
     # Mocking the visualization creation and just testing the processing logic
     @patch("plotly.graph_objects.Figure")
-    def test_mocked_visualization(self, MockFigure):
-        result = create_sankey(
+    def test_mocked_visualization(self, mock_figure):
+        create_sankey(
             self.df, self.predefined_colors, self.columns, self.viz_config, "test"
         )
 
         # Ensuring our mocked Figure was called with the correct parameters
-        MockFigure.assert_called_once()
+        mock_figure.assert_called_once()
 
 
 if __name__ == "__main__":

@@ -6,23 +6,24 @@ from __future__ import annotations
 
 import logging.config
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
-from io import BytesIO
 from os import SEEK_END
-from typing import Optional, Any, Union, List, Dict
+from typing import TYPE_CHECKING, Any, Dict, List, Union
+
 from dataclasses_json import DataClassJsonMixin
 from dateutil.parser import parse
 
-from dune_client.types import DuneRecord
+if TYPE_CHECKING:
+    from datetime import datetime
+    from io import BytesIO
+
+    from dune_client.types import DuneRecord
 
 log = logging.getLogger(__name__)
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.INFO)
 
 
-class QueryFailed(Exception):
+class QueryFailedError(Exception):
     """Special Error for failed Queries"""
 
 
@@ -77,9 +78,7 @@ class ExecutionResponse:
     @classmethod
     def from_dict(cls, data: dict[str, str]) -> ExecutionResponse:
         """Constructor from dictionary. See unit test for sample input."""
-        return cls(
-            execution_id=data["execution_id"], state=ExecutionState(data["state"])
-        )
+        return cls(execution_id=data["execution_id"], state=ExecutionState(data["state"]))
 
 
 @dataclass
@@ -87,12 +86,12 @@ class TimeData:
     """A collection of all timestamp related values contained within Dune Response"""
 
     submitted_at: datetime
-    execution_started_at: Optional[datetime]
-    execution_ended_at: Optional[datetime]
+    execution_started_at: datetime | None
+    execution_ended_at: datetime | None
     # Expires only exists when we have result data
-    expires_at: Optional[datetime]
+    expires_at: datetime | None
     # only exists for cancelled executions
-    cancelled_at: Optional[datetime]
+    cancelled_at: datetime | None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TimeData:
@@ -147,16 +146,16 @@ class ExecutionStatusResponse:
     query_id: int
     state: ExecutionState
     times: TimeData
-    queue_position: Optional[int]
+    queue_position: int | None
     # this will be present when the query execution completes
-    result_metadata: Optional[ResultMetadata]
-    error: Optional[ExecutionError]
+    result_metadata: ResultMetadata | None
+    error: ExecutionError | None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ExecutionStatusResponse:
         """Constructor from dictionary. See unit test for sample input."""
-        dct: Optional[MetaData] = data.get("result_metadata")
-        error: Optional[dict[str, str]] = data.get("error")
+        dct: MetaData | None = data.get("result_metadata")
+        error: dict[str, str] | None = data.get("error")
         return cls(
             execution_id=data["execution_id"],
             query_id=int(data["query_id"]),
@@ -185,7 +184,6 @@ class ResultMetadata:
     Representation of Dune's Result Metadata from [Get] Query Results endpoint
     """
 
-    # pylint: disable=too-many-instance-attributes
 
     column_names: list[str]
     column_types: list[str]
@@ -194,14 +192,14 @@ class ResultMetadata:
     total_row_count: int
     total_result_set_bytes: int
     datapoint_count: int
-    pending_time_millis: Optional[int]
+    pending_time_millis: int | None
     execution_time_millis: int
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ResultMetadata:
         """Constructor from dictionary. See unit test for sample input."""
         assert isinstance(data["column_names"], list)
-        pending_time = data.get("pending_time_millis", None)
+        pending_time = data.get("pending_time_millis")
         return cls(
             column_names=data["column_names"],
             column_types=data["column_types"],
@@ -241,8 +239,8 @@ class ExecutionResultCSV:
     """
 
     data: BytesIO  # includes all CSV rows, including the header row.
-    next_uri: Optional[str] = None
-    next_offset: Optional[int] = None
+    next_uri: str | None = None
+    next_offset: int | None = None
 
     def __add__(self, other: ExecutionResultCSV) -> ExecutionResultCSV:
         assert other is not None
@@ -307,9 +305,9 @@ class ResultsResponse:
     state: ExecutionState
     times: TimeData
     # optional because it will only be present when the query execution completes
-    result: Optional[ExecutionResult]
-    next_uri: Optional[str]
-    next_offset: Optional[int]
+    result: ExecutionResult | None
+    next_uri: str | None
+    next_offset: int | None
 
     @classmethod
     def from_dict(cls, data: dict[str, str | int | ResultData]) -> ResultsResponse:
@@ -371,7 +369,7 @@ class CreateTableResult(DataClassJsonMixin):
     example_query: str
     message: str
     # kept for backward compatibility, always False, unreliable
-    already_existed: Optional[bool] = False
+    already_existed: bool | None = False
 
 
 @dataclass

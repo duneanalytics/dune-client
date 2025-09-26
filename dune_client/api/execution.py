@@ -12,17 +12,17 @@ from typing import Any, Dict, List, Optional
 from deprecated import deprecated
 
 from dune_client.api.base import (
-    BaseRouter,
-    DUNE_CSV_NEXT_URI_HEADER,
     DUNE_CSV_NEXT_OFFSET_HEADER,
+    DUNE_CSV_NEXT_URI_HEADER,
+    BaseRouter,
 )
 from dune_client.models import (
+    DuneError,
     ExecutionResponse,
+    ExecutionResultCSV,
+    ExecutionState,
     ExecutionStatusResponse,
     ResultsResponse,
-    ExecutionResultCSV,
-    DuneError,
-    ExecutionState,
 )
 from dune_client.query import QueryBase
 
@@ -39,9 +39,7 @@ class ExecutionAPI(BaseRouter):
         params = query.request_format()
         params["performance"] = performance or self.performance
 
-        self.logger.info(
-            f"executing {query.query_id} on {performance or self.performance} cluster"
-        )
+        self.logger.info(f"executing {query.query_id} on {performance or self.performance} cluster")
         response_json = self._post(
             route=f"/query/{query.query_id}/execute",
             params=params,
@@ -60,9 +58,10 @@ class ExecutionAPI(BaseRouter):
         try:
             # No need to make a dataclass for this since it's just a boolean.
             success: bool = response_json["success"]
-            return success
         except KeyError as err:
             raise DuneError(response_json, "CancellationResponse", err) from err
+        else:
+            return success
 
     def get_execution_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""
@@ -144,9 +143,10 @@ class ExecutionAPI(BaseRouter):
                     f"execution {result.execution_id} resulted in a partial "
                     f"result set (i.e. results too large)."
                 )
-            return result
         except KeyError as err:
             raise DuneError(response_json, "ResultsResponse", err) from err
+        else:
+            return result
 
     def _get_execution_results_csv_by_url(
         self,
@@ -177,9 +177,7 @@ class ExecutionAPI(BaseRouter):
     # Deprecated Functions:
     #######################
     @deprecated(version="1.2.1", reason="Please use execute_query")
-    def execute(
-        self, query: QueryBase, performance: Optional[str] = None
-    ) -> ExecutionResponse:
+    def execute(self, query: QueryBase, performance: Optional[str] = None) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         return self.execute_query(query, performance)
 
