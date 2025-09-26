@@ -143,4 +143,6 @@ class TestFileIO(unittest.TestCase):
         for writer in self.file_writers:
             self.file_manager._write(self.dune_records, writer, True)
             self.file_manager._write(self.dune_records, writer, True)
-            assert self.dune_records == self.file_manager._load(writer), f"idempotent write failed on {writer}"
+            assert self.dune_records == self.file_manager._load(writer), (
+                f"idempotent write failed on {writer}"
+            )

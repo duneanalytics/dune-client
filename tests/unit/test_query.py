@@ -20,7 +20,10 @@ class TestQueryBase(unittest.TestCase):
         assert self.query.base_url() == "https://dune.com/queries/0"
 
     def test_url(self):
-        assert self.query.url() == "https://dune.com/queries/0?Enum=option1&Text=plain+text&Number=12&Date=2021-01-01+12%3A34%3A56"
+        assert (
+            self.query.url()
+            == "https://dune.com/queries/0?Enum=option1&Text=plain+text&Number=12&Date=2021-01-01+12%3A34%3A56"
+        )
         assert QueryBase(0, "", []).url() == "https://dune.com/queries/0"
 
     def test_parameters(self):
@@ -67,7 +70,10 @@ class TestQueryBase(unittest.TestCase):
         expected_params = None
         assert parse_query_object_or_id(self.query.query_id) == (expected_params, expected_query_id)
         # Query ID (string)
-        assert parse_query_object_or_id(str(self.query.query_id)) == (expected_params, expected_query_id)
+        assert parse_query_object_or_id(str(self.query.query_id)) == (
+            expected_params,
+            expected_query_id,
+        )
 
 
 if __name__ == "__main__":

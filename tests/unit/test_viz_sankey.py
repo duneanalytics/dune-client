@@ -58,9 +58,7 @@ class TestCreateSankey(unittest.TestCase):
     # Mocking the visualization creation and just testing the processing logic
     @patch("plotly.graph_objects.Figure")
     def test_mocked_visualization(self, mock_figure):
-        create_sankey(
-            self.df, self.predefined_colors, self.columns, self.viz_config, "test"
-        )
+        create_sankey(self.df, self.predefined_colors, self.columns, self.viz_config, "test")
 
         # Ensuring our mocked Figure was called with the correct parameters
         mock_figure.assert_called_once()

@@ -184,7 +184,6 @@ class ResultMetadata:
     Representation of Dune's Result Metadata from [Get] Query Results endpoint
     """
 
-
     column_names: list[str]
     column_types: list[str]
     row_count: int
