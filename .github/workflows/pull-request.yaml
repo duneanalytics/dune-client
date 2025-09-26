@@ -6,9 +6,6 @@ on:
 jobs:
   lint-format-types:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -16,22 +13,19 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+      - name: Set up Python 3.13
+        run: uv python install 3.13
       - name: Install dependencies
         run: uv sync --extra dev
       - name: Format Check
         run: make fmt-check
       - name: Lint
-        run: make lint
+        run: uv run ruff check
       - name: Type Check (mypy)
-        run: make types
+        run: uv run mypy dune_client/ --strict
 
   tests:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -39,13 +33,13 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+      - name: Install Python versions
+        run: uv python install 3.11 3.12 3.13
       - name: Install dependencies
         run: uv sync --extra dev
-      - name: Unit Tests
-        run: make test-unit
-      - name: End to End Tests
+      - name: Run tests with tox
+        run: uv run tox
+      - name: Run E2E tests (Python 3.13)
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
-        run: make test-e2e
+        run: uv run --python 3.13 --extra dev python -m pytest tests/e2e -v

@@ -1,5 +1,5 @@
-[![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build](https://github.com/duneanalytics/dune-client/actions/workflows/pull-request.yaml/badge.svg)](https://github.com/duneanalytics/dune-client/actions/workflows/pull-request.yaml)
 
@@ -155,10 +155,10 @@ uv sync --extra dev
 ## Development Commands
 ```shell
 # Format code
-uv run black ./
+uv run ruff format
 
 # Lint code  
-uv run pylint dune_client/
+uv run ruff check
 
 # Type checking
 uv run mypy dune_client/ --strict
@@ -166,6 +166,22 @@ uv run mypy dune_client/ --strict
 # Run tests
 uv run python -m pytest tests/unit      # Unit tests
 uv run python -m pytest tests/e2e       # E2E tests (requires DUNE_API_KEY)
+```
+
+## Multi-Python Testing
+
+This project supports Python 3.11, 3.12, and 3.13. You can test across all versions using tox with uv:
+
+```shell
+# Test all Python versions with tox
+uv run tox
+# or
+make test-tox
+
+# Test specific Python versions
+uv run tox -e py311
+uv run tox -e py312
+uv run tox -e py313
 ```
 
 ## Makefile Shortcuts
@@ -187,8 +203,9 @@ can also be run individually with `fmt`, `lint` and `types` respectively.
 ```shell
 make test-unit  # Unit tests 
 make test-e2e   # Requires valid `DUNE_API_KEY`
+make test-all   # Both unit and e2e tests
+make test-tox   # Multi-Python testing (py311, py312, py313)
 ```
-can also run both with `make test-all`
 
 ## Deployment
 
