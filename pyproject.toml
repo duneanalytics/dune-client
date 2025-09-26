@@ -38,7 +38,7 @@ Issues = "https://github.com/duneanalytics/dune-client/issues"
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.13.0",
+    "ruff>=0.13.1",
     "pandas>=1.0.0",
     "pandas-stubs>=1.0.0",
     "pytest>=7.4.1",
@@ -63,7 +63,7 @@ dev = [
 [tool.ruff]
 # Increase the maximum line length to 100 characters.
 line-length = 100
-target-version = "py38"
+target-version = "py313"
 
 [tool.ruff.lint]
 # Enable a comprehensive set of rules

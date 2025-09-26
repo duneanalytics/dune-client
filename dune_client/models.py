@@ -8,7 +8,7 @@ import logging.config
 from dataclasses import dataclass
 from enum import Enum
 from os import SEEK_END
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any
 
 from dataclasses_json import DataClassJsonMixin
 from dateutil.parser import parse
@@ -225,8 +225,8 @@ class ResultMetadata:
         return self
 
 
-RowData = List[Dict[str, Any]]
-MetaData = Dict[str, Union[int, List[str]]]
+RowData = list[dict[str, Any]]
+MetaData = dict[str, int | list[str]]
 
 
 @dataclass
@@ -291,7 +291,7 @@ class ExecutionResult:
         return self
 
 
-ResultData = Dict[str, Union[RowData, MetaData]]
+ResultData = dict[str, RowData | MetaData]
 
 
 @dataclass

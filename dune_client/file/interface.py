@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, List
 
 from dune_client.file.base import CSVFile, FileRWInterface, JSONFile, NDJSONFile
 from dune_client.types import DuneRecord
@@ -137,4 +137,4 @@ class FileIO:
         return self._load(reader)[index]
 
 
-WriteLikeSignature = Callable[[FileIO, List[DuneRecord], str, FileRWInterface], None]
+WriteLikeSignature = Callable[[FileIO, list[DuneRecord], str, FileRWInterface], None]

@@ -7,7 +7,7 @@ Further Documentation:
 """
 
 from io import BytesIO
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from deprecated import deprecated
 
@@ -33,7 +33,7 @@ class ExecutionAPI(BaseRouter):
     """
 
     def execute_query(
-        self, query: QueryBase, performance: Optional[str] = None
+        self, query: QueryBase, performance: str | None = None
     ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         params = query.request_format()
@@ -74,12 +74,12 @@ class ExecutionAPI(BaseRouter):
     def get_execution_results(
         self,
         job_id: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        sample_count: Optional[int] = None,
-        filters: Optional[str] = None,
-        sort_by: Optional[List[str]] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
         allow_partial_results: str = "true",
     ) -> ResultsResponse:
         """GET results from Dune API for `job_id` (aka `execution_id`)"""
@@ -100,12 +100,12 @@ class ExecutionAPI(BaseRouter):
     def get_execution_results_csv(
         self,
         job_id: str,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        columns: Optional[List[str]] = None,
-        filters: Optional[str] = None,
-        sample_count: Optional[int] = None,
-        sort_by: Optional[List[str]] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        columns: list[str] | None = None,
+        filters: str | None = None,
+        sample_count: int | None = None,
+        sort_by: list[str] | None = None,
     ) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
@@ -128,7 +128,7 @@ class ExecutionAPI(BaseRouter):
         return self._get_execution_results_csv_by_url(url=url, params=params)
 
     def _get_execution_results_by_url(
-        self, url: str, params: Optional[Dict[str, Any]] = None
+        self, url: str, params: dict[str, Any] | None = None
     ) -> ResultsResponse:
         """
         GET results from Dune API with a given URL. This is particularly useful for pagination.
@@ -151,7 +151,7 @@ class ExecutionAPI(BaseRouter):
     def _get_execution_results_csv_by_url(
         self,
         url: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> ExecutionResultCSV:
         """
         GET results in CSV format from Dune API with a given URL. This is particularly
@@ -177,7 +177,7 @@ class ExecutionAPI(BaseRouter):
     # Deprecated Functions:
     #######################
     @deprecated(version="1.2.1", reason="Please use execute_query")
-    def execute(self, query: QueryBase, performance: Optional[str] = None) -> ExecutionResponse:
+    def execute(self, query: QueryBase, performance: str | None = None) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         return self.execute_query(query, performance)
 
