@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
 DuneRecord = dict[str, Any]
+QueryParameters = dict[str, str | list[str] | int]
 
 
 class Address:

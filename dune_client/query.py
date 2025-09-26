@@ -9,18 +9,18 @@ import urllib.parse
 from dataclasses import dataclass
 from typing import Any
 
-from dune_client.types import QueryParameter
+from dune_client.types import QueryParameter, QueryParameters
 
 
 def parse_query_object_or_id(
     query: QueryBase | str | int,
-) -> tuple[dict[str, str | list[str] | int] | None, int]:
+) -> tuple[QueryParameters | None, int]:
     """
     Users are allowed to pass QueryBase or ID into some functions.
     This method handles both scenarios, returning a pair of the form (params, query_id)
     """
     if isinstance(query, QueryBase):
-        params: dict[str, str | list[str] | int] = {
+        params: QueryParameters = {
             f"params.{p.key}": p.to_dict()["value"] for p in query.parameters()
         }
         return params, query.query_id
@@ -67,7 +67,7 @@ class QueryBase:
         """
         return self.url().__hash__()
 
-    def request_format(self) -> dict[str, str | dict[str, str | list[str]]]:
+    def request_format(self) -> dict[str, str | QueryParameters]:
         """Transforms Query objects to params to pass in API"""
         return {"query_parameters": {p.key: p.to_dict()["value"] for p in self.parameters()}}
 

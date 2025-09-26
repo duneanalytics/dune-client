@@ -1,4 +1,5 @@
 import unittest
+import urllib.parse
 from datetime import datetime
 
 from dune_client.query import QueryBase, parse_query_object_or_id
@@ -21,10 +22,16 @@ class TestQueryBase(unittest.TestCase):
         assert self.query.base_url() == "https://dune.com/queries/0"
 
     def test_url(self):
-        assert (
-            self.query.url()
-            == "https://dune.com/queries/0?Enum=option1&Text=plain+text&Number=12&Date=2021-01-01+12%3A34%3A56&Multi=%5B%22a1%22%2C%22a2%22%5D"
+        raw_params = (
+            'Enum=option1&Text=plain text&Number=12&Date=2021-01-01 12:34:56&Multi=["a1","a2"]'
         )
+        expected_url = "?".join(
+            [
+                "https://dune.com/queries/0",
+                urllib.parse.quote_plus(raw_params, safe="=&?"),
+            ]
+        )
+        assert self.query.url() == expected_url
         assert QueryBase(0, "", []).url() == "https://dune.com/queries/0"
 
     def test_parameters(self):
