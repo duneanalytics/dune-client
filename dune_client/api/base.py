@@ -188,7 +188,7 @@ class BaseRouter(BaseDuneClient):
         response = self.http.post(
             url=url,
             json=params,
-            headers=dict(self.default_headers(), **headers if headers else {}),
+            headers=dict(self.default_headers(), **headers or {}),
             timeout=self.request_timeout,
             data=data,
         )

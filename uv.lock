@@ -288,7 +288,7 @@ requires-dist = [
     { name = "python-dateutil", specifier = "~=2.8.2" },
     { name = "python-dotenv", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "requests", specifier = "~=2.31.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.13.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.13.1" },
     { name = "tox", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "tox-uv", marker = "extra == 'dev'", specifier = ">=1.28.0" },
     { name = "types-deprecated", marker = "extra == 'dev'", specifier = ">=1.2.9.3" },

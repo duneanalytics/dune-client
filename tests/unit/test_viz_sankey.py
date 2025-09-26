@@ -10,13 +10,11 @@ from dune_client.viz.graphs import create_sankey
 class TestCreateSankey(unittest.TestCase):
     # Setting up a dataframe for testing
     def setUp(self):
-        self.df = pd.DataFrame(
-            {
-                "source_col": ["WBTC", "USDC"],
-                "target_col": ["USDC", "WBTC"],
-                "value_col": [2184, 2076],
-            }
-        )
+        self.df = pd.DataFrame({
+            "source_col": ["WBTC", "USDC"],
+            "target_col": ["USDC", "WBTC"],
+            "value_col": [2184, 2076],
+        })
 
         self.predefined_colors = {
             "USDC": "rgb(38, 112, 196)",

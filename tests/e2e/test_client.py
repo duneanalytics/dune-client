@@ -1,4 +1,5 @@
 import copy
+import math
 import os
 import time
 import unittest
@@ -33,7 +34,7 @@ class TestDuneClient(unittest.TestCase):
             params=[
                 # These are the queries default parameters.
                 QueryParameter.text_type(name="TextField", value="Plain Text"),
-                QueryParameter.number_type(name="NumberField", value=3.1415926535),
+                QueryParameter.number_type(name="NumberField", value=math.pi),
                 QueryParameter.date_type(name="DateField", value="2022-05-04 00:00:00"),
                 QueryParameter.enum_type(name="ListField", value="Option 1"),
             ],
@@ -229,15 +230,13 @@ class TestDuneClient(unittest.TestCase):
             description="e2e test table",
             schema=[{"name": "date", "type": "timestamp"}, {"name": "dgs10", "type": "double"}],
             is_private=False,
-        ) == CreateTableResult.from_dict(
-            {
-                "namespace": namespace,
-                "table_name": table_name,
-                "full_name": f"dune.{namespace}.{table_name}",
-                "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
-                "message": "Table created successfully",
-            }
-        )
+        ) == CreateTableResult.from_dict({
+            "namespace": namespace,
+            "table_name": table_name,
+            "full_name": f"dune.{namespace}.{table_name}",
+            "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
+            "message": "Table created successfully",
+        })
 
     # @unittest.skip("Requires custom namespace and table_name input.")
     def test_create_table_error(self):
@@ -309,9 +308,9 @@ class TestDuneClient(unittest.TestCase):
 
         assert client.delete_table(
             namespace=namespace, table_name=table_name
-        ) == DeleteTableResult.from_dict(
-            {"message": f"Table {namespace}.{table_name} successfully deleted"}
-        )
+        ) == DeleteTableResult.from_dict({
+            "message": f"Table {namespace}.{table_name} successfully deleted"
+        })
 
     def test_download_csv_with_pagination(self):
         # Arrange
@@ -378,7 +377,7 @@ class TestDuneClient(unittest.TestCase):
             {
                 "date_field": "2022-05-04 00:00:00",
                 "list_field": "Option 1",
-                "number_field": 3.1415926535,
+                "number_field": math.pi,
                 "text_field": "Plain Text",
             }
         ]
@@ -405,7 +404,7 @@ class TestCRUDOps(unittest.TestCase):
         test_id = self.existing_query_id
         current_sql = self.client.get_query(test_id).sql
         self.client.update_query(query_id=test_id, query_sql="")
-        assert self.client.get_query(test_id).sql == ""
+        assert not self.client.get_query(test_id).sql
         # Reset:
         self.client.update_query(query_id=test_id, query_sql=current_sql)
 

@@ -209,7 +209,7 @@ eth_traces,4474223
     def test_execution_result_csv(self):
         # document the expected output data from DuneAPI result/csv endpoint
         csv_response = ExecutionResultCSV(data=self.execution_result_csv_data)
-        result = csv.reader(TextIOWrapper(csv_response.data))
+        result = csv.reader(TextIOWrapper(csv_response.data, encoding="utf-8"))
         # note that CSV is non-typed, up to the reader to do type inference
         assert list(result) == [
             ["TableName", "ct"],

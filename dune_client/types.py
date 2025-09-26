@@ -8,14 +8,14 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 from dune_client.util import postgres_date
 
 if TYPE_CHECKING:
     from datetime import datetime
 
-DuneRecord = Dict[str, Any]
+DuneRecord = dict[str, Any]
 
 
 class Address:
@@ -116,13 +116,11 @@ class QueryParameter:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, QueryParameter):
             return NotImplemented
-        return all(
-            [
-                self.key == other.key,
-                self.value == other.value,
-                self.type.value == other.type.value,
-            ]
-        )
+        return all([
+            self.key == other.key,
+            self.value == other.value,
+            self.type.value == other.type.value,
+        ])
 
     def __hash__(self) -> int:
         return hash((self.key, self.value, self.type.value))

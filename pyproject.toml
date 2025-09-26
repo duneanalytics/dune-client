@@ -37,7 +37,7 @@ Issues = "https://github.com/duneanalytics/dune-client/issues"
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.1",
-    "ruff>=0.13.0",
+    "ruff>=0.13.1",
     "mypy>=1.5.1",
     "tox>=4.0.0",
     "tox-uv>=1.28.0",
@@ -65,6 +65,8 @@ packages = ["dune_client"]
 # Increase the maximum line length to 100 characters.
 line-length = 100
 target-version = "py313"
+# Enable preview mode for the latest rules and features
+preview = true
 
 [tool.ruff.lint]
 # Enable a comprehensive set of rules

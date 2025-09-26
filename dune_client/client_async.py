@@ -9,7 +9,10 @@ from __future__ import annotations
 import asyncio
 import ssl
 from io import BytesIO
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Self
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 import certifi
 from aiohttp import (
@@ -20,7 +23,6 @@ from aiohttp import (
     ContentTypeError,
     TCPConnector,
 )
-from typing_extensions import Self
 
 from dune_client.api.base import (
     DUNE_CSV_NEXT_OFFSET_HEADER,
@@ -161,7 +163,7 @@ class AsyncDuneClient(BaseDuneClient):
         for i in range(5):
             try:
                 return await call()
-            except RetryableError as e:  # noqa: PERF203
+            except RetryableError as e:
                 self.logger.warning(
                     f"Rate limited or internal error. Retrying in {i * 5} seconds..."
                 )
