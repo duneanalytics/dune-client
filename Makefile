@@ -3,11 +3,11 @@ PYTHON = $(VENV)/bin/python3
 
 # Install dependencies using uv
 install:
-	uv sync
+	uv sync --no-dev
 
-# Install with dev dependencies 
+# Install with dev dependencies
 install-dev:
-	uv sync --extra dev
+	uv sync --dev
 
 clean:
 	rm -rf __pycache__ .tox dist

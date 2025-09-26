@@ -78,7 +78,7 @@ results = dune.run_query(query)
 ## Further Examples
 
 ### Get Latest Results
-Use `get_latest_results` to get the most recent query results without using execution credits. 
+Use `get_latest_results` to get the most recent query results without using execution credits.
 You can specify a `max_age_hours` to re-run the query if the data is too outdated.
 
 ```python
@@ -92,7 +92,7 @@ results = dune.get_latest_result(1215383, max_age_hours=8)
 
 ### CRUD Operations
 
-If you're writing scripts that rely on Dune query results and want to ensure that your local, 
+If you're writing scripts that rely on Dune query results and want to ensure that your local,
 peer-reviewed, queries are being used at runtime, you can call `update_query` before `run_query`!
 
 Here is a fictitious example making use of this functionality;
@@ -118,11 +118,11 @@ query = dune.create_query(
 )
 query_id = query.base.query_id
 print(f"Created query with id {query.base.query_id}")
-# Could retrieve using 
+# Could retrieve using
 # dune.get_query(query_id)
 
 dune.update_query(
-    query_id, 
+    query_id,
     # All parameters below are optional
     name="Top {N} Most Expensive Transactions on {Blockchain}",
     query_sql=sql.replace("ethereum", "{{Blockchain}}"),
@@ -149,7 +149,7 @@ git clone https://github.com/duneanalytics/dune-client.git
 cd dune-client
 
 # Install dependencies
-uv sync --extra dev
+uv sync --dev
 ```
 
 ## Development Commands
@@ -157,7 +157,7 @@ uv sync --extra dev
 # Format code
 uv run ruff format
 
-# Lint code  
+# Lint code
 uv run ruff check
 
 # Type checking
@@ -190,18 +190,18 @@ uv run tox -e py313
 ```shell
 make install        # Uses uv sync
 # or
-make install-dev    # Uses uv sync --extra dev
+make install-dev    # Uses uv sync --dev
 ````
 
 ### Format, Lint & Types
 ```shell
 make check
 ```
-can also be run individually with `fmt`, `lint` and `types` respectively. 
+can also be run individually with `fmt`, `lint` and `types` respectively.
 
 ### Testing
 ```shell
-make test-unit  # Unit tests 
+make test-unit  # Unit tests
 make test-e2e   # Requires valid `DUNE_API_KEY`
 make test-all   # Both unit and e2e tests
 make test-tox   # Multi-Python testing (py311, py312, py313)
@@ -209,6 +209,6 @@ make test-tox   # Multi-Python testing (py311, py312, py313)
 
 ## Deployment
 
-Publishing releases to PyPi is configured automatically via github actions 
+Publishing releases to PyPi is configured automatically via github actions
 (cf. [./.github/workflows/py-publish.yaml](./.github/workflows/py-publish.yaml)).
 Any time a branch is tagged for release this workflow is triggered and published with the same version name.
