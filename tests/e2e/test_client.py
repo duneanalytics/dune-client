@@ -82,7 +82,13 @@ class TestDuneClient(unittest.TestCase):
         results = dune.run_query(self.multi_rows_query, batch_size=1).get_rows()
 
         # Assert
-        assert results == [{"number": 1}, {"number": 2}, {"number": 3}, {"number": 4}, {"number": 5}]
+        assert results == [
+            {"number": 1},
+            {"number": 2},
+            {"number": 3},
+            {"number": 4},
+            {"number": 5},
+        ]
 
     def test_run_query_with_filters(self):
         # Arrange
@@ -108,7 +114,14 @@ class TestDuneClient(unittest.TestCase):
         new_query = self.copy_query_and_change_parameters()
         dune = DuneClient(self.valid_api_key)
         results = dune.run_query(new_query)
-        assert results.get_rows() == [{"text_field": "different word", "number_field": 22, "date_field": "1991-01-01 00:00:00", "list_field": "Option 2"}]
+        assert results.get_rows() == [
+            {
+                "text_field": "different word",
+                "number_field": 22,
+                "date_field": "1991-01-01 00:00:00",
+                "list_field": "Option 2",
+            }
+        ]
 
     def test_endpoints(self):
         dune = DuneClient(self.valid_api_key)
@@ -144,7 +157,10 @@ class TestDuneClient(unittest.TestCase):
         assert str(err.value) == "Can't build ExecutionResponse from {'error': 'invalid API Key'}"
         with pytest.raises(DuneError) as err:
             dune.get_execution_status("wonky job_id")
-        assert str(err.value) == "Can't build ExecutionStatusResponse from {'error': 'invalid API Key'}"
+        assert (
+            str(err.value)
+            == "Can't build ExecutionStatusResponse from {'error': 'invalid API Key'}"
+        )
         with pytest.raises(DuneError) as err:
             dune.get_execution_results("wonky job_id")
         assert str(err.value) == "Can't build ResultsResponse from {'error': 'invalid API Key'}"
@@ -166,13 +182,19 @@ class TestDuneClient(unittest.TestCase):
 
         with pytest.raises(DuneError) as err:
             dune.execute_query(query)
-        assert str(err.value) == "Can't build ExecutionResponse from {'error': 'An internal error occured'}"
+        assert (
+            str(err.value)
+            == "Can't build ExecutionResponse from {'error': 'An internal error occured'}"
+        )
 
     def test_invalid_job_id_error(self):
         dune = DuneClient(self.valid_api_key)
         with pytest.raises(DuneError) as err:
             dune.get_execution_status("Wonky Job ID")
-        assert str(err.value) == "Can't build ExecutionStatusResponse from " "{'error': 'The requested execution ID (ID: Wonky Job ID) is invalid.'}"
+        assert (
+            str(err.value) == "Can't build ExecutionStatusResponse from "
+            "{'error': 'The requested execution ID (ID: Wonky Job ID) is invalid.'}"
+        )
 
     def test_get_latest_result_with_query_object(self):
         dune = DuneClient(self.valid_api_key)
@@ -187,7 +209,11 @@ class TestDuneClient(unittest.TestCase):
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_upload_csv_success(self):
         client = DuneClient(self.valid_api_key)
-        assert client.upload_csv(table_name="e2e-test", description="best data", data="column1,column2\nvalue1,value2\nvalue3,value4")
+        assert client.upload_csv(
+            table_name="e2e-test",
+            description="best data",
+            data="column1,column2\nvalue1,value2\nvalue3,value4",
+        )
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_create_table_success(self):
@@ -197,7 +223,21 @@ class TestDuneClient(unittest.TestCase):
 
         namespace = "bh2smith"
         table_name = "dataset_e2e_test"
-        assert client.create_table(namespace=namespace, table_name=table_name, description="e2e test table", schema=[{"name": "date", "type": "timestamp"}, {"name": "dgs10", "type": "double"}], is_private=False) == CreateTableResult.from_dict({"namespace": namespace, "table_name": table_name, "full_name": f"dune.{namespace}.{table_name}", "example_query": f"select * from dune.{namespace}.{table_name} limit 10", "message": "Table created successfully"})
+        assert client.create_table(
+            namespace=namespace,
+            table_name=table_name,
+            description="e2e test table",
+            schema=[{"name": "date", "type": "timestamp"}, {"name": "dgs10", "type": "double"}],
+            is_private=False,
+        ) == CreateTableResult.from_dict(
+            {
+                "namespace": namespace,
+                "table_name": table_name,
+                "full_name": f"dune.{namespace}.{table_name}",
+                "example_query": f"select * from dune.{namespace}.{table_name} limit 10",
+                "message": "Table created successfully",
+            }
+        )
 
     # @unittest.skip("Requires custom namespace and table_name input.")
     def test_create_table_error(self):
@@ -232,14 +272,18 @@ class TestDuneClient(unittest.TestCase):
             ],
         )
         with Path("./tests/fixtures/sample_table_insert.csv").open("rb") as data:
-            assert client.insert_table(namespace, table_name, data=data, content_type="text/csv") == InsertTableResult(rows_written=1, bytes_written=33)
+            assert client.insert_table(
+                namespace, table_name, data=data, content_type="text/csv"
+            ) == InsertTableResult(rows_written=1, bytes_written=33)
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_clear_data(self):
         client = DuneClient(self.valid_api_key)
         namespace = "bh2smith"
         table_name = "dataset_e2e_test"
-        assert client.clear_data(namespace, table_name) == ClearTableResult(message="Table dune.bh2smith.dataset_e2e_test successfully cleared")
+        assert client.clear_data(namespace, table_name) == ClearTableResult(
+            message="Table dune.bh2smith.dataset_e2e_test successfully cleared"
+        )
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_insert_table_json_success(self):
@@ -247,7 +291,12 @@ class TestDuneClient(unittest.TestCase):
         # You will need to change the namespace to your own.
         client = DuneClient(self.valid_api_key)
         with Path("./tests/fixtures/sample_table_insert.json").open("rb") as data:
-            assert client.insert_table(namespace="test", table_name="dataset_e2e_test", data=data, content_type="application/x-ndjson") == InsertTableResult(rows_written=1, bytes_written=33)
+            assert client.insert_table(
+                namespace="test",
+                table_name="dataset_e2e_test",
+                data=data,
+                content_type="application/x-ndjson",
+            ) == InsertTableResult(rows_written=1, bytes_written=33)
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_delete_table_success(self):
@@ -258,7 +307,11 @@ class TestDuneClient(unittest.TestCase):
         namespace = "test"
         table_name = "dataset_e2e_test"
 
-        assert client.delete_table(namespace=namespace, table_name=table_name) == DeleteTableResult.from_dict({"message": f"Table {namespace}.{table_name} successfully deleted"})
+        assert client.delete_table(
+            namespace=namespace, table_name=table_name
+        ) == DeleteTableResult.from_dict(
+            {"message": f"Table {namespace}.{table_name} successfully deleted"}
+        )
 
     def test_download_csv_with_pagination(self):
         # Arrange
@@ -269,7 +322,13 @@ class TestDuneClient(unittest.TestCase):
         result_csv = client.download_csv(self.multi_rows_query.query_id, batch_size=1)
 
         # Assert
-        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [{"number": 1}, {"number": 2}, {"number": 3}, {"number": 4}, {"number": 5}]
+        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [
+            {"number": 1},
+            {"number": 2},
+            {"number": 3},
+            {"number": 4},
+            {"number": 5},
+        ]
 
     def test_download_csv_with_filters(self):
         # Arrange
@@ -283,7 +342,10 @@ class TestDuneClient(unittest.TestCase):
         )
 
         # Assert
-        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [{"number": 1}, {"number": 2}]
+        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [
+            {"number": 1},
+            {"number": 2},
+        ]
 
     def test_download_csv_success_by_id(self):
         client = DuneClient(self.valid_api_key)
@@ -293,7 +355,14 @@ class TestDuneClient(unittest.TestCase):
         # Download CSV by query_id
         result_csv = client.download_csv(self.query.query_id)
         # Expect that the csv returns the latest execution results (i.e. those that were just run)
-        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [{"text_field": "different word", "number_field": 22, "date_field": "1991-01-01 00:00:00", "list_field": "Option 2"}]
+        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [
+            {
+                "text_field": "different word",
+                "number_field": 22,
+                "date_field": "1991-01-01 00:00:00",
+                "list_field": "Option 2",
+            }
+        ]
 
     def test_download_csv_success_with_params(self):
         client = DuneClient(self.valid_api_key)
@@ -305,7 +374,14 @@ class TestDuneClient(unittest.TestCase):
         # but there seems to be a discrepancy with the date string values.
         # Specifically 1991-01-01 00:00:00 vs 1991-01-01 00:00:00
         #################################################################
-        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [{"date_field": "2022-05-04 00:00:00", "list_field": "Option 1", "number_field": 3.1415926535, "text_field": "Plain Text"}]
+        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [
+            {
+                "date_field": "2022-05-04 00:00:00",
+                "list_field": "Option 1",
+                "number_field": 3.1415926535,
+                "text_field": "Plain Text",
+            }
+        ]
 
 
 @unittest.skip("This is an enterprise only endpoint that can no longer be tested.")

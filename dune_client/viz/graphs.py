@@ -2,7 +2,6 @@
 Functions you can call to make different graphs
 """
 
-
 # https://github.com/plotly/colorlover/issues/35
 import colorlover as cl  # type: ignore[import-untyped]
 import pandas as pd

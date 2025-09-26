@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
       - name: Format Check
-        run: make fmt
+        run: make fmt-check
       - name: Lint
         run: make lint
       - name: Type Check (mypy)
