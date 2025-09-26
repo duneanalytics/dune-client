@@ -150,7 +150,15 @@ eth_traces,4474223
             self.fail(f"Unexpected error {err}")
 
     def test_parse_status_response_completed(self):
-        assert ExecutionStatusResponse(execution_id="01GBM4W2N0NMCGPZYW8AYK4YF1", query_id=980708, state=ExecutionState.COMPLETED, times=TimeData.from_dict(self.status_response_data), result_metadata=ResultMetadata.from_dict(self.result_metadata_data), queue_position=None, error=None) == ExecutionStatusResponse.from_dict(self.status_response_data_completed)
+        assert ExecutionStatusResponse(
+            execution_id="01GBM4W2N0NMCGPZYW8AYK4YF1",
+            query_id=980708,
+            state=ExecutionState.COMPLETED,
+            times=TimeData.from_dict(self.status_response_data),
+            result_metadata=ResultMetadata.from_dict(self.result_metadata_data),
+            queue_position=None,
+            error=None,
+        ) == ExecutionStatusResponse.from_dict(self.status_response_data_completed)
 
     def test_parse_result_metadata(self):
         expected = ResultMetadata(
@@ -164,8 +172,12 @@ eth_traces,4474223
             pending_time_millis=54,
             execution_time_millis=900,
         )
-        assert expected == ResultMetadata.from_dict(self.results_response_data["result"]["metadata"])
-        assert expected == ResultMetadata.from_dict(self.status_response_data_completed["result_metadata"])
+        assert expected == ResultMetadata.from_dict(
+            self.results_response_data["result"]["metadata"]
+        )
+        assert expected == ResultMetadata.from_dict(
+            self.status_response_data_completed["result_metadata"]
+        )
 
     def test_parse_execution_result(self):
         expected = ExecutionResult(
@@ -199,7 +211,11 @@ eth_traces,4474223
         csv_response = ExecutionResultCSV(data=self.execution_result_csv_data)
         result = csv.reader(TextIOWrapper(csv_response.data))
         # note that CSV is non-typed, up to the reader to do type inference
-        assert list(result) == [["TableName", "ct"], ["eth_blocks", "6296"], ["eth_traces", "4474223"]]
+        assert list(result) == [
+            ["TableName", "ct"],
+            ["eth_blocks", "6296"],
+            ["eth_traces", "4474223"],
+        ]
 
     def test_dune_query_from_dict(self):
         example_response = """{

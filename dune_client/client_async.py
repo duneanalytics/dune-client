@@ -115,7 +115,9 @@ class AsyncDuneClient(BaseDuneClient):
         self._session = await self._create_session()
         return self
 
-    async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object) -> None:
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object
+    ) -> None:
         await self.disconnect()
 
     async def _handle_response(self, response: ClientResponse) -> Any:

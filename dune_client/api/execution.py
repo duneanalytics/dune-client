@@ -32,9 +32,7 @@ class ExecutionAPI(BaseRouter):
     Query execution and result fetching functions.
     """
 
-    def execute_query(
-        self, query: QueryBase, performance: str | None = None
-    ) -> ExecutionResponse:
+    def execute_query(self, query: QueryBase, performance: str | None = None) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         params = query.request_format()
         params["performance"] = performance or self.performance

@@ -15,6 +15,9 @@ clean:
 fmt:
 	uv run ruff format
 
+fmt-check:
+	uv run ruff format --check
+
 lint:
 	uv run ruff check
 

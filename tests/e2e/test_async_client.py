@@ -45,7 +45,13 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             results = (await cl.refresh(self.multi_rows_query, batch_size=1)).get_rows()
 
         # Assert
-        assert results == [{"number": 1}, {"number": 2}, {"number": 3}, {"number": 4}, {"number": 5}]
+        assert results == [
+            {"number": 1},
+            {"number": 2},
+            {"number": 3},
+            {"number": 4},
+            {"number": 5},
+        ]
 
     async def test_refresh_with_filters(self):
         # Arrange
@@ -63,7 +69,13 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             result_csv = await cl.refresh_csv(self.multi_rows_query, batch_size=1)
 
         # Assert
-        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [{"number": 1}, {"number": 2}, {"number": 3}, {"number": 4}, {"number": 5}]
+        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [
+            {"number": 1},
+            {"number": 2},
+            {"number": 3},
+            {"number": 4},
+            {"number": 5},
+        ]
 
     async def test_refresh_csv_with_filters(self):
         # Arrange
@@ -72,7 +84,10 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             result_csv = await cl.refresh_csv(self.multi_rows_query, filters="number < 3")
 
         # Assert
-        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [{"number": 1}, {"number": 2}]
+        assert pd.read_csv(result_csv.data).to_dict(orient="records") == [
+            {"number": 1},
+            {"number": 2},
+        ]
 
     @unittest.skip("Large performance tier doesn't currently work.")
     async def test_refresh_context_manager_performance_large(self):
