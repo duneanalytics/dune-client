@@ -65,7 +65,7 @@ query = QueryBase(
 )
 print("Results available at", query.url())
 
-dune = DuneClient.from_env()
+dune = DuneClient()
 results = dune.run_query(query)
 
 # or as CSV
@@ -84,7 +84,7 @@ You can specify a `max_age_hours` to re-run the query if the data is too outdate
 ```python
 from dune_client.client import DuneClient
 
-dune = DuneClient.from_env()
+dune = DuneClient()
 results = dune.get_latest_result(1215383, max_age_hours=8)
 ```
 
@@ -108,7 +108,7 @@ sql = """
     LIMIT {{N}}
     """
 
-dune = DuneClient.from_env()
+dune = DuneClient()
 query = dune.create_query(
     name="Top {N} Most Expensive Transactions on Ethereum",
     query_sql=sql,
