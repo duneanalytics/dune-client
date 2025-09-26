@@ -244,6 +244,7 @@ wheels = [
 
 [[package]]
 name = "dune-client"
+version = "1.7.11.dev5+g1f6446f0b.d20250926"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },

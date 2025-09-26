@@ -9,13 +9,16 @@ from __future__ import annotations
 import logging.config
 import os
 from json import JSONDecodeError
-from typing import IO, Any
+from typing import IO, TYPE_CHECKING, Any
 
 from deprecated import deprecated
 from requests import Response, Session
 from requests.adapters import HTTPAdapter, Retry
 
 from dune_client.util import get_package_version
+
+if TYPE_CHECKING:
+    from dune_client.types import QueryParameters
 
 # Headers used for pagination in CSV results
 DUNE_CSV_NEXT_URI_HEADER = "x-dune-next-uri"
@@ -94,7 +97,7 @@ class BaseDuneClient:
 
     def _build_parameters(
         self,
-        params: dict[str, str | int] | None = None,
+        params: QueryParameters | None = None,
         columns: list[str] | None = None,
         sample_count: int | None = None,
         filters: str | None = None,
@@ -102,7 +105,7 @@ class BaseDuneClient:
         limit: int | None = None,
         offset: int | None = None,
         allow_partial_results: str = "true",
-    ) -> dict[str, str | int]:
+    ) -> QueryParameters:
         """
         Utility function that builds a dictionary of parameters to be used
         when retrieving advanced results (filters, pagination, sorting, etc.).
@@ -114,24 +117,24 @@ class BaseDuneClient:
             sample_count is None
             # We are sampling and don't use filters or pagination
             or (limit is None and offset is None and filters is None)
-        ), "sampling cannot be combined with filters or pagination"
+        ), "sapling cannot be combined with filters or pagination"
 
-        params = params or {}
-        params["allow_partial_results"] = allow_partial_results
-        if columns is not None and len(columns) > 0:
-            params["columns"] = ",".join(columns)
+        result: QueryParameters = dict(params) if params else {}
+        result["allow_partial_results"] = allow_partial_results
+        if columns:
+            result["columns"] = ",".join(columns)
         if sample_count is not None:
-            params["sample_count"] = sample_count
+            result["sample_count"] = sample_count
         if filters is not None:
-            params["filters"] = filters
-        if sort_by is not None and len(sort_by) > 0:
-            params["sort_by"] = ",".join(sort_by)
+            result["filters"] = filters
+        if sort_by:
+            result["sort_by"] = ",".join(sort_by)
         if limit is not None:
-            params["limit"] = limit
+            result["limit"] = limit
         if offset is not None:
-            params["offset"] = offset
+            result["offset"] = offset
 
-        return params
+        return result
 
 
 class BaseRouter(BaseDuneClient):
