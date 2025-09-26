@@ -63,7 +63,10 @@ class BaseDuneClient:
         self.http.mount("http://", adapter)
 
     @classmethod
-    @deprecated(version="1.8.0", reason="Use DuneClient() without any arguments instead, which will automatically read from environment variables")
+    @deprecated(
+        version="1.8.0",
+        reason="Use DuneClient() without any arguments instead, which will automatically read from environment variables",
+    )
     def from_env(cls) -> BaseDuneClient:
         """
         Constructor allowing user to instantiate a client from environment variable
