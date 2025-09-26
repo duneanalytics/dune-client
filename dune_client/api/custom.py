@@ -22,8 +22,8 @@ class CustomEndpointAPI(BaseRouter):
     """
 
     @deprecated(
-        version="1.8.1", 
-        reason="Custom endpoints feature is deprecated and will be removed in a future version"
+        version="1.8.1",
+        reason="Custom endpoints feature is deprecated and will be removed in a future version",
     )
     def get_custom_endpoint_result(
         self,
