@@ -5,6 +5,8 @@ fetch and filter data from custom endpoints.
 
 from __future__ import annotations
 
+from deprecated import deprecated
+
 from dune_client.api.base import BaseRouter
 from dune_client.models import (
     DuneError,
@@ -19,6 +21,10 @@ class CustomEndpointAPI(BaseRouter):
         get_custom_endpoint_result(): returns the results of a custom endpoint.
     """
 
+    @deprecated(
+        version="1.8.1",
+        reason="Custom endpoints feature is deprecated and will be removed in a future version",
+    )
     def get_custom_endpoint_result(
         self,
         handle: str,
