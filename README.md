@@ -10,12 +10,6 @@ service](https://docs.dune.com/api-reference/overview/introduction).
 
 ## Installation
 
-### Using pip
-
-```shell
-pip install dune-client
-```
-
 ### Using uv (recommended)
 
 [uv](https://docs.astral.sh/uv/) is a fast Python package and project manager written in Rust. It provides:
@@ -34,6 +28,12 @@ uv add dune-client
 uv init my-dune-project
 cd my-dune-project
 uv add dune-client
+```
+
+### Using pip
+
+```shell
+pip install dune-client
 ```
 
 # Example Usage
