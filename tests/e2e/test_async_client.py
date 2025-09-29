@@ -105,14 +105,18 @@ class TestDuneClient(aiounittest.AsyncTestCase):
         async with AsyncDuneClient() as cl:
             execution_response = await cl.execute(self.query)
             assert execution_response.execution_id is not None
-            assert execution_response.state in [ExecutionState.EXECUTING, ExecutionState.PENDING, ExecutionState.COMPLETED]
+            assert execution_response.state in [
+                ExecutionState.EXECUTING,
+                ExecutionState.PENDING,
+                ExecutionState.COMPLETED,
+            ]
 
     async def test_get_status(self):
         async with AsyncDuneClient() as cl:
             # First execute a query to get a job ID
             execution_response = await cl.execute(self.query)
             job_id = execution_response.execution_id
-            
+
             # Then get its status
             status = await cl.get_status(job_id)
             assert status.execution_id == job_id
@@ -123,7 +127,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             # Execute and wait for completion using refresh
             results = await cl.refresh(self.query)
             job_id = results.execution_id
-            
+
             # Now get results directly
             direct_results = await cl.get_result(job_id)
             assert direct_results.execution_id == job_id
@@ -134,12 +138,13 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             # Execute and wait for completion using refresh
             results = await cl.refresh(self.query)
             job_id = results.execution_id
-            
+
             # Now get CSV results directly
             csv_results = await cl.get_result_csv(job_id)
             assert csv_results.data is not None
             # Verify we can read the CSV
             import pandas as pd
+
             df = pd.read_csv(csv_results.data)
             assert len(df) > 0
 
@@ -148,7 +153,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             # Execute a query
             execution_response = await cl.execute(self.query)
             job_id = execution_response.execution_id
-            
+
             # Try to cancel it (might already be completed, but that's ok)
             success = await cl.cancel_execution(job_id)
             # success can be True or False depending on timing
