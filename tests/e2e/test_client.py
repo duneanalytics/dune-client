@@ -1,11 +1,9 @@
 import copy
-import os
 import time
 import unittest
 import warnings
 from pathlib import Path
 
-import dotenv
 import pandas as pd
 import pytest
 
@@ -22,8 +20,6 @@ from dune_client.models import (
 )
 from dune_client.query import QueryBase
 from dune_client.types import QueryParameter
-
-dotenv.load_dotenv()
 
 
 class TestDuneClient(unittest.TestCase):
@@ -43,7 +39,6 @@ class TestDuneClient(unittest.TestCase):
             name="Query that returns multiple rows",
             query_id=3435763,
         )
-        self.valid_api_key = os.environ["DUNE_API_KEY"]
 
     def copy_query_and_change_parameters(self) -> QueryBase:
         new_query = copy.copy(self.query)
@@ -79,19 +74,19 @@ class TestDuneClient(unittest.TestCase):
 
     def test_get_execution_status(self):
         query = QueryBase(name="No Name", query_id=1276442, params=[])
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         job_id = dune.execute_query(query).execution_id
         status = dune.get_execution_status(job_id)
         assert status.state in [ExecutionState.EXECUTING, ExecutionState.PENDING]
 
     def test_run_query(self):
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         results = dune.run_query(self.query).get_rows()
         assert len(results) > 0
 
     def test_run_query_paginated(self):
         # Arrange
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
 
         # Act
         results = dune.run_query(self.multi_rows_query, batch_size=1).get_rows()
@@ -107,7 +102,7 @@ class TestDuneClient(unittest.TestCase):
 
     def test_run_query_with_filters(self):
         # Arrange
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
 
         # Act
         results = dune.run_query(self.multi_rows_query, filters="number < 3").get_rows()
@@ -116,18 +111,18 @@ class TestDuneClient(unittest.TestCase):
         assert results == [{"number": 1}, {"number": 2}]
 
     def test_run_query_performance_large(self):
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         results = dune.run_query(self.query, performance="large").get_rows()
         assert len(results) > 0
 
     def test_run_query_dataframe(self):
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         pd = dune.run_query_dataframe(self.query)
         assert len(pd) > 0
 
     def test_parameters_recognized(self):
         new_query = self.copy_query_and_change_parameters()
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         results = dune.run_query(new_query)
         assert results.get_rows() == [
             {
@@ -139,7 +134,7 @@ class TestDuneClient(unittest.TestCase):
         ]
 
     def test_endpoints(self):
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         execution_response = dune.execute_query(self.query)
         assert isinstance(execution_response, ExecutionResponse)
         job_id = execution_response.execution_id
@@ -151,7 +146,7 @@ class TestDuneClient(unittest.TestCase):
         assert len(results) > 0
 
     def test_cancel_execution(self):
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         query = QueryBase(
             name="Long Running Query",
             query_id=1229120,
@@ -181,7 +176,7 @@ class TestDuneClient(unittest.TestCase):
         assert str(err.value) == "Can't build ResultsResponse from {'error': 'invalid API Key'}"
 
     def test_query_not_found_error(self):
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         query = copy.copy(self.query)
         query.query_id = 99999999  # Invalid Query Id.
 
@@ -190,7 +185,7 @@ class TestDuneClient(unittest.TestCase):
         assert str(err.value) == "Can't build ExecutionResponse from {'error': 'Query not found'}"
 
     def test_internal_error(self):
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         query = copy.copy(self.query)
         # This query ID is too large!
         query.query_id = 9999999999999
@@ -203,7 +198,7 @@ class TestDuneClient(unittest.TestCase):
         )
 
     def test_invalid_job_id_error(self):
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         with pytest.raises(DuneError) as err:
             dune.get_execution_status("Wonky Job ID")
         assert (
@@ -212,18 +207,18 @@ class TestDuneClient(unittest.TestCase):
         )
 
     def test_get_latest_result_with_query_object(self):
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         results = dune.get_latest_result(self.query).get_rows()
         assert len(results) > 0
 
     def test_get_latest_result_with_query_id(self):
-        dune = DuneClient(self.valid_api_key)
+        dune = DuneClient()
         results = dune.get_latest_result(self.query.query_id).get_rows()
         assert len(results) > 0
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_upload_csv_success(self):
-        client = DuneClient(self.valid_api_key)
+        client = DuneClient()
         assert client.upload_csv(
             table_name="e2e-test",
             description="best data",
@@ -234,7 +229,7 @@ class TestDuneClient(unittest.TestCase):
     def test_create_table_success(self):
         # Make sure the table doesn't already exist.
         # You will need to change the namespace to your own.
-        client = DuneClient(self.valid_api_key)
+        client = DuneClient()
 
         namespace = "bh2smith"
         table_name = "dataset_e2e_test"
@@ -275,7 +270,7 @@ class TestDuneClient(unittest.TestCase):
     def test_insert_table_csv_success(self):
         # Make sure the table already exists and csv matches table schema.
         # You will need to change the namespace to your own.
-        client = DuneClient(self.valid_api_key)
+        client = DuneClient()
         namespace = "bh2smith"
         table_name = "dataset_e2e_test"
         client.create_table(
@@ -293,7 +288,7 @@ class TestDuneClient(unittest.TestCase):
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_clear_data(self):
-        client = DuneClient(self.valid_api_key)
+        client = DuneClient()
         namespace = "bh2smith"
         table_name = "dataset_e2e_test"
         assert client.clear_data(namespace, table_name) == ClearTableResult(
@@ -304,7 +299,7 @@ class TestDuneClient(unittest.TestCase):
     def test_insert_table_json_success(self):
         # Make sure the table already exists and json matches table schema.
         # You will need to change the namespace to your own.
-        client = DuneClient(self.valid_api_key)
+        client = DuneClient()
         with Path("./tests/fixtures/sample_table_insert.json").open("rb") as data:
             assert client.insert_table(
                 namespace="test",
@@ -317,7 +312,7 @@ class TestDuneClient(unittest.TestCase):
     def test_delete_table_success(self):
         # Make sure the table doesn't already exist.
         # You will need to change the namespace to your own.
-        client = DuneClient(self.valid_api_key)
+        client = DuneClient()
 
         namespace = "test"
         table_name = "dataset_e2e_test"
@@ -330,7 +325,7 @@ class TestDuneClient(unittest.TestCase):
 
     def test_download_csv_with_pagination(self):
         # Arrange
-        client = DuneClient(self.valid_api_key)
+        client = DuneClient()
         client.run_query(self.multi_rows_query)
 
         # Act
@@ -347,7 +342,7 @@ class TestDuneClient(unittest.TestCase):
 
     def test_download_csv_with_filters(self):
         # Arrange
-        client = DuneClient(self.valid_api_key)
+        client = DuneClient()
         client.run_query(self.multi_rows_query)
 
         # Act
@@ -363,7 +358,7 @@ class TestDuneClient(unittest.TestCase):
         ]
 
     def test_download_csv_success_by_id(self):
-        client = DuneClient(self.valid_api_key)
+        client = DuneClient()
         new_query = self.copy_query_and_change_parameters()
         # Run query with new parameters
         client.run_query(new_query)
@@ -380,7 +375,7 @@ class TestDuneClient(unittest.TestCase):
         ]
 
     def test_download_csv_success_with_params(self):
-        client = DuneClient(self.valid_api_key)
+        client = DuneClient()
         # Download CSV with query and given parameters.
         result_csv = client.download_csv(self.query)
         # Expect the result to be relative to values of given parameters.
@@ -402,8 +397,7 @@ class TestDuneClient(unittest.TestCase):
 @unittest.skip("This is an enterprise only endpoint that can no longer be tested.")
 class TestCRUDOps(unittest.TestCase):
     def setUp(self) -> None:
-        self.valid_api_key = os.environ["DUNE_API_KEY"]
-        self.client = DuneClient(self.valid_api_key, client_version="alpha/v1")
+        self.client = DuneClient(client_version="alpha/v1")
         self.existing_query_id = 2713571
 
     @unittest.skip("Works fine, but creates too many queries")
