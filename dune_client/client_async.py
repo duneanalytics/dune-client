@@ -1,5 +1,5 @@
 """
-Simplified Async Dune Client - A thin async wrapper around the sync client logic
+Async Dune Client - A thin async wrapper around the sync client logic
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from dune_client.query import QueryBase, parse_query_object_or_id
 
 class AsyncDuneClient(BaseDuneClient):
     """
-    A simplified asynchronous interface for Dune API.
+    An asynchronous interface for Dune API.
     Reuses the sync client's logic for parameter validation and building.
     """
 
@@ -46,7 +46,7 @@ class AsyncDuneClient(BaseDuneClient):
         self._session: ClientSession | None = None
 
     async def __aenter__(self) -> Self:
-        # Simple session creation
+        # Create session with timeout
         timeout = ClientTimeout(total=self.request_timeout)
         self._session = ClientSession(
             base_url=self.base_url,
