@@ -7,7 +7,6 @@ from dune_client.client import DuneClient
 
 @unittest.skip("endpoint no longer exists - {'error': 'Custom endpoint not found'}")
 class TestCustomEndpoints(unittest.TestCase):
-
     def test_getting_custom_endpoint_results(self):
         dune = DuneClient()
         with warnings.catch_warnings(record=True) as w:
