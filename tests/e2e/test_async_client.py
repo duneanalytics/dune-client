@@ -2,7 +2,6 @@ import os
 import unittest
 
 import aiounittest
-import dotenv
 import pandas as pd
 
 from dune_client.client_async import AsyncDuneClient
@@ -16,7 +15,6 @@ class TestDuneClient(aiounittest.AsyncTestCase):
             name="Query that returns multiple rows",
             query_id=3435763,
         )
-        dotenv.load_dotenv()
         self.valid_api_key = os.environ["DUNE_API_KEY"]
 
     async def test_disconnect(self):

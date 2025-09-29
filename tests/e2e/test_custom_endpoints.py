@@ -2,11 +2,8 @@ import os
 import unittest
 import warnings
 
-import dotenv
-
 from dune_client.client import DuneClient
 
-dotenv.load_dotenv()
 
 
 @unittest.skip("endpoint no longer exists - {'error': 'Custom endpoint not found'}")

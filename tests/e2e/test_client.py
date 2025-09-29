@@ -5,7 +5,6 @@ import unittest
 import warnings
 from pathlib import Path
 
-import dotenv
 import pandas as pd
 import pytest
 
@@ -23,7 +22,6 @@ from dune_client.models import (
 from dune_client.query import QueryBase
 from dune_client.types import QueryParameter
 
-dotenv.load_dotenv()
 
 
 class TestDuneClient(unittest.TestCase):
