@@ -23,7 +23,6 @@ from dune_client.query import QueryBase
 from dune_client.types import QueryParameter
 
 
-
 class TestDuneClient(unittest.TestCase):
     def setUp(self) -> None:
         self.query = QueryBase(
