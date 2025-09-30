@@ -485,7 +485,7 @@ class AsyncDuneClient(BaseDuneClient):
 
         next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
         next_offset_header = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
-        next_offset = int(next_offset_header) if next_offset_header is not None else None
+        next_offset = self._parse_next_offset(next_offset_header)
         data = BytesIO(await response.content.read(-1))
         response.release()
         return ExecutionResultCSV(
@@ -504,7 +504,7 @@ class AsyncDuneClient(BaseDuneClient):
 
         next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
         next_offset_header = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
-        next_offset = int(next_offset_header) if next_offset_header is not None else None
+        next_offset = self._parse_next_offset(next_offset_header)
         data = BytesIO(await response.content.read(-1))
         response.release()
         return ExecutionResultCSV(
@@ -547,6 +547,18 @@ class AsyncDuneClient(BaseDuneClient):
         assert sample_count is None or (batch_size is None and filters is None), (
             "sampling cannot be combined with filters or pagination"
         )
+
+    def _parse_next_offset(self, header_value: str | None) -> int | None:
+        if header_value is None:
+            return None
+        try:
+            return int(header_value)
+        except ValueError:
+            self.logger.warning(
+                "invalid x-dune-next-offset header encountered; ignoring",
+                extra={"header_value": header_value},
+            )
+            return None
 
     async def _collect_pages(
         self,
