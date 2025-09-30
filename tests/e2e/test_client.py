@@ -6,13 +6,13 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from requests.exceptions import HTTPError
 
 from dune_client.client import DuneClient
 from dune_client.models import (
     ClearTableResult,
     CreateTableResult,
     DeleteTableResult,
-    DuneError,
     ExecutionResponse,
     ExecutionState,
     ExecutionStatusResponse,
@@ -162,27 +162,24 @@ class TestDuneClient(unittest.TestCase):
 
     def test_invalid_api_key_error(self):
         dune = DuneClient(api_key="Invalid Key")
-        with pytest.raises(DuneError) as err:
+        with pytest.raises(HTTPError) as err:
             dune.execute_query(self.query)
-        assert str(err.value) == "Can't build ExecutionResponse from {'error': 'invalid API Key'}"
-        with pytest.raises(DuneError) as err:
+        assert err.value.response.status_code == 401
+        with pytest.raises(HTTPError) as err:
             dune.get_execution_status("wonky job_id")
-        assert (
-            str(err.value)
-            == "Can't build ExecutionStatusResponse from {'error': 'invalid API Key'}"
-        )
-        with pytest.raises(DuneError) as err:
+        assert err.value.response.status_code == 401
+        with pytest.raises(HTTPError) as err:
             dune.get_execution_results("wonky job_id")
-        assert str(err.value) == "Can't build ResultsResponse from {'error': 'invalid API Key'}"
+        assert err.value.response.status_code == 401
 
     def test_query_not_found_error(self):
         dune = DuneClient()
         query = copy.copy(self.query)
         query.query_id = 99999999  # Invalid Query Id.
 
-        with pytest.raises(DuneError) as err:
+        with pytest.raises(HTTPError) as err:
             dune.execute_query(query)
-        assert str(err.value) == "Can't build ExecutionResponse from {'error': 'Query not found'}"
+        assert err.value.response.status_code == 404
 
     def test_internal_error(self):
         dune = DuneClient()
@@ -190,21 +187,15 @@ class TestDuneClient(unittest.TestCase):
         # This query ID is too large!
         query.query_id = 9999999999999
 
-        with pytest.raises(DuneError) as err:
+        with pytest.raises(HTTPError) as err:
             dune.execute_query(query)
-        assert (
-            str(err.value)
-            == "Can't build ExecutionResponse from {'error': 'An internal error occured'}"
-        )
+        assert err.value.response.status_code == 500
 
     def test_invalid_job_id_error(self):
         dune = DuneClient()
-        with pytest.raises(DuneError) as err:
+        with pytest.raises(HTTPError) as err:
             dune.get_execution_status("Wonky Job ID")
-        assert (
-            str(err.value) == "Can't build ExecutionStatusResponse from "
-            "{'error': 'The requested execution ID (ID: Wonky Job ID) is invalid.'}"
-        )
+        assert err.value.response.status_code == 400
 
     def test_get_latest_result_with_query_object(self):
         dune = DuneClient()
@@ -255,7 +246,7 @@ class TestDuneClient(unittest.TestCase):
 
         namespace = "test"
         table_name = "table"
-        with pytest.raises(DuneError):
+        with pytest.raises(HTTPError) as err:
             client.create_table(
                 namespace=namespace,
                 table_name=table_name,
@@ -265,6 +256,7 @@ class TestDuneClient(unittest.TestCase):
                 ],
                 is_private=False,
             )
+        assert err.value.response.status_code == 401
 
     @unittest.skip("Requires custom namespace and table_name input.")
     def test_insert_table_csv_success(self):

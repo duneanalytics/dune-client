@@ -151,6 +151,9 @@ class BaseRouter(BaseDuneClient):
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
         else:
+            # Check status code even for valid JSON responses
+            # Error responses (4xx, 5xx) can have JSON bodies
+            response.raise_for_status()
             return response_json
 
     def _route_url(self, route: str | None = None, url: str | None = None) -> str:
