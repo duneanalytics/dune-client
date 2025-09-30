@@ -11,6 +11,8 @@ import ssl
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, Self, TypeVar
 
+import certifi
+
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
@@ -96,7 +98,8 @@ class AsyncDuneClient(BaseDuneClient):
             self._session = None
 
     def _create_session(self) -> ClientSession:
-        connector = TCPConnector(limit=self._connection_limit, ssl=ssl.create_default_context())
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        connector = TCPConnector(limit=self._connection_limit, ssl=ssl_context)
         return ClientSession(
             connector=connector,
             base_url=self.base_url,
