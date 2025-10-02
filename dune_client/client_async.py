@@ -197,7 +197,9 @@ class AsyncDuneClient(BaseDuneClient):
                 return response
             return await self._handle_response(response)
 
-    async def execute_query(self, query: QueryBase, performance: str | None = None) -> ExecutionResponse:
+    async def execute_query(
+        self, query: QueryBase, performance: str | None = None
+    ) -> ExecutionResponse:
         """Post's to Dune API for execute `query`"""
         params = query.request_format()
         params["performance"] = performance or self.performance
