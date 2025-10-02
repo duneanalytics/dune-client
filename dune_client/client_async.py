@@ -24,6 +24,7 @@ from aiohttp import (
     ContentTypeError,
     TCPConnector,
 )
+from deprecated import deprecated
 
 from dune_client.api.base import (
     DUNE_CSV_NEXT_OFFSET_HEADER,
@@ -196,7 +197,8 @@ class AsyncDuneClient(BaseDuneClient):
                 return response
             return await self._handle_response(response)
 
-    async def execute(self, query: QueryBase, performance: str | None = None) -> ExecutionResponse:
+    async def execute_query(self, query: QueryBase, performance: str | None = None) -> ExecutionResponse:
+        """Post's to Dune API for execute `query`"""
         params = query.request_format()
         params["performance"] = performance or self.performance
 
@@ -210,14 +212,15 @@ class AsyncDuneClient(BaseDuneClient):
         except KeyError as err:
             raise DuneError(response_json, "ExecutionResponse", err) from err
 
-    async def get_status(self, job_id: str) -> ExecutionStatusResponse:
+    async def get_execution_status(self, job_id: str) -> ExecutionStatusResponse:
+        """GET status from Dune API for `job_id` (aka `execution_id`)"""
         response_json = await self._get(route=f"/execution/{job_id}/status")
         try:
             return ExecutionStatusResponse.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "ExecutionStatusResponse", err) from err
 
-    async def get_result(
+    async def get_execution_results(
         self,
         job_id: str,
         batch_size: int | None = None,
@@ -226,6 +229,7 @@ class AsyncDuneClient(BaseDuneClient):
         filters: str | None = None,
         sort_by: list[str] | None = None,
     ) -> ResultsResponse:
+        """GET results from Dune API for `job_id` (aka `execution_id`)"""
         self._validate_sampling(sample_count, batch_size, filters)
 
         if sample_count is None and batch_size is None:
@@ -243,7 +247,7 @@ class AsyncDuneClient(BaseDuneClient):
             self._get_result_by_url,
         )
 
-    async def get_result_csv(
+    async def get_execution_results_csv(
         self,
         job_id: str,
         batch_size: int | None = None,
@@ -257,7 +261,7 @@ class AsyncDuneClient(BaseDuneClient):
 
         this API only returns the raw data in CSV format, it is faster & lighterweight
         use this method for large results where you want lower CPU and memory overhead
-        if you need metadata information use get_results() or get_status()
+        if you need metadata information use get_execution_results() or get_execution_status()
         """
         self._validate_sampling(sample_count, batch_size, filters)
 
@@ -320,11 +324,70 @@ class AsyncDuneClient(BaseDuneClient):
         else:
             return success
 
+    #######################
+    # Deprecated Functions:
+    #######################
+    @deprecated(version="1.9.3", reason="Please use execute_query")
+    async def execute(self, query: QueryBase, performance: str | None = None) -> ExecutionResponse:
+        """Post's to Dune API for execute `query`"""
+        return await self.execute_query(query, performance)
+
+    @deprecated(version="1.9.3", reason="Please use get_execution_status")
+    async def get_status(self, job_id: str) -> ExecutionStatusResponse:
+        """GET status from Dune API for `job_id` (aka `execution_id`)"""
+        return await self.get_execution_status(job_id)
+
+    @deprecated(version="1.9.3", reason="Please use get_execution_results")
+    async def get_result(
+        self,
+        job_id: str,
+        batch_size: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
+    ) -> ResultsResponse:
+        """GET results from Dune API for `job_id` (aka `execution_id`)"""
+        return await self.get_execution_results(
+            job_id,
+            batch_size=batch_size,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
+        )
+
+    @deprecated(version="1.9.3", reason="Please use get_execution_results_csv")
+    async def get_result_csv(
+        self,
+        job_id: str,
+        batch_size: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
+    ) -> ExecutionResultCSV:
+        """
+        GET results in CSV format from Dune API for `job_id` (aka `execution_id`)
+
+        this API only returns the raw data in CSV format, it is faster & lighterweight
+        use this method for large results where you want lower CPU and memory overhead
+        if you need metadata information use get_execution_results() or get_execution_status()
+        """
+        return await self.get_execution_results_csv(
+            job_id,
+            batch_size=batch_size,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
+        )
+
     ########################
     # Higher level functions
     ########################
 
-    async def refresh(
+    async def run_query(
         self,
         query: QueryBase,
         ping_frequency: int = 5,
@@ -343,7 +406,7 @@ class AsyncDuneClient(BaseDuneClient):
         self._validate_sampling(sample_count, batch_size, filters)
 
         job_id = await self._refresh(query, ping_frequency=ping_frequency, performance=performance)
-        return await self.get_result(
+        return await self.get_execution_results(
             job_id,
             columns=columns,
             sample_count=sample_count,
@@ -352,7 +415,7 @@ class AsyncDuneClient(BaseDuneClient):
             batch_size=batch_size,
         )
 
-    async def refresh_csv(
+    async def run_query_csv(
         self,
         query: QueryBase,
         ping_frequency: int = 5,
@@ -371,7 +434,7 @@ class AsyncDuneClient(BaseDuneClient):
         self._validate_sampling(sample_count, batch_size, filters)
 
         job_id = await self._refresh(query, ping_frequency=ping_frequency, performance=performance)
-        return await self.get_result_csv(
+        return await self.get_execution_results_csv(
             job_id,
             columns=columns,
             sample_count=sample_count,
@@ -380,6 +443,97 @@ class AsyncDuneClient(BaseDuneClient):
             batch_size=batch_size,
         )
 
+    async def run_query_dataframe(
+        self,
+        query: QueryBase,
+        performance: str | None = None,
+        batch_size: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
+    ) -> Any:
+        """
+        Execute a Dune Query, waits till execution completes,
+        fetched and returns the result as a Pandas DataFrame
+
+        This is a convenience method that uses run_query_csv() + pandas.read_csv() underneath
+        """
+        try:
+            import pandas as pd  # noqa: PLC0415
+        except ImportError as exc:
+            raise ImportError("dependency failure, pandas is required but missing") from exc
+        results = await self.run_query_csv(
+            query,
+            performance=performance,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
+            batch_size=batch_size,
+        )
+        return pd.read_csv(results.data)
+
+    ######################
+    # Deprecated Functions
+    ######################
+    @deprecated(version="1.9.3", reason="Please use run_query")
+    async def refresh(
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: str | None = None,
+        batch_size: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
+    ) -> ResultsResponse:
+        """
+        Executes a Dune `query`, waits until execution completes,
+        fetches and returns the results.
+        Sleeps `ping_frequency` seconds between each status request.
+        """
+        return await self.run_query(
+            query,
+            ping_frequency=ping_frequency,
+            performance=performance,
+            batch_size=batch_size,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
+        )
+
+    @deprecated(version="1.9.3", reason="Please use run_query_csv")
+    async def refresh_csv(
+        self,
+        query: QueryBase,
+        ping_frequency: int = 5,
+        performance: str | None = None,
+        batch_size: int | None = None,
+        columns: list[str] | None = None,
+        sample_count: int | None = None,
+        filters: str | None = None,
+        sort_by: list[str] | None = None,
+    ) -> ExecutionResultCSV:
+        """
+        Executes a Dune query, waits till execution completes,
+        fetches and the results in CSV format
+        (use it load the data directly in pandas.from_csv() or similar frameworks)
+        """
+        return await self.run_query_csv(
+            query,
+            ping_frequency=ping_frequency,
+            performance=performance,
+            batch_size=batch_size,
+            columns=columns,
+            sample_count=sample_count,
+            filters=filters,
+            sort_by=sort_by,
+        )
+
+    @deprecated(version="1.9.3", reason="Please use run_query_dataframe")
     async def refresh_into_dataframe(
         self,
         query: QueryBase,
@@ -394,22 +548,17 @@ class AsyncDuneClient(BaseDuneClient):
         Execute a Dune Query, waits till execution completes,
         fetched and returns the result as a Pandas DataFrame
 
-        This is a convenience method that uses refresh_csv underneath
+        This is a convenience method that uses run_query_csv underneath
         """
-        try:
-            import pandas as pd  # noqa: PLC0415
-        except ImportError as exc:
-            raise ImportError("dependency failure, pandas is required but missing") from exc
-        results = await self.refresh_csv(
+        return await self.run_query_dataframe(
             query,
             performance=performance,
+            batch_size=batch_size,
             columns=columns,
             sample_count=sample_count,
             filters=filters,
             sort_by=sort_by,
-            batch_size=batch_size,
         )
-        return pd.read_csv(results.data)
 
     #################
     # Private Methods
@@ -522,11 +671,11 @@ class AsyncDuneClient(BaseDuneClient):
         ping_frequency: int = 5,
         performance: str | None = None,
     ) -> str:
-        job_id = (await self.execute(query=query, performance=performance)).execution_id
+        job_id = (await self.execute_query(query=query, performance=performance)).execution_id
         terminal_states = ExecutionState.terminal_states()
 
         while True:
-            status = await self.get_status(job_id)
+            status = await self.get_execution_status(job_id)
             if status.state in terminal_states:
                 if status.state == ExecutionState.FAILED:
                     self.logger.error(status)

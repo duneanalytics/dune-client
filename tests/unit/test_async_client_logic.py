@@ -201,14 +201,14 @@ class TestTerminalStateHandling(aiounittest.AsyncTestCase):
         client = self._create_client()
         query = QueryBase(name="test", query_id=123)
 
-        # Mock execute to return a job_id
-        client.execute = AsyncMock(return_value=MagicMock(execution_id="job-123"))
+        # Mock execute_query to return a job_id
+        client.execute_query = AsyncMock(return_value=MagicMock(execution_id="job-123"))
 
-        # Mock get_status to return FAILED
+        # Mock get_execution_status to return FAILED
         failed_status = self._mock_status_response(
             ExecutionState.FAILED, error=MagicMock(message="Query syntax error")
         )
-        client.get_status = AsyncMock(return_value=failed_status)
+        client.get_execution_status = AsyncMock(return_value=failed_status)
 
         with pytest.raises(QueryFailedError) as exc_info:
             await client._refresh(query)
@@ -220,9 +220,9 @@ class TestTerminalStateHandling(aiounittest.AsyncTestCase):
         client = self._create_client()
         query = QueryBase(name="test", query_id=123)
 
-        client.execute = AsyncMock(return_value=MagicMock(execution_id="job-123"))
+        client.execute_query = AsyncMock(return_value=MagicMock(execution_id="job-123"))
         completed_status = self._mock_status_response(ExecutionState.COMPLETED)
-        client.get_status = AsyncMock(return_value=completed_status)
+        client.get_execution_status = AsyncMock(return_value=completed_status)
 
         job_id = await client._refresh(query)
         assert job_id == "job-123"
@@ -232,9 +232,9 @@ class TestTerminalStateHandling(aiounittest.AsyncTestCase):
         client = self._create_client()
         query = QueryBase(name="test", query_id=123)
 
-        client.execute = AsyncMock(return_value=MagicMock(execution_id="job-123"))
+        client.execute_query = AsyncMock(return_value=MagicMock(execution_id="job-123"))
         cancelled_status = self._mock_status_response(ExecutionState.CANCELLED)
-        client.get_status = AsyncMock(return_value=cancelled_status)
+        client.get_execution_status = AsyncMock(return_value=cancelled_status)
 
         job_id = await client._refresh(query)
         assert job_id == "job-123"
@@ -244,9 +244,9 @@ class TestTerminalStateHandling(aiounittest.AsyncTestCase):
         client = self._create_client()
         query = QueryBase(name="test", query_id=123)
 
-        client.execute = AsyncMock(return_value=MagicMock(execution_id="job-123"))
+        client.execute_query = AsyncMock(return_value=MagicMock(execution_id="job-123"))
         expired_status = self._mock_status_response(ExecutionState.EXPIRED)
-        client.get_status = AsyncMock(return_value=expired_status)
+        client.get_execution_status = AsyncMock(return_value=expired_status)
 
         job_id = await client._refresh(query)
         assert job_id == "job-123"
@@ -256,9 +256,9 @@ class TestTerminalStateHandling(aiounittest.AsyncTestCase):
         client = self._create_client()
         query = QueryBase(name="test", query_id=123)
 
-        client.execute = AsyncMock(return_value=MagicMock(execution_id="job-123"))
+        client.execute_query = AsyncMock(return_value=MagicMock(execution_id="job-123"))
         partial_status = self._mock_status_response(ExecutionState.PARTIAL)
-        client.get_status = AsyncMock(return_value=partial_status)
+        client.get_execution_status = AsyncMock(return_value=partial_status)
 
         job_id = await client._refresh(query)
         assert job_id == "job-123"
@@ -268,7 +268,7 @@ class TestTerminalStateHandling(aiounittest.AsyncTestCase):
         client = self._create_client()
         query = QueryBase(name="test", query_id=123)
 
-        client.execute = AsyncMock(return_value=MagicMock(execution_id="job-123"))
+        client.execute_query = AsyncMock(return_value=MagicMock(execution_id="job-123"))
 
         # Sequence: PENDING -> EXECUTING -> COMPLETED
         statuses = [
@@ -276,11 +276,11 @@ class TestTerminalStateHandling(aiounittest.AsyncTestCase):
             self._mock_status_response(ExecutionState.EXECUTING),
             self._mock_status_response(ExecutionState.COMPLETED),
         ]
-        client.get_status = AsyncMock(side_effect=statuses)
+        client.get_execution_status = AsyncMock(side_effect=statuses)
 
         job_id = await client._refresh(query, ping_frequency=0)
         assert job_id == "job-123"
-        assert client.get_status.call_count == 3
+        assert client.get_execution_status.call_count == 3
 
 
 class TestSessionRequirement(aiounittest.AsyncTestCase):
