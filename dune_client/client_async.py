@@ -9,15 +9,16 @@ from __future__ import annotations
 import asyncio
 import ssl
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, Self
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Self, TypeVar
 
 import certifi
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
 from aiohttp import (
+    ClientError,
     ClientResponse,
-    ClientResponseError,
     ClientSession,
     ClientTimeout,
     ContentTypeError,
@@ -41,37 +42,18 @@ from dune_client.models import (
 )
 from dune_client.query import QueryBase, parse_query_object_or_id
 
-
-class RetryableError(Exception):
-    """
-    Internal exception used to signal that the request should be retried
-    """
-
-    def __init__(self, base_error: ClientResponseError) -> None:
-        self.base_error = base_error
-
-
-class MaxRetryError(Exception):
-    """
-    This exception is raised when the maximum number of retries is exceeded,
-    e.g. due to rate limiting or internal server errors
-    """
-
-    def __init__(self, url: str, reason: Exception | None = None) -> None:
-        self.reason = reason
-
-        message = f"Max retries exceeded with url: {url} (Caused by {reason!r})"
-
-        super().__init__(message)
+PaginatedResult = TypeVar("PaginatedResult", ResultsResponse, ExecutionResultCSV)
 
 
 class AsyncDuneClient(BaseDuneClient):
     """
     An asynchronous interface for Dune API with a few convenience methods
     combining the use of endpoints (e.g. refresh)
-    """
 
-    _connection_limit = 3
+    Must be used as an async context manager:
+        async with AsyncDuneClient() as client:
+            results = await client.refresh(query)
+    """
 
     def __init__(
         self,
@@ -90,29 +72,14 @@ class AsyncDuneClient(BaseDuneClient):
         super().__init__(api_key, base_url, request_timeout, client_version, performance)
         self._connection_limit = connection_limit
         self._session: ClientSession | None = None
-
-    async def _create_session(self) -> ClientSession:
-        # Create an SSL context using the certifi certificate store
-        ssl_context = ssl.create_default_context(cafile=certifi.where())
-
-        conn = TCPConnector(limit=self._connection_limit, ssl=ssl_context)
-        return ClientSession(
-            connector=conn,
-            base_url=self.base_url,
-            timeout=ClientTimeout(total=self.request_timeout),
-        )
-
-    async def connect(self) -> None:
-        """Opens a client session (can be used instead of async with)"""
-        self._session = await self._create_session()
-
-    async def disconnect(self) -> None:
-        """Closes client session"""
-        if self._session:
-            await self._session.close()
+        self._max_attempts = 5
+        self._retry_backoff = 0.5
+        self._retry_statuses = {429, 502, 503, 504}
 
     async def __aenter__(self) -> Self:
-        self._session = await self._create_session()
+        if self._session is not None:
+            raise RuntimeError("AsyncDuneClient session already active")
+        await self.connect()
         return self
 
     async def __aexit__(
@@ -120,14 +87,26 @@ class AsyncDuneClient(BaseDuneClient):
     ) -> None:
         await self.disconnect()
 
+    async def connect(self) -> None:
+        if self._session is not None:
+            raise RuntimeError("AsyncDuneClient session already active")
+        self._session = self._create_session()
+
+    async def disconnect(self) -> None:
+        if self._session is not None:
+            await self._session.close()
+            self._session = None
+
+    def _create_session(self) -> ClientSession:
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        connector = TCPConnector(limit=self._connection_limit, ssl=ssl_context)
+        return ClientSession(
+            connector=connector,
+            base_url=self.base_url,
+            timeout=ClientTimeout(total=self.request_timeout),
+        )
+
     async def _handle_response(self, response: ClientResponse) -> Any:
-        if response.status in {429, 502, 503, 504}:
-            try:
-                response.raise_for_status()
-            except ClientResponseError as err:
-                raise RetryableError(
-                    base_error=err,
-                ) from err
         try:
             # Some responses can be decoded and converted to DuneErrors
             response_json = await response.json()
@@ -137,40 +116,16 @@ class AsyncDuneClient(BaseDuneClient):
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
         else:
+            response.raise_for_status()
             return response_json
 
-    def _route_url(
-        self,
-        route: str | None = None,
-        url: str | None = None,
-    ) -> str:
+    def _route_url(self, route: str | None = None, url: str | None = None) -> str:
         if route is not None:
-            final_route = f"{self.api_version}{route}"
-        elif url is not None:
-            assert url.startswith(self.base_url)
-            final_route = url[len(self.base_url) :]
-        else:
-            assert route is not None or url is not None
-
-        return final_route
-
-    async def _handle_ratelimit(self, call: Callable[..., Any], url: str) -> Any:
-        """Generic wrapper around request callables. If the request fails due to rate limiting,
-        or server side errors, it will retry it up to five times, sleeping i * 5s in between
-        """
-        backoff_factor = 0.5
-        error: ClientResponseError | None = None
-        for i in range(5):
-            try:
-                return await call()
-            except RetryableError as e:
-                self.logger.warning(
-                    f"Rate limited or internal error. Retrying in {i * 5} seconds..."
-                )
-                error = e.base_error
-                await asyncio.sleep(i**2 * backoff_factor)
-
-        raise MaxRetryError(url, error)
+            return f"{self.api_version}{route}"
+        if url is None:
+            raise ValueError("Either route or url must be provided")
+        assert url.startswith(self.base_url)
+        return url[len(self.base_url) :]
 
     async def _get(
         self,
@@ -179,41 +134,69 @@ class AsyncDuneClient(BaseDuneClient):
         raw: bool = False,
         url: str | None = None,
     ) -> Any:
-        final_route = self._route_url(route=route, url=url)
-        self.logger.debug(f"GET received input route={final_route}")
+        return await self._request(
+            method="GET",
+            route=route,
+            url=url,
+            params=params,
+            raw=raw,
+        )
 
-        async def _get() -> Any:
-            if self._session is None:
-                raise ValueError("Client is not connected; call `await cl.connect()`")
-            response = await self._session.get(
-                url=final_route,
-                headers=self.default_headers(),
-                params=params,
-            )
+    async def _post(self, route: str, params: Any) -> Any:
+        return await self._request(
+            method="POST",
+            route=route,
+            json_body=params,
+        )
+
+    async def _request(
+        self,
+        *,
+        method: str,
+        route: str | None = None,
+        url: str | None = None,
+        params: Any | None = None,
+        json_body: Any | None = None,
+        raw: bool = False,
+    ) -> Any:
+        session = self._require_session()
+        target = self._route_url(route=route, url=url) if route or url else None
+        if target is None:
+            raise ValueError("Either route or url must be provided")
+        self.logger.debug(f"{method} received input target={target}")
+
+        attempt = 0
+        delay = self._retry_backoff
+        while True:
+            try:
+                response = await session.request(
+                    method,
+                    target,
+                    headers=self.default_headers(),
+                    params=params,
+                    json=json_body,
+                )
+            except ClientError:
+                if attempt >= self._max_attempts - 1:
+                    raise
+                await asyncio.sleep(delay)
+                attempt += 1
+                delay *= 2
+                continue
+
+            if response.status in self._retry_statuses and attempt < self._max_attempts - 1:
+                await response.read()
+                response.release()
+                await asyncio.sleep(delay)
+                attempt += 1
+                delay *= 2
+                continue
+
             if raw:
                 return response
             return await self._handle_response(response)
 
-        return await self._handle_ratelimit(_get, final_route)
-
-    async def _post(self, route: str, params: Any) -> Any:
-        url = self._route_url(route)
-        self.logger.debug(f"POST received input url={url}, params={params}")
-
-        async def _post() -> Any:
-            if self._session is None:
-                raise ValueError("Client is not connected; call `await cl.connect()`")
-            response = await self._session.post(
-                url=url,
-                json=params,
-                headers=self.default_headers(),
-            )
-            return await self._handle_response(response)
-
-        return await self._handle_ratelimit(_post, route)
-
     async def execute(self, query: QueryBase, performance: str | None = None) -> ExecutionResponse:
-        """Post's to Dune API for execute `query`"""
         params = query.request_format()
         params["performance"] = performance or self.performance
 
@@ -228,7 +211,6 @@ class AsyncDuneClient(BaseDuneClient):
             raise DuneError(response_json, "ExecutionResponse", err) from err
 
     async def get_status(self, job_id: str) -> ExecutionStatusResponse:
-        """GET status from Dune API for `job_id` (aka `execution_id`)"""
         response_json = await self._get(route=f"/execution/{job_id}/status")
         try:
             return ExecutionStatusResponse.from_dict(response_json)
@@ -244,30 +226,22 @@ class AsyncDuneClient(BaseDuneClient):
         filters: str | None = None,
         sort_by: list[str] | None = None,
     ) -> ResultsResponse:
-        """GET results from Dune API for `job_id` (aka `execution_id`)"""
-        assert (
-            # We are not sampling
-            sample_count is None
-            # We are sampling and don't use filters or pagination
-            or (batch_size is None and filters is None)
-        ), "sampling cannot be combined with filters or pagination"
+        self._validate_sampling(sample_count, batch_size, filters)
 
         if sample_count is None and batch_size is None:
             batch_size = MAX_NUM_ROWS_PER_BATCH
 
-        results = await self._get_result_page(
-            job_id,
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            limit=batch_size,
+        return await self._collect_pages(
+            lambda: self._get_result_page(
+                job_id,
+                columns=columns,
+                sample_count=sample_count,
+                filters=filters,
+                sort_by=sort_by,
+                limit=batch_size,
+            ),
+            self._get_result_by_url,
         )
-        while results.next_uri is not None:
-            batch = await self._get_result_by_url(results.next_uri)
-            results += batch
-
-        return results
 
     async def get_result_csv(
         self,
@@ -285,29 +259,22 @@ class AsyncDuneClient(BaseDuneClient):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
-        assert (
-            # We are not sampling
-            sample_count is None
-            # We are sampling and don't use filters or pagination
-            or (batch_size is None and filters is None)
-        ), "sampling cannot be combined with filters or pagination"
+        self._validate_sampling(sample_count, batch_size, filters)
 
         if sample_count is None and batch_size is None:
             batch_size = MAX_NUM_ROWS_PER_BATCH
 
-        results = await self._get_result_csv_page(
-            job_id,
-            columns=columns,
-            sample_count=sample_count,
-            filters=filters,
-            sort_by=sort_by,
-            limit=batch_size,
+        return await self._collect_pages(
+            lambda: self._get_result_csv_page(
+                job_id,
+                columns=columns,
+                sample_count=sample_count,
+                filters=filters,
+                sort_by=sort_by,
+                limit=batch_size,
+            ),
+            self._get_result_csv_by_url,
         )
-        while results.next_uri is not None:
-            batch = await self._get_result_csv_by_url(results.next_uri)
-            results += batch
-
-        return results
 
     async def get_latest_result(
         self,
@@ -328,22 +295,19 @@ class AsyncDuneClient(BaseDuneClient):
 
         params["limit"] = batch_size
 
-        response_json = await self._get(
-            route=f"/query/{query_id}/results",
-            params=params,
-        )
-        try:
-            results = ResultsResponse.from_dict(response_json)
-            while results.next_uri is not None:
-                batch = await self._get_result_by_url(results.next_uri)
-                results += batch
-        except KeyError as err:
-            raise DuneError(response_json, "ResultsResponse", err) from err
-        else:
-            return results
+        async def first_page() -> ResultsResponse:
+            response_json = await self._get(
+                route=f"/query/{query_id}/results",
+                params=params,
+            )
+            try:
+                return ResultsResponse.from_dict(response_json)
+            except KeyError as err:
+                raise DuneError(response_json, "ResultsResponse", err) from err
+
+        return await self._collect_pages(first_page, self._get_result_by_url)
 
     async def cancel_execution(self, job_id: str) -> bool:
-        """POST Execution Cancellation to Dune API for `job_id` (aka `execution_id`)"""
         response_json = await self._post(
             route=f"/execution/{job_id}/cancel",
             params=None,
@@ -376,12 +340,7 @@ class AsyncDuneClient(BaseDuneClient):
         fetches and returns the results.
         Sleeps `ping_frequency` seconds between each status request.
         """
-        assert (
-            # We are not sampling
-            sample_count is None
-            # We are sampling and don't use filters or pagination
-            or (batch_size is None and filters is None)
-        ), "sampling cannot be combined with filters or pagination"
+        self._validate_sampling(sample_count, batch_size, filters)
 
         job_id = await self._refresh(query, ping_frequency=ping_frequency, performance=performance)
         return await self.get_result(
@@ -409,12 +368,7 @@ class AsyncDuneClient(BaseDuneClient):
         fetches and the results in CSV format
         (use it load the data directly in pandas.from_csv() or similar frameworks)
         """
-        assert (
-            # We are not sampling
-            sample_count is None
-            # We are sampling and don't use filters or pagination
-            or (batch_size is None and filters is None)
-        ), "sampling cannot be combined with filters or pagination"
+        self._validate_sampling(sample_count, batch_size, filters)
 
         job_id = await self._refresh(query, ping_frequency=ping_frequency, performance=performance)
         return await self.get_result_csv(
@@ -471,8 +425,6 @@ class AsyncDuneClient(BaseDuneClient):
         filters: str | None = None,
         sort_by: list[str] | None = None,
     ) -> ResultsResponse:
-        """GET a page of results from Dune API for `job_id` (aka `execution_id`)"""
-
         if sample_count is None and limit is None and offset is None:
             limit = MAX_NUM_ROWS_PER_BATCH
             offset = 0
@@ -500,9 +452,6 @@ class AsyncDuneClient(BaseDuneClient):
         url: str,
         params: dict[str, Any] | None = None,
     ) -> ResultsResponse:
-        """
-        GET results from Dune API with a given URL. This is particularly useful for pagination.
-        """
         response_json = await self._get(url=url, params=params)
 
         try:
@@ -520,10 +469,6 @@ class AsyncDuneClient(BaseDuneClient):
         filters: str | None = None,
         sort_by: list[str] | None = None,
     ) -> ExecutionResultCSV:
-        """
-        GET a page of results in CSV format from Dune API for `job_id` (aka `execution_id`)
-        """
-
         if sample_count is None and limit is None and offset is None:
             limit = MAX_NUM_ROWS_PER_BATCH
             offset = 0
@@ -542,9 +487,12 @@ class AsyncDuneClient(BaseDuneClient):
         response.raise_for_status()
 
         next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
-        next_offset = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
+        next_offset_header = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
+        next_offset = self._parse_next_offset(next_offset_header)
+        data = BytesIO(await response.content.read(-1))
+        response.release()
         return ExecutionResultCSV(
-            data=BytesIO(await response.content.read(-1)),
+            data=data,
             next_uri=next_uri,
             next_offset=next_offset,
         )
@@ -554,17 +502,16 @@ class AsyncDuneClient(BaseDuneClient):
         url: str,
         params: dict[str, Any] | None = None,
     ) -> ExecutionResultCSV:
-        """
-        GET results in CSV format from Dune API with a given URL.
-        This is particularly useful for pagination.
-        """
         response = await self._get(url=url, params=params, raw=True)
         response.raise_for_status()
 
         next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
-        next_offset = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
+        next_offset_header = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
+        next_offset = self._parse_next_offset(next_offset_header)
+        data = BytesIO(await response.content.read(-1))
+        response.release()
         return ExecutionResultCSV(
-            data=BytesIO(await response.content.read(-1)),
+            data=data,
             next_uri=next_uri,
             next_offset=next_offset,
         )
@@ -575,19 +522,53 @@ class AsyncDuneClient(BaseDuneClient):
         ping_frequency: int = 5,
         performance: str | None = None,
     ) -> str:
-        """
-        Executes a Dune `query`, waits until execution completes,
-        fetches and returns the results.
-        Sleeps `ping_frequency` seconds between each status request.
-        """
         job_id = (await self.execute(query=query, performance=performance)).execution_id
-        status = await self.get_status(job_id)
-        while status.state not in ExecutionState.terminal_states():
+        terminal_states = ExecutionState.terminal_states()
+
+        while True:
+            status = await self.get_status(job_id)
+            if status.state in terminal_states:
+                if status.state == ExecutionState.FAILED:
+                    self.logger.error(status)
+                    raise QueryFailedError(f"Error data: {status.error}")
+                return job_id
+
             self.logger.info(f"waiting for query execution {job_id} to complete: {status}")
             await asyncio.sleep(ping_frequency)
-            status = await self.get_status(job_id)
-        if status.state == ExecutionState.FAILED:
-            self.logger.error(status)
-            raise QueryFailedError(f"Error data: {status.error}")
 
-        return job_id
+    def _require_session(self) -> ClientSession:
+        if self._session is None:
+            raise RuntimeError("AsyncDuneClient must be used as an async context manager")
+        return self._session
+
+    @staticmethod
+    def _validate_sampling(
+        sample_count: int | None,
+        batch_size: int | None,
+        filters: str | None,
+    ) -> None:
+        assert sample_count is None or (batch_size is None and filters is None), (
+            "sampling cannot be combined with filters or pagination"
+        )
+
+    def _parse_next_offset(self, header_value: str | None) -> int | None:
+        if header_value is None:
+            return None
+        try:
+            return int(header_value)
+        except ValueError:
+            self.logger.warning(
+                "invalid x-dune-next-offset header encountered; ignoring",
+                extra={"header_value": header_value},
+            )
+            return None
+
+    async def _collect_pages(
+        self,
+        fetch_first: Callable[[], Awaitable[PaginatedResult]],
+        fetch_next: Callable[[str], Awaitable[PaginatedResult]],
+    ) -> PaginatedResult:
+        results = await fetch_first()
+        while results.next_uri is not None:
+            results += await fetch_next(results.next_uri)
+        return results

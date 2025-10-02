@@ -21,7 +21,7 @@ class TestDuneClient(aiounittest.AsyncTestCase):
         results = (await dune.refresh(self.query)).get_rows()
         assert len(results) > 0
         await dune.disconnect()
-        assert dune._session.closed
+        assert dune._session is None
 
     async def test_refresh_context_manager_singleton(self):
         dune = AsyncDuneClient()
