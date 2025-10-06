@@ -51,7 +51,6 @@ class BaseDuneClient:
         self.client_version = client_version
         self.performance = performance
         self.logger = logging.getLogger(__name__)
-        logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
         # Configure retry transport for httpx
         transport = httpx.HTTPTransport(retries=5)
