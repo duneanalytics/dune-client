@@ -7,24 +7,14 @@ https://docs.dune.com/api-reference/overview/introduction
 from __future__ import annotations
 
 import asyncio
-import ssl
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, Self, TypeVar
 
-import certifi
+import httpx
+from deprecated import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
-
-from aiohttp import (
-    ClientError,
-    ClientResponse,
-    ClientSession,
-    ClientTimeout,
-    ContentTypeError,
-    TCPConnector,
-)
-from deprecated import deprecated
 
 from dune_client.api.base import (
     DUNE_CSV_NEXT_OFFSET_HEADER,
@@ -72,10 +62,7 @@ class AsyncDuneClient(BaseDuneClient):
         """
         super().__init__(api_key, base_url, request_timeout, client_version, performance)
         self._connection_limit = connection_limit
-        self._session: ClientSession | None = None
-        self._max_attempts = 5
-        self._retry_backoff = 0.5
-        self._retry_statuses = {429, 502, 503, 504}
+        self._session: httpx.AsyncClient | None = None
 
     async def __aenter__(self) -> Self:
         if self._session is not None:
@@ -95,24 +82,25 @@ class AsyncDuneClient(BaseDuneClient):
 
     async def disconnect(self) -> None:
         if self._session is not None:
-            await self._session.close()
+            await self._session.aclose()
             self._session = None
 
-    def _create_session(self) -> ClientSession:
-        ssl_context = ssl.create_default_context(cafile=certifi.where())
-        connector = TCPConnector(limit=self._connection_limit, ssl=ssl_context)
-        return ClientSession(
-            connector=connector,
+    def _create_session(self) -> httpx.AsyncClient:
+        transport = httpx.AsyncHTTPTransport(retries=5)
+        limits = httpx.Limits(max_connections=self._connection_limit)
+        return httpx.AsyncClient(
             base_url=self.base_url,
-            timeout=ClientTimeout(total=self.request_timeout),
+            timeout=self.request_timeout,
+            transport=transport,
+            limits=limits,
         )
 
-    async def _handle_response(self, response: ClientResponse) -> Any:
+    async def _handle_response(self, response: httpx.Response) -> Any:
         try:
             # Some responses can be decoded and converted to DuneErrors
-            response_json = await response.json()
+            response_json = response.json()
             self.logger.debug(f"received response {response_json}")
-        except ContentTypeError as err:
+        except Exception as err:
             # Others can't. Only raise HTTP error for not decodable errors
             response.raise_for_status()
             raise ValueError("Unreachable since previous line raises") from err
@@ -166,36 +154,17 @@ class AsyncDuneClient(BaseDuneClient):
             raise ValueError("Either route or url must be provided")
         self.logger.debug(f"{method} received input target={target}")
 
-        attempt = 0
-        delay = self._retry_backoff
-        while True:
-            try:
-                response = await session.request(
-                    method,
-                    target,
-                    headers=self.default_headers(),
-                    params=params,
-                    json=json_body,
-                )
-            except ClientError:
-                if attempt >= self._max_attempts - 1:
-                    raise
-                await asyncio.sleep(delay)
-                attempt += 1
-                delay *= 2
-                continue
+        response = await session.request(
+            method,
+            target,
+            headers=self.default_headers(),
+            params=params,
+            json=json_body,
+        )
 
-            if response.status in self._retry_statuses and attempt < self._max_attempts - 1:
-                await response.read()
-                response.release()
-                await asyncio.sleep(delay)
-                attempt += 1
-                delay *= 2
-                continue
-
-            if raw:
-                return response
-            return await self._handle_response(response)
+        if raw:
+            return response
+        return await self._handle_response(response)
 
     async def execute_query(
         self, query: QueryBase, performance: str | None = None
@@ -640,8 +609,7 @@ class AsyncDuneClient(BaseDuneClient):
         next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
         next_offset_header = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
         next_offset = self._parse_next_offset(next_offset_header)
-        data = BytesIO(await response.content.read(-1))
-        response.release()
+        data = BytesIO(response.content)
         return ExecutionResultCSV(
             data=data,
             next_uri=next_uri,
@@ -659,8 +627,7 @@ class AsyncDuneClient(BaseDuneClient):
         next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
         next_offset_header = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
         next_offset = self._parse_next_offset(next_offset_header)
-        data = BytesIO(await response.content.read(-1))
-        response.release()
+        data = BytesIO(response.content)
         return ExecutionResultCSV(
             data=data,
             next_uri=next_uri,
@@ -687,7 +654,7 @@ class AsyncDuneClient(BaseDuneClient):
             self.logger.info(f"waiting for query execution {job_id} to complete: {status}")
             await asyncio.sleep(ping_frequency)
 
-    def _require_session(self) -> ClientSession:
+    def _require_session(self) -> httpx.AsyncClient:
         if self._session is None:
             raise RuntimeError("AsyncDuneClient must be used as an async context manager")
         return self._session

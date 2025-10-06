@@ -5,8 +5,8 @@ from io import BytesIO
 from unittest.mock import AsyncMock, MagicMock
 
 import aiounittest
+import httpx
 import pytest
-from aiohttp import ClientResponse
 
 from dune_client.client_async import AsyncDuneClient
 from dune_client.models import (
@@ -319,17 +319,15 @@ class TestCSVHeaderParsing(aiounittest.AsyncTestCase):
 
     def _mock_csv_response(self, csv_data=b"col1,col2\nval1,val2", next_uri=None, next_offset=None):
         """Create a mock CSV response"""
-        response = MagicMock(spec=ClientResponse)
-        response.status = 200
+        response = MagicMock(spec=httpx.Response)
+        response.status_code = 200
         response.headers = {}
         if next_uri:
             response.headers["x-dune-next-uri"] = next_uri
         if next_offset is not None:
             response.headers["x-dune-next-offset"] = str(next_offset)
-        response.content = MagicMock()
-        response.content.read = AsyncMock(return_value=csv_data)
+        response.content = csv_data  # httpx.Response.content is bytes, not async
         response.raise_for_status = MagicMock()
-        response.release = MagicMock()
         return response
 
     async def test_csv_without_pagination_headers(self):
@@ -362,8 +360,8 @@ class TestCSVHeaderParsing(aiounittest.AsyncTestCase):
         assert isinstance(result.data, BytesIO)
         csv_response.raise_for_status.assert_called_once()
 
-    async def test_csv_response_is_released(self):
-        """Test that CSV response resources are properly released"""
+    async def test_csv_response_status_check(self):
+        """Test that CSV response status is checked"""
         client = self._create_client()
 
         csv_response = self._mock_csv_response()
@@ -371,8 +369,7 @@ class TestCSVHeaderParsing(aiounittest.AsyncTestCase):
 
         await client._get_result_csv_page("job-123")
 
-        # Verify response.release() was called
-        csv_response.release.assert_called_once()
+        # Verify status was checked (httpx handles resource cleanup automatically)
         csv_response.raise_for_status.assert_called_once()
 
     async def test_csv_multi_page_combines_rows(self):
@@ -406,8 +403,7 @@ class TestCSVHeaderParsing(aiounittest.AsyncTestCase):
         assert result.next_offset == 200
         assert first_response.raise_for_status.call_count == 1
         assert second_response.raise_for_status.call_count == 1
-        assert first_response.release.call_count == 1
-        assert second_response.release.call_count == 1
+        # httpx handles resource cleanup automatically, no need to check release()
 
 
 if __name__ == "__main__":
