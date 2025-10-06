@@ -52,7 +52,6 @@ class BaseDuneClient:
         self.client_version = client_version
         self.performance = performance
         self.logger = logging.getLogger(__name__)
-        logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
         retry_strategy = Retry(
             total=5,
             backoff_factor=0.5,

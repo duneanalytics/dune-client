@@ -10,7 +10,6 @@ from dune_client.file.base import CSVFile, FileRWInterface, JSONFile, NDJSONFile
 from dune_client.types import DuneRecord
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 
 class FileIO:
