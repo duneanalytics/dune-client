@@ -11,9 +11,8 @@ import os
 from json import JSONDecodeError
 from typing import IO, TYPE_CHECKING, Any
 
+import httpx
 from deprecated import deprecated
-from requests import Response, Session
-from requests.adapters import HTTPAdapter, Retry
 
 from dune_client.util import get_package_version
 
@@ -53,17 +52,14 @@ class BaseDuneClient:
         self.performance = performance
         self.logger = logging.getLogger(__name__)
         logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
-        retry_strategy = Retry(
-            total=5,
-            backoff_factor=0.5,
-            status_forcelist={429, 502, 503, 504},
-            allowed_methods={"GET", "POST", "PATCH"},
-            raise_on_status=True,
+
+        # Configure retry transport for httpx
+        transport = httpx.HTTPTransport(retries=5)
+        self.http = httpx.Client(
+            base_url=base_url,
+            timeout=request_timeout,
+            transport=transport,
         )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        self.http = Session()
-        self.http.mount("https://", adapter)
-        self.http.mount("http://", adapter)
 
     @classmethod
     @deprecated(
@@ -140,7 +136,7 @@ class BaseDuneClient:
 class BaseRouter(BaseDuneClient):
     """Extending the Base Client with elementary api routing"""
 
-    def _handle_response(self, response: Response) -> Any:
+    def _handle_response(self, response: httpx.Response) -> Any:
         """Generic response handler utilized by all Dune API routes"""
         try:
             # Some responses can be decoded and converted to DuneErrors
@@ -158,13 +154,12 @@ class BaseRouter(BaseDuneClient):
 
     def _route_url(self, route: str | None = None, url: str | None = None) -> str:
         if route is not None:
-            final_url = f"{self.base_url}{self.api_version}{route}"
-        elif url is not None:
-            final_url = url
-        else:
-            assert route is not None or url is not None
-
-        return final_url
+            # Return relative path - httpx.Client will prepend base_url
+            return f"{self.api_version}{route}"
+        if url is not None:
+            # Absolute URL provided (e.g., for pagination next_uri)
+            return url
+        raise ValueError("Either route or url must be provided")
 
     def _get(
         self,
@@ -197,12 +192,12 @@ class BaseRouter(BaseDuneClient):
         """Generic interface for the POST method of a Dune API request"""
         url = self._route_url(route)
         self.logger.debug(f"POST received input url={url}, params={params}")
+        merged_headers = dict(self.default_headers(), **headers if headers else {})
         response = self.http.post(
             url=url,
             json=params,
-            headers=dict(self.default_headers(), **headers if headers else {}),
-            timeout=self.request_timeout,
-            data=data,
+            headers=merged_headers,
+            content=data,
         )
         return self._handle_response(response)
 
@@ -214,7 +209,6 @@ class BaseRouter(BaseDuneClient):
             url=url,
             json=params,
             headers=self.default_headers(),
-            timeout=self.request_timeout,
         )
         return self._handle_response(response)
 
@@ -225,6 +219,5 @@ class BaseRouter(BaseDuneClient):
         response = self.http.delete(
             url=url,
             headers=self.default_headers(),
-            timeout=self.request_timeout,
         )
         return self._handle_response(response)

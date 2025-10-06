@@ -4,9 +4,9 @@ import unittest
 import warnings
 from pathlib import Path
 
+import httpx
 import pandas as pd
 import pytest
-from requests.exceptions import HTTPError
 
 from dune_client.client import DuneClient
 from dune_client.models import (
@@ -162,13 +162,13 @@ class TestDuneClient(unittest.TestCase):
 
     def test_invalid_api_key_error(self):
         dune = DuneClient(api_key="Invalid Key")
-        with pytest.raises(HTTPError) as err:
+        with pytest.raises(httpx.HTTPStatusError) as err:
             dune.execute_query(self.query)
         assert err.value.response.status_code == 401
-        with pytest.raises(HTTPError) as err:
+        with pytest.raises(httpx.HTTPStatusError) as err:
             dune.get_execution_status("wonky job_id")
         assert err.value.response.status_code == 401
-        with pytest.raises(HTTPError) as err:
+        with pytest.raises(httpx.HTTPStatusError) as err:
             dune.get_execution_results("wonky job_id")
         assert err.value.response.status_code == 401
 
@@ -177,7 +177,7 @@ class TestDuneClient(unittest.TestCase):
         query = copy.copy(self.query)
         query.query_id = 99999999  # Invalid Query Id.
 
-        with pytest.raises(HTTPError) as err:
+        with pytest.raises(httpx.HTTPStatusError) as err:
             dune.execute_query(query)
         assert err.value.response.status_code == 404
 
@@ -187,13 +187,13 @@ class TestDuneClient(unittest.TestCase):
         # This query ID is too large!
         query.query_id = 9999999999999
 
-        with pytest.raises(HTTPError) as err:
+        with pytest.raises(httpx.HTTPStatusError) as err:
             dune.execute_query(query)
         assert err.value.response.status_code == 500
 
     def test_invalid_job_id_error(self):
         dune = DuneClient()
-        with pytest.raises(HTTPError) as err:
+        with pytest.raises(httpx.HTTPStatusError) as err:
             dune.get_execution_status("Wonky Job ID")
         assert err.value.response.status_code == 400
 
@@ -246,7 +246,7 @@ class TestDuneClient(unittest.TestCase):
 
         namespace = "test"
         table_name = "table"
-        with pytest.raises(HTTPError) as err:
+        with pytest.raises(httpx.HTTPStatusError) as err:
             client.create_table(
                 namespace=namespace,
                 table_name=table_name,

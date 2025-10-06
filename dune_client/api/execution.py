@@ -131,8 +131,6 @@ class ExecutionAPI(BaseRouter):
         """
         GET results from Dune API with a given URL. This is particularly useful for pagination.
         """
-        assert url.startswith(self.base_url)
-
         response_json = self._get(url=url, params=params)
         try:
             result = ResultsResponse.from_dict(response_json)
@@ -159,8 +157,6 @@ class ExecutionAPI(BaseRouter):
         use this method for large results where you want lower CPU and memory overhead
         if you need metadata information use get_results() or get_status()
         """
-        assert url.startswith(self.base_url)
-
         response = self._get(url=url, params=params, raw=True)
         response.raise_for_status()
         next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)

@@ -6,9 +6,9 @@ from dune_client.util import age_in_hours, get_package_version
 
 class TestUtils(unittest.TestCase):
     def test_package_version_some(self):
-        version_string = get_package_version("requests")
+        version_string = get_package_version("httpx")
         parsed_version = list(map(int, version_string.split(".")))
-        assert parsed_version >= [2, 31, 0]
+        assert parsed_version >= [0, 28, 0]
 
     def test_package_version_none(self):
         # Can't self refer (this should only work when user has dune-client installed).

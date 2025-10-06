@@ -23,7 +23,7 @@ dependencies = [
     "aiohttp~=3.12.15",
     "dataclasses-json~=0.6.4",
     "python-dateutil~=2.9.0",
-    "requests~=2.32.5",
+    "httpx~=0.28.1",
     "ndjson~=0.3.1",
     "Deprecated~=1.2.18",
 ]
@@ -43,7 +43,6 @@ dev = [
     "tox-uv>=1.28.0",
     # Type stubs
     "types-python-dateutil>=2.8.19.14",
-    "types-requests>=2.28.0",
     "types-Deprecated>=1.2.9.3",
     # Optional features
     "pandas>=1.0.0",
