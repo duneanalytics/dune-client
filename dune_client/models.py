@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from dune_client.types import DuneRecord
 
 log = logging.getLogger(__name__)
-logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.INFO)
 
 
 class QueryFailedError(Exception):
