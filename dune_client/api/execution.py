@@ -7,7 +7,7 @@ Further Documentation:
 """
 
 from io import BytesIO
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from deprecated import deprecated
 
@@ -24,9 +24,7 @@ from dune_client.models import (
     ExecutionStatusResponse,
     ResultsResponse,
 )
-
-if TYPE_CHECKING:
-    from dune_client.query import QueryBase
+from dune_client.query import QueryBase  # noqa: TC001
 
 
 class ExecutionAPI(BaseRouter):
