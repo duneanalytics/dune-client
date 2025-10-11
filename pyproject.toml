@@ -16,6 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
@@ -61,7 +62,7 @@ packages = ["dune_client"]
 [tool.ruff]
 # Increase the maximum line length to 100 characters.
 line-length = 100
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 # Enable a comprehensive set of rules
