@@ -24,7 +24,7 @@ from dune_client.models import (
     ExecutionStatusResponse,
     ResultsResponse,
 )
-from dune_client.query import QueryBase
+from dune_client.query import QueryBase  # noqa: TC001
 
 
 class ExecutionAPI(BaseRouter):
