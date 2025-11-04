@@ -362,9 +362,7 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, UsageAPI, CustomEndpointAPI)
             raise QueryFailedError(f"Error data: {status.error}")
 
         # Fetch and return results
-        return self._fetch_entire_result(
-            self.get_execution_results(job_id)
-        )
+        return self._fetch_entire_result(self.get_execution_results(job_id))
 
     ######################
     # Deprecated Functions

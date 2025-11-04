@@ -46,4 +46,3 @@ class UsageAPI(BaseRouter):
             return UsageResponse.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "UsageResponse", err) from err
-
