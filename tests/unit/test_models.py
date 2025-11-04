@@ -285,56 +285,74 @@ eth_traces,4474223
     def test_usage_response_parsing(self):
         """Test UsageResponse parsing from API response"""
         response_data = {
-            "credits_used": 1000,
-            "overage_credits": 50,
-            "private_query_executions": 25,
-            "storage_bytes": 1024000,
+            "billing_periods": [
+                {
+                    "credits_included": 100.0,
+                    "credits_used": 50.5,
+                    "start_date": "2025-01-01",
+                    "end_date": "2025-02-01",
+                },
+                {
+                    "credits_included": 100.0,
+                    "credits_used": 75.25,
+                    "start_date": "2025-02-01",
+                    "end_date": "2025-03-01",
+                },
+            ],
+            "bytes_allowed": 1024000,
+            "bytes_used": 512000,
+            "private_dashboards": 5,
+            "private_queries": 10,
         }
         result = UsageResponse.from_dict(response_data)
-        assert result.credits_used == 1000
-        assert result.overage_credits == 50
-        assert result.private_query_executions == 25
-        assert result.storage_bytes == 1024000
+        assert len(result.billing_periods) == 2
+        assert result.billing_periods[0].credits_included == 100.0
+        assert result.billing_periods[0].credits_used == 50.5
+        assert result.billing_periods[0].start_date == "2025-01-01"
+        assert result.billing_periods[1].credits_used == 75.25
+        assert result.bytes_allowed == 1024000
+        assert result.bytes_used == 512000
+        assert result.private_dashboards == 5
+        assert result.private_queries == 10
 
     def test_usage_response_parsing_with_missing_fields(self):
         """Test UsageResponse parsing with missing optional fields defaults to 0"""
         response_data = {}
         result = UsageResponse.from_dict(response_data)
-        assert result.credits_used == 0
-        assert result.overage_credits == 0
-        assert result.private_query_executions == 0
-        assert result.storage_bytes == 0
+        assert len(result.billing_periods) == 0
+        assert result.bytes_allowed == 0
+        assert result.bytes_used == 0
+        assert result.private_dashboards == 0
+        assert result.private_queries == 0
 
     def test_table_info_parsing(self):
         """Test TableInfo parsing from API response"""
         response_data = {
-            "namespace": "my_namespace",
-            "table_name": "my_table",
             "full_name": "dune.my_namespace.my_table",
             "created_at": "2024-01-15T10:30:00Z",
             "is_private": True,
+            "table_size_bytes": "1024",
+            "updated_at": "2024-01-16T10:30:00Z",
         }
         result = TableInfo.from_dict(response_data)
+        assert result.full_name == "dune.my_namespace.my_table"
         assert result.namespace == "my_namespace"
         assert result.table_name == "my_table"
-        assert result.full_name == "dune.my_namespace.my_table"
         assert result.created_at == "2024-01-15T10:30:00Z"
         assert result.is_private is True
+        assert result.table_size_bytes == "1024"
+        assert result.updated_at == "2024-01-16T10:30:00Z"
 
     def test_list_tables_response_parsing(self):
         """Test ListTablesResponse parsing from API response"""
         response_data = {
             "tables": [
                 {
-                    "namespace": "namespace1",
-                    "table_name": "table1",
                     "full_name": "dune.namespace1.table1",
                     "created_at": "2024-01-15T10:30:00Z",
                     "is_private": False,
                 },
                 {
-                    "namespace": "namespace2",
-                    "table_name": "table2",
                     "full_name": "dune.namespace2.table2",
                     "created_at": "2024-01-16T11:30:00Z",
                     "is_private": True,
@@ -344,7 +362,11 @@ eth_traces,4474223
         }
         result = ListTablesResponse.from_dict(response_data)
         assert len(result.tables) == 2
+        assert result.tables[0].full_name == "dune.namespace1.table1"
+        assert result.tables[0].namespace == "namespace1"
         assert result.tables[0].table_name == "table1"
+        assert result.tables[1].full_name == "dune.namespace2.table2"
+        assert result.tables[1].namespace == "namespace2"
         assert result.tables[1].table_name == "table2"
         assert result.next_offset == 100
 

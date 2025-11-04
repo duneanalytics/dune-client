@@ -398,17 +398,26 @@ class TestDuneClient(unittest.TestCase):
     def test_get_usage(self):
         """Test the get_usage endpoint"""
         dune = DuneClient()
-        usage = dune.get_usage("2024-01-01", "2024-01-31")
+        usage = dune.get_usage("2025-01-01", "2025-02-01")
         # Verify response structure
-        assert hasattr(usage, "credits_used")
-        assert hasattr(usage, "overage_credits")
-        assert hasattr(usage, "private_query_executions")
-        assert hasattr(usage, "storage_bytes")
-        # All should be integers
-        assert isinstance(usage.credits_used, int)
-        assert isinstance(usage.overage_credits, int)
-        assert isinstance(usage.private_query_executions, int)
-        assert isinstance(usage.storage_bytes, int)
+        assert hasattr(usage, "billing_periods")
+        assert hasattr(usage, "bytes_allowed")
+        assert hasattr(usage, "bytes_used")
+        assert hasattr(usage, "private_dashboards")
+        assert hasattr(usage, "private_queries")
+        # Check types
+        assert isinstance(usage.billing_periods, list)
+        assert isinstance(usage.bytes_allowed, int)
+        assert isinstance(usage.bytes_used, int)
+        assert isinstance(usage.private_dashboards, int)
+        assert isinstance(usage.private_queries, int)
+        # If there are billing periods, verify their structure
+        if usage.billing_periods:
+            bp = usage.billing_periods[0]
+            assert hasattr(bp, "credits_included")
+            assert hasattr(bp, "credits_used")
+            assert hasattr(bp, "start_date")
+            assert hasattr(bp, "end_date")
 
     @unittest.skip("Requires Plus subscription and uploaded tables")
     def test_list_tables(self):

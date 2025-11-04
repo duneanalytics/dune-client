@@ -400,25 +400,48 @@ class ClearTableResult(DataClassJsonMixin):
 
 
 @dataclass
+class BillingPeriod:
+    """Billing period information with credits and dates"""
+
+    credits_included: float
+    credits_used: float
+    start_date: str
+    end_date: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> BillingPeriod:
+        """Constructor from dictionary."""
+        return cls(
+            credits_included=float(data["credits_included"]),
+            credits_used=float(data["credits_used"]),
+            start_date=data["start_date"],
+            end_date=data["end_date"],
+        )
+
+
+@dataclass
 class UsageResponse:
     """
-    Representation of Response from Dune's [GET] Usage endpoint
+    Representation of Response from Dune's [POST] Usage endpoint
     https://docs.dune.com/api-reference/usage/endpoint/get-usage
     """
 
-    credits_used: int
-    overage_credits: int
-    private_query_executions: int
-    storage_bytes: int
+    billing_periods: list[BillingPeriod]
+    bytes_allowed: int
+    bytes_used: int
+    private_dashboards: int
+    private_queries: int
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> UsageResponse:
         """Constructor from dictionary."""
+        billing_periods_data = data.get("billing_periods", [])
         return cls(
-            credits_used=int(data.get("credits_used", 0)),
-            overage_credits=int(data.get("overage_credits", 0)),
-            private_query_executions=int(data.get("private_query_executions", 0)),
-            storage_bytes=int(data.get("storage_bytes", 0)),
+            billing_periods=[BillingPeriod.from_dict(bp) for bp in billing_periods_data],
+            bytes_allowed=int(data.get("bytes_allowed", 0)),
+            bytes_used=int(data.get("bytes_used", 0)),
+            private_dashboards=int(data.get("private_dashboards", 0)),
+            private_queries=int(data.get("private_queries", 0)),
         )
 
 
@@ -426,21 +449,34 @@ class UsageResponse:
 class TableInfo:
     """Information about a single table"""
 
-    namespace: str
-    table_name: str
     full_name: str
-    created_at: str
     is_private: bool
+    created_at: str
+    # Optional fields that may be present
+    table_size_bytes: str | None = None
+    updated_at: str | None = None
+
+    @property
+    def namespace(self) -> str:
+        """Extract namespace from full_name (e.g., 'dune.namespace.table' -> 'namespace')"""
+        parts = self.full_name.split(".")
+        return parts[1] if len(parts) >= 3 else ""
+
+    @property
+    def table_name(self) -> str:
+        """Extract table name from full_name (e.g., 'dune.namespace.table' -> 'table')"""
+        parts = self.full_name.split(".")
+        return parts[2] if len(parts) >= 3 else ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TableInfo:
         """Constructor from dictionary."""
         return cls(
-            namespace=data["namespace"],
-            table_name=data["table_name"],
             full_name=data["full_name"],
-            created_at=data["created_at"],
             is_private=data["is_private"],
+            created_at=data["created_at"],
+            table_size_bytes=data.get("table_size_bytes"),
+            updated_at=data.get("updated_at"),
         )
 
 

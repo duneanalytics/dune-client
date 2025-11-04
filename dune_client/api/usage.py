@@ -17,30 +17,31 @@ class UsageAPI(BaseRouter):
 
     def get_usage(
         self,
-        start_date: str,
-        end_date: str,
+        start_date: str | None = None,
+        end_date: str | None = None,
     ) -> UsageResponse:
         """
-        Get credits usage data, overage, number of private queries run, storage, etc.
-        over a specific timeframe.
+        Get credits usage data, billing periods, storage, etc.
         https://docs.dune.com/api-reference/usage/endpoint/get-usage
 
         Args:
-            start_date: Start date for the usage period (ISO format: YYYY-MM-DD)
-            end_date: End date for the usage period (ISO format: YYYY-MM-DD)
+            start_date: Optional start date for the usage period (format: YYYY-MM-DD)
+            end_date: Optional end date for the usage period (format: YYYY-MM-DD)
 
         Returns:
-            UsageResponse containing usage statistics
+            UsageResponse containing usage statistics and billing periods
 
         Requires Plus subscription!
         """
-        params = {
-            "start_date": start_date,
-            "end_date": end_date,
-        }
-        response_json = self._get(
+        payload = {}
+        if start_date:
+            payload["start_date"] = start_date
+        if end_date:
+            payload["end_date"] = end_date
+
+        response_json = self._post(
             route="/usage",
-            params=params,
+            params=payload,
         )
         try:
             return UsageResponse.from_dict(response_json)
