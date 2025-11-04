@@ -10,6 +10,7 @@ from dateutil.tz import tzutc
 from dune_client.models import (
     CreateTableResult,
     DuneError,
+    ExecutionError,
     ExecutionResponse,
     ExecutionResult,
     ExecutionResultCSV,
@@ -162,6 +163,31 @@ eth_traces,4474223
             queue_position=None,
             error=None,
         ) == ExecutionStatusResponse.from_dict(self.status_response_data_completed)
+
+    def test_parse_status_response_with_error(self):
+        """Test that errors are properly included in status response (new API feature)"""
+        status_response_with_error = {
+            "execution_id": "01GBM4W2N0NMCGPZYW8AYK4YF1",
+            "query_id": 980708,
+            "state": "QUERY_STATE_FAILED",
+            "submitted_at": self.submission_time_str,
+            "execution_started_at": self.execution_start_str,
+            "execution_ended_at": self.execution_end_str,
+            "error": {
+                "type": "FAILED_TYPE_EXECUTION_FAILED",
+                "message": "line 24:13: Binary literal can only contain hexadecimal digits",
+                "metadata": {"line": 24, "column": 13},
+            },
+        }
+        result = ExecutionStatusResponse.from_dict(status_response_with_error)
+        assert result.state == ExecutionState.FAILED
+        assert result.error is not None
+        assert isinstance(result.error, ExecutionError)
+        assert result.error.type == "FAILED_TYPE_EXECUTION_FAILED"
+        assert (
+            result.error.message == "line 24:13: Binary literal can only contain hexadecimal digits"
+        )
+        assert result.error.metadata == {"line": 24, "column": 13}
 
     def test_parse_result_metadata(self):
         expected = ResultMetadata(

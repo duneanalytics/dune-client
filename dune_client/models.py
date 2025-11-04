@@ -115,23 +115,23 @@ class ExecutionError:
 
     Example:
     {
-        "type":"FAILED_TYPE_EXECUTION_FAILED",
-        "message":"line 24:13: Binary literal can only contain hexadecimal digits",
-        "metadata":{"line":24,"column":13}
+        "type":"syntax_error",
+        "message":"Error: Line 1:1: mismatched input 'selecdt'",
+        "metadata":{"line":10,"column":73}
     }
     """
 
     type: str
     message: str
-    metadata: str
+    metadata: dict[str, Any] | None
 
     @classmethod
-    def from_dict(cls, data: dict[str, str]) -> ExecutionError:
+    def from_dict(cls, data: dict[str, Any]) -> ExecutionError:
         """Constructs an instance from a dict"""
         return cls(
             type=data.get("type", "unknown"),
             message=data.get("message", "unknown"),
-            metadata=data.get("metadata", "unknown"),
+            metadata=data.get("metadata"),
         )
 
 
@@ -139,30 +139,41 @@ class ExecutionError:
 class ExecutionStatusResponse:
     """
     Representation of Response from Dune's [Get] Execution Status endpoint
+    https://docs.dune.com/api-reference/executions/endpoint/get-execution-status
     """
 
     execution_id: str
-    query_id: int
+    query_id: int | None  # None for ad-hoc SQL executions via /sql/execute
     state: ExecutionState
     times: TimeData
     queue_position: int | None
     # this will be present when the query execution completes
     result_metadata: ResultMetadata | None
     error: ExecutionError | None
+    # New fields added to the API
+    is_execution_finished: bool | None = None
+    execution_cost_credits: float | None = None
+    max_inflight_interactive_executions: int | None = None
+    max_inflight_interactive_reached: int | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ExecutionStatusResponse:
         """Constructor from dictionary. See unit test for sample input."""
         dct: MetaData | None = data.get("result_metadata")
-        error: dict[str, str] | None = data.get("error")
+        error: dict[str, Any] | None = data.get("error")
+        query_id = data.get("query_id")
         return cls(
             execution_id=data["execution_id"],
-            query_id=int(data["query_id"]),
+            query_id=int(query_id) if query_id is not None else None,
             queue_position=data.get("queue_position"),
             state=ExecutionState(data["state"]),
             result_metadata=ResultMetadata.from_dict(dct) if dct else None,
             times=TimeData.from_dict(data),  # Sending the entire data dict
             error=ExecutionError.from_dict(error) if error else None,
+            is_execution_finished=data.get("is_execution_finished"),
+            execution_cost_credits=data.get("execution_cost_credits"),
+            max_inflight_interactive_executions=data.get("max_inflight_interactive_executions"),
+            max_inflight_interactive_reached=data.get("max_inflight_interactive_reached"),
         )
 
     def __str__(self) -> str:

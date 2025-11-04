@@ -394,11 +394,40 @@ class TestDuneClient(unittest.TestCase):
         # Note: With the new /sql/execute endpoint, no saved query is created,
         # so this is purely an execution operation, not a CRUD operation.
 
-    @unittest.skip("Requires Plus subscription and valid data")
-    def test_get_usage(self):
-        """Test the get_usage endpoint"""
+    def test_execution_status_includes_error(self):
+        """Test that execution status includes error details for failed SQL (new API feature)"""
         dune = DuneClient()
-        usage = dune.get_usage("2025-01-01", "2025-02-01")
+        # Execute SQL with a syntax error
+        faulty_sql = "SELECDT 1"  # Intentional typo
+        execution_response = dune.execute_sql(faulty_sql)
+        job_id = execution_response.execution_id
+
+        # Poll until terminal state
+        status = dune.get_execution_status(job_id)
+        max_wait = 30  # seconds
+        start = time.time()
+        while status.state not in ExecutionState.terminal_states():
+            if time.time() - start > max_wait:
+                self.fail(f"Query didn't reach terminal state in {max_wait}s")
+            time.sleep(1)
+            status = dune.get_execution_status(job_id)
+
+        # Verify the query failed
+        assert status.state == ExecutionState.FAILED
+
+        # Verify error details are included in the status response (new API feature)
+        assert status.error is not None, "Error should be included in status response"
+        assert status.error.type is not None
+        assert status.error.message is not None
+        # The error message should mention the syntax error
+        assert "selecdt" in status.error.message.lower() or "syntax" in status.error.message.lower()
+
+    def test_get_usage_without_dates(self):
+        """Test the get_usage endpoint without date parameters"""
+        dune = DuneClient()
+
+        # Call without dates (returns all usage data)
+        usage = dune.get_usage()
         # Verify response structure
         assert hasattr(usage, "billing_periods")
         assert hasattr(usage, "bytes_allowed")
@@ -418,6 +447,25 @@ class TestDuneClient(unittest.TestCase):
             assert hasattr(bp, "credits_used")
             assert hasattr(bp, "start_date")
             assert hasattr(bp, "end_date")
+            # Verify types
+            assert isinstance(bp.credits_included, float)
+            assert isinstance(bp.credits_used, float)
+            assert isinstance(bp.start_date, str)
+            assert isinstance(bp.end_date, str)
+
+    def test_get_usage_with_dates(self):
+        """Test the get_usage endpoint with date parameters"""
+        dune = DuneClient()
+        # Use recent dates - older dates may cause 500 errors
+        usage = dune.get_usage("2025-10-01", "2025-11-04")
+        # Verify response structure
+        assert isinstance(usage.billing_periods, list)
+        assert isinstance(usage.bytes_allowed, int)
+        assert isinstance(usage.bytes_used, int)
+        assert isinstance(usage.private_dashboards, int)
+        assert isinstance(usage.private_queries, int)
+        # Should have at least one billing period for this date range
+        assert len(usage.billing_periods) > 0
 
     @unittest.skip("Requires Plus subscription and uploaded tables")
     def test_list_tables(self):
