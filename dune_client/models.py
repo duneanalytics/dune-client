@@ -299,7 +299,7 @@ class ResultsResponse:
     """
 
     execution_id: str
-    query_id: int
+    query_id: int | None  # None for ad-hoc SQL executions via /sql/execute
     state: ExecutionState
     times: TimeData
     # optional because it will only be present when the query execution completes
@@ -311,7 +311,8 @@ class ResultsResponse:
     def from_dict(cls, data: dict[str, str | int | ResultData]) -> ResultsResponse:
         """Constructor from dictionary. See unit test for sample input."""
         assert isinstance(data["execution_id"], str)
-        assert isinstance(data["query_id"], int)
+        query_id = data.get("query_id")
+        assert isinstance(query_id, int) or query_id is None
         assert isinstance(data["state"], str)
         result = data.get("result", {})
         assert isinstance(result, dict)
@@ -321,7 +322,7 @@ class ResultsResponse:
         assert isinstance(next_offset, int) or next_offset is None
         return cls(
             execution_id=data["execution_id"],
-            query_id=int(data["query_id"]),
+            query_id=int(query_id) if query_id is not None else None,
             state=ExecutionState(data["state"]),
             times=TimeData.from_dict(data),
             result=ExecutionResult.from_dict(result) if result else None,

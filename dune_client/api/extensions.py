@@ -326,12 +326,13 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, UsageAPI, CustomEndpointAPI)
         Uses the /sql/execute endpoint introduced in the Dune API.
         https://docs.dune.com/api-reference/executions/endpoint/execute-query
 
-        Note: The `name`, `is_private`, and `archive_after` parameters are kept for
-        backward compatibility but are ignored when using the direct SQL execution endpoint.
+        Note: The `name`, `is_private`, `archive_after`, and `params` parameters are
+        kept for backward compatibility but are ignored when using the direct SQL execution
+        endpoint. The /sql/execute endpoint does not support parameterized queries.
 
         Args:
             query_sql: The SQL query string to execute
-            params: Optional list of query parameters
+            params: (Ignored) Kept for backward compatibility
             is_private: (Ignored) Kept for backward compatibility
             archive_after: (Ignored) Kept for backward compatibility
             performance: Optional performance tier ("medium" or "large")
@@ -346,7 +347,6 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, UsageAPI, CustomEndpointAPI)
         # Execute SQL directly using the new endpoint
         job_id = self.execute_sql(
             query_sql=query_sql,
-            params=params,
             performance=performance,
         ).execution_id
 

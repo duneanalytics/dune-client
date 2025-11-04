@@ -9,7 +9,7 @@ Further Documentation:
 from __future__ import annotations
 
 from io import BytesIO
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from deprecated import deprecated
 
@@ -27,9 +27,6 @@ from dune_client.models import (
     ResultsResponse,
 )
 from dune_client.query import QueryBase  # noqa: TC001
-
-if TYPE_CHECKING:
-    from dune_client.types import QueryParameter
 
 
 class ExecutionAPI(BaseRouter):
@@ -55,27 +52,26 @@ class ExecutionAPI(BaseRouter):
     def execute_sql(
         self,
         query_sql: str,
-        params: list[QueryParameter] | None = None,
         performance: str | None = None,
     ) -> ExecutionResponse:
         """
         Execute arbitrary SQL directly via the API without creating a saved query.
-        https://docs.dune.com/api-reference/executions/endpoint/execute-query
+        https://docs.dune.com/api-reference/executions/endpoint/execute-sql
+
+        Note: This endpoint does not support parameterized queries. If you need
+        parameters, use the regular execute_query() with a saved query.
 
         Args:
             query_sql: The SQL query string to execute
-            params: Optional list of query parameters
             performance: Optional performance tier ("medium" or "large")
 
         Returns:
             ExecutionResponse with execution_id and state
         """
-        payload: dict[str, Any] = {"query_sql": query_sql}
-
-        if params:
-            payload["query_parameters"] = {p.key: p.to_dict()["value"] for p in params}
-
-        payload["performance"] = performance or self.performance
+        payload: dict[str, str] = {
+            "sql": query_sql,
+            "performance": performance or self.performance,
+        }
 
         self.logger.info(f"executing SQL on {performance or self.performance} cluster")
         response_json = self._post(
