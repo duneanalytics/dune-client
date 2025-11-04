@@ -396,3 +396,68 @@ class ClearTableResult(DataClassJsonMixin):
     """
 
     message: str
+
+
+@dataclass
+class UsageResponse:
+    """
+    Representation of Response from Dune's [GET] Usage endpoint
+    https://docs.dune.com/api-reference/usage/endpoint/get-usage
+    """
+
+    credits_used: int
+    overage_credits: int
+    private_query_executions: int
+    storage_bytes: int
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> UsageResponse:
+        """Constructor from dictionary."""
+        return cls(
+            credits_used=int(data.get("credits_used", 0)),
+            overage_credits=int(data.get("overage_credits", 0)),
+            private_query_executions=int(data.get("private_query_executions", 0)),
+            storage_bytes=int(data.get("storage_bytes", 0)),
+        )
+
+
+@dataclass
+class TableInfo:
+    """Information about a single table"""
+
+    namespace: str
+    table_name: str
+    full_name: str
+    created_at: str
+    is_private: bool
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TableInfo:
+        """Constructor from dictionary."""
+        return cls(
+            namespace=data["namespace"],
+            table_name=data["table_name"],
+            full_name=data["full_name"],
+            created_at=data["created_at"],
+            is_private=data["is_private"],
+        )
+
+
+@dataclass
+class ListTablesResponse:
+    """
+    Representation of Response from Dune's [GET] Tables List endpoint
+    https://docs.dune.com/api-reference/tables/endpoint/list
+    """
+
+    tables: list[TableInfo]
+    next_offset: int | None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ListTablesResponse:
+        """Constructor from dictionary."""
+        tables_data = data.get("tables", [])
+        return cls(
+            tables=[TableInfo.from_dict(table) for table in tables_data],
+            next_offset=data.get("next_offset"),
+        )

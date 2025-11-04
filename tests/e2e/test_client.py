@@ -385,6 +385,49 @@ class TestDuneClient(unittest.TestCase):
             }
         ]
 
+    def test_run_sql(self):
+        """Test the run_sql method that uses /sql/execute endpoint"""
+        dune = DuneClient()
+        query_sql = "select 85 as result"
+        results = dune.run_sql(query_sql)
+        assert results.get_rows() == [{"result": 85}]
+        # Note: With the new /sql/execute endpoint, no saved query is created,
+        # so this is purely an execution operation, not a CRUD operation.
+
+    @unittest.skip("Requires Plus subscription and valid data")
+    def test_get_usage(self):
+        """Test the get_usage endpoint"""
+        dune = DuneClient()
+        usage = dune.get_usage("2024-01-01", "2024-01-31")
+        # Verify response structure
+        assert hasattr(usage, "credits_used")
+        assert hasattr(usage, "overage_credits")
+        assert hasattr(usage, "private_query_executions")
+        assert hasattr(usage, "storage_bytes")
+        # All should be integers
+        assert isinstance(usage.credits_used, int)
+        assert isinstance(usage.overage_credits, int)
+        assert isinstance(usage.private_query_executions, int)
+        assert isinstance(usage.storage_bytes, int)
+
+    @unittest.skip("Requires Plus subscription and uploaded tables")
+    def test_list_tables(self):
+        """Test the list_tables endpoint"""
+        dune = DuneClient()
+        tables_response = dune.list_tables(limit=10)
+        # Verify response structure
+        assert hasattr(tables_response, "tables")
+        assert hasattr(tables_response, "next_offset")
+        assert isinstance(tables_response.tables, list)
+        # If there are tables, verify their structure
+        if len(tables_response.tables) > 0:
+            table = tables_response.tables[0]
+            assert hasattr(table, "namespace")
+            assert hasattr(table, "table_name")
+            assert hasattr(table, "full_name")
+            assert hasattr(table, "created_at")
+            assert hasattr(table, "is_private")
+
 
 @unittest.skip("This is an enterprise only endpoint that can no longer be tested.")
 class TestCRUDOps(unittest.TestCase):
@@ -420,17 +463,6 @@ class TestCRUDOps(unittest.TestCase):
     def test_archive(self):
         assert self.client.archive_query(self.existing_query_id)
         assert not self.client.unarchive_query(self.existing_query_id)
-
-    @unittest.skip("Works fine, but creates too many queries!")
-    def test_run_sql(self):
-        query_sql = "select 85"
-        results = self.client.run_sql(query_sql)
-        assert results.get_rows() == [{"_col0": 85}]
-
-        # The default functionality is meant to create a private query and then archive it.
-        query = self.client.get_query(results.query_id)
-        assert query.meta.is_archived
-        assert query.meta.is_private
 
 
 if __name__ == "__main__":

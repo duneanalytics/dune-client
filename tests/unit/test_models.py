@@ -15,9 +15,12 @@ from dune_client.models import (
     ExecutionResultCSV,
     ExecutionState,
     ExecutionStatusResponse,
+    ListTablesResponse,
     ResultMetadata,
     ResultsResponse,
+    TableInfo,
     TimeData,
+    UsageResponse,
 )
 from dune_client.query import DuneQuery, QueryBase, QueryMeta
 from dune_client.types import QueryParameter
@@ -278,6 +281,79 @@ eth_traces,4474223
         result = CreateTableResult.from_dict(response_data)
         # Verify default value is False
         assert not result.already_existed
+
+    def test_usage_response_parsing(self):
+        """Test UsageResponse parsing from API response"""
+        response_data = {
+            "credits_used": 1000,
+            "overage_credits": 50,
+            "private_query_executions": 25,
+            "storage_bytes": 1024000,
+        }
+        result = UsageResponse.from_dict(response_data)
+        assert result.credits_used == 1000
+        assert result.overage_credits == 50
+        assert result.private_query_executions == 25
+        assert result.storage_bytes == 1024000
+
+    def test_usage_response_parsing_with_missing_fields(self):
+        """Test UsageResponse parsing with missing optional fields defaults to 0"""
+        response_data = {}
+        result = UsageResponse.from_dict(response_data)
+        assert result.credits_used == 0
+        assert result.overage_credits == 0
+        assert result.private_query_executions == 0
+        assert result.storage_bytes == 0
+
+    def test_table_info_parsing(self):
+        """Test TableInfo parsing from API response"""
+        response_data = {
+            "namespace": "my_namespace",
+            "table_name": "my_table",
+            "full_name": "dune.my_namespace.my_table",
+            "created_at": "2024-01-15T10:30:00Z",
+            "is_private": True,
+        }
+        result = TableInfo.from_dict(response_data)
+        assert result.namespace == "my_namespace"
+        assert result.table_name == "my_table"
+        assert result.full_name == "dune.my_namespace.my_table"
+        assert result.created_at == "2024-01-15T10:30:00Z"
+        assert result.is_private is True
+
+    def test_list_tables_response_parsing(self):
+        """Test ListTablesResponse parsing from API response"""
+        response_data = {
+            "tables": [
+                {
+                    "namespace": "namespace1",
+                    "table_name": "table1",
+                    "full_name": "dune.namespace1.table1",
+                    "created_at": "2024-01-15T10:30:00Z",
+                    "is_private": False,
+                },
+                {
+                    "namespace": "namespace2",
+                    "table_name": "table2",
+                    "full_name": "dune.namespace2.table2",
+                    "created_at": "2024-01-16T11:30:00Z",
+                    "is_private": True,
+                },
+            ],
+            "next_offset": 100,
+        }
+        result = ListTablesResponse.from_dict(response_data)
+        assert len(result.tables) == 2
+        assert result.tables[0].table_name == "table1"
+        assert result.tables[1].table_name == "table2"
+        assert result.next_offset == 100
+
+    def test_list_tables_response_parsing_empty(self):
+        """Test ListTablesResponse parsing with no tables"""
+        response_data = {"tables": [], "next_offset": None}
+        result = ListTablesResponse.from_dict(response_data)
+        assert len(result.tables) == 0
+        assert result.next_offset is None
 
 
 if __name__ == "__main__":

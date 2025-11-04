@@ -19,6 +19,7 @@ from dune_client.api.custom import CustomEndpointAPI
 from dune_client.api.execution import ExecutionAPI
 from dune_client.api.query import QueryAPI
 from dune_client.api.table import TableAPI
+from dune_client.api.usage import UsageAPI
 from dune_client.models import (
     DuneError,
     ExecutionResultCSV,
@@ -38,7 +39,7 @@ THREE_MONTHS_IN_HOURS = 2191
 POLL_FREQUENCY_SECONDS = 1
 
 
-class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
+class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, UsageAPI, CustomEndpointAPI):
     """
     Provides higher level helper methods for faster
     and easier development on top of the base ExecutionAPI.
@@ -321,20 +322,49 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, CustomEndpointAPI):
         name: str = "API Query",
     ) -> ResultsResponse:
         """
-        Allows user to provide execute raw_sql via the CRUD interface
-        - create, run, get results with optional archive/delete.
-        - Query is by default made private and archived after execution.
+        Execute arbitrary SQL directly via the API and return results.
+        Uses the /sql/execute endpoint introduced in the Dune API.
+        https://docs.dune.com/api-reference/executions/endpoint/execute-query
+
+        Note: The `name`, `is_private`, and `archive_after` parameters are kept for
+        backward compatibility but are ignored when using the direct SQL execution endpoint.
+
+        Args:
+            query_sql: The SQL query string to execute
+            params: Optional list of query parameters
+            is_private: (Ignored) Kept for backward compatibility
+            archive_after: (Ignored) Kept for backward compatibility
+            performance: Optional performance tier ("medium" or "large")
+            ping_frequency: Seconds between status checks while polling
+            name: (Ignored) Kept for backward compatibility
+
+        Returns:
+            ResultsResponse with the query execution results
+
         Requires Plus subscription!
         """
-        query = self.create_query(name, query_sql, params, is_private)
-        try:
-            results = self.run_query(
-                query=query.base, performance=performance, ping_frequency=ping_frequency
-            )
-        finally:
-            if archive_after:
-                self.archive_query(query.base.query_id)
-        return results
+        # Execute SQL directly using the new endpoint
+        job_id = self.execute_sql(
+            query_sql=query_sql,
+            params=params,
+            performance=performance,
+        ).execution_id
+
+        # Poll for completion
+        status = self.get_execution_status(job_id)
+        while status.state not in ExecutionState.terminal_states():
+            self.logger.info(f"waiting for query execution {job_id} to complete: {status}")
+            time.sleep(ping_frequency)
+            status = self.get_execution_status(job_id)
+
+        if status.state == ExecutionState.FAILED:
+            self.logger.error(status)
+            raise QueryFailedError(f"Error data: {status.error}")
+
+        # Fetch and return results
+        return self._fetch_entire_result(
+            self.get_execution_results(job_id)
+        )
 
     ######################
     # Deprecated Functions
