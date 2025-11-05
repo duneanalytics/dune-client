@@ -385,6 +385,106 @@ class TestDuneClient(unittest.TestCase):
             }
         ]
 
+    def test_run_sql(self):
+        """Test the run_sql method that uses /sql/execute endpoint"""
+        dune = DuneClient()
+        query_sql = "select 85 as result"
+        results = dune.run_sql(query_sql)
+        assert results.get_rows() == [{"result": 85}]
+        # Note: With the new /sql/execute endpoint, no saved query is created,
+        # so this is purely an execution operation, not a CRUD operation.
+
+    def test_execution_status_includes_error(self):
+        """Test that execution status includes error details for failed SQL (new API feature)"""
+        dune = DuneClient()
+        # Execute SQL with a syntax error
+        faulty_sql = "SELECDT 1"  # Intentional typo
+        execution_response = dune.execute_sql(faulty_sql)
+        job_id = execution_response.execution_id
+
+        # Poll until terminal state
+        status = dune.get_execution_status(job_id)
+        max_wait = 30  # seconds
+        start = time.time()
+        while status.state not in ExecutionState.terminal_states():
+            if time.time() - start > max_wait:
+                self.fail(f"Query didn't reach terminal state in {max_wait}s")
+            time.sleep(1)
+            status = dune.get_execution_status(job_id)
+
+        # Verify the query failed
+        assert status.state == ExecutionState.FAILED
+
+        # Verify error details are included in the status response (new API feature)
+        assert status.error is not None, "Error should be included in status response"
+        assert status.error.type is not None
+        assert status.error.message is not None
+        # The error message should mention the syntax error
+        assert "selecdt" in status.error.message.lower() or "syntax" in status.error.message.lower()
+
+    def test_get_usage_without_dates(self):
+        """Test the get_usage endpoint without date parameters"""
+        dune = DuneClient()
+
+        # Call without dates (returns all usage data)
+        usage = dune.get_usage()
+        # Verify response structure
+        assert hasattr(usage, "billing_periods")
+        assert hasattr(usage, "bytes_allowed")
+        assert hasattr(usage, "bytes_used")
+        assert hasattr(usage, "private_dashboards")
+        assert hasattr(usage, "private_queries")
+        # Check types
+        assert isinstance(usage.billing_periods, list)
+        assert isinstance(usage.bytes_allowed, int)
+        assert isinstance(usage.bytes_used, int)
+        assert isinstance(usage.private_dashboards, int)
+        assert isinstance(usage.private_queries, int)
+        # If there are billing periods, verify their structure
+        if usage.billing_periods:
+            bp = usage.billing_periods[0]
+            assert hasattr(bp, "credits_included")
+            assert hasattr(bp, "credits_used")
+            assert hasattr(bp, "start_date")
+            assert hasattr(bp, "end_date")
+            # Verify types
+            assert isinstance(bp.credits_included, float)
+            assert isinstance(bp.credits_used, float)
+            assert isinstance(bp.start_date, str)
+            assert isinstance(bp.end_date, str)
+
+    def test_get_usage_with_dates(self):
+        """Test the get_usage endpoint with date parameters"""
+        dune = DuneClient()
+        # Use recent dates - older dates may cause 500 errors
+        usage = dune.get_usage("2025-10-01", "2025-11-04")
+        # Verify response structure
+        assert isinstance(usage.billing_periods, list)
+        assert isinstance(usage.bytes_allowed, int)
+        assert isinstance(usage.bytes_used, int)
+        assert isinstance(usage.private_dashboards, int)
+        assert isinstance(usage.private_queries, int)
+        # Should have at least one billing period for this date range
+        assert len(usage.billing_periods) > 0
+
+    @unittest.skip("Requires Plus subscription and uploaded tables")
+    def test_list_tables(self):
+        """Test the list_tables endpoint"""
+        dune = DuneClient()
+        tables_response = dune.list_tables(limit=10)
+        # Verify response structure
+        assert hasattr(tables_response, "tables")
+        assert hasattr(tables_response, "next_offset")
+        assert isinstance(tables_response.tables, list)
+        # If there are tables, verify their structure
+        if len(tables_response.tables) > 0:
+            table = tables_response.tables[0]
+            assert hasattr(table, "namespace")
+            assert hasattr(table, "table_name")
+            assert hasattr(table, "full_name")
+            assert hasattr(table, "created_at")
+            assert hasattr(table, "is_private")
+
 
 @unittest.skip("This is an enterprise only endpoint that can no longer be tested.")
 class TestCRUDOps(unittest.TestCase):
@@ -420,17 +520,6 @@ class TestCRUDOps(unittest.TestCase):
     def test_archive(self):
         assert self.client.archive_query(self.existing_query_id)
         assert not self.client.unarchive_query(self.existing_query_id)
-
-    @unittest.skip("Works fine, but creates too many queries!")
-    def test_run_sql(self):
-        query_sql = "select 85"
-        results = self.client.run_sql(query_sql)
-        assert results.get_rows() == [{"_col0": 85}]
-
-        # The default functionality is meant to create a private query and then archive it.
-        query = self.client.get_query(results.query_id)
-        assert query.meta.is_archived
-        assert query.meta.is_private
 
 
 if __name__ == "__main__":

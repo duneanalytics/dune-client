@@ -115,23 +115,23 @@ class ExecutionError:
 
     Example:
     {
-        "type":"FAILED_TYPE_EXECUTION_FAILED",
-        "message":"line 24:13: Binary literal can only contain hexadecimal digits",
-        "metadata":{"line":24,"column":13}
+        "type":"syntax_error",
+        "message":"Error: Line 1:1: mismatched input 'selecdt'",
+        "metadata":{"line":10,"column":73}
     }
     """
 
     type: str
     message: str
-    metadata: str
+    metadata: dict[str, Any] | None
 
     @classmethod
-    def from_dict(cls, data: dict[str, str]) -> ExecutionError:
+    def from_dict(cls, data: dict[str, Any]) -> ExecutionError:
         """Constructs an instance from a dict"""
         return cls(
             type=data.get("type", "unknown"),
             message=data.get("message", "unknown"),
-            metadata=data.get("metadata", "unknown"),
+            metadata=data.get("metadata"),
         )
 
 
@@ -139,30 +139,41 @@ class ExecutionError:
 class ExecutionStatusResponse:
     """
     Representation of Response from Dune's [Get] Execution Status endpoint
+    https://docs.dune.com/api-reference/executions/endpoint/get-execution-status
     """
 
     execution_id: str
-    query_id: int
+    query_id: int | None  # None for ad-hoc SQL executions via /sql/execute
     state: ExecutionState
     times: TimeData
     queue_position: int | None
     # this will be present when the query execution completes
     result_metadata: ResultMetadata | None
     error: ExecutionError | None
+    # New fields added to the API
+    is_execution_finished: bool | None = None
+    execution_cost_credits: float | None = None
+    max_inflight_interactive_executions: int | None = None
+    max_inflight_interactive_reached: int | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ExecutionStatusResponse:
         """Constructor from dictionary. See unit test for sample input."""
         dct: MetaData | None = data.get("result_metadata")
-        error: dict[str, str] | None = data.get("error")
+        error: dict[str, Any] | None = data.get("error")
+        query_id = data.get("query_id")
         return cls(
             execution_id=data["execution_id"],
-            query_id=int(data["query_id"]),
+            query_id=int(query_id) if query_id is not None else None,
             queue_position=data.get("queue_position"),
             state=ExecutionState(data["state"]),
             result_metadata=ResultMetadata.from_dict(dct) if dct else None,
             times=TimeData.from_dict(data),  # Sending the entire data dict
             error=ExecutionError.from_dict(error) if error else None,
+            is_execution_finished=data.get("is_execution_finished"),
+            execution_cost_credits=data.get("execution_cost_credits"),
+            max_inflight_interactive_executions=data.get("max_inflight_interactive_executions"),
+            max_inflight_interactive_reached=data.get("max_inflight_interactive_reached"),
         )
 
     def __str__(self) -> str:
@@ -299,7 +310,7 @@ class ResultsResponse:
     """
 
     execution_id: str
-    query_id: int
+    query_id: int | None  # None for ad-hoc SQL executions via /sql/execute
     state: ExecutionState
     times: TimeData
     # optional because it will only be present when the query execution completes
@@ -311,7 +322,8 @@ class ResultsResponse:
     def from_dict(cls, data: dict[str, str | int | ResultData]) -> ResultsResponse:
         """Constructor from dictionary. See unit test for sample input."""
         assert isinstance(data["execution_id"], str)
-        assert isinstance(data["query_id"], int)
+        query_id = data.get("query_id")
+        assert isinstance(query_id, int) or query_id is None
         assert isinstance(data["state"], str)
         result = data.get("result", {})
         assert isinstance(result, dict)
@@ -321,7 +333,7 @@ class ResultsResponse:
         assert isinstance(next_offset, int) or next_offset is None
         return cls(
             execution_id=data["execution_id"],
-            query_id=int(data["query_id"]),
+            query_id=int(query_id) if query_id is not None else None,
             state=ExecutionState(data["state"]),
             times=TimeData.from_dict(data),
             result=ExecutionResult.from_dict(result) if result else None,
@@ -396,3 +408,104 @@ class ClearTableResult(DataClassJsonMixin):
     """
 
     message: str
+
+
+@dataclass
+class BillingPeriod:
+    """Billing period information with credits and dates"""
+
+    credits_included: float
+    credits_used: float
+    start_date: str
+    end_date: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> BillingPeriod:
+        """Constructor from dictionary."""
+        return cls(
+            credits_included=float(data["credits_included"]),
+            credits_used=float(data["credits_used"]),
+            start_date=data["start_date"],
+            end_date=data["end_date"],
+        )
+
+
+@dataclass
+class UsageResponse:
+    """
+    Representation of Response from Dune's [POST] Usage endpoint
+    https://docs.dune.com/api-reference/usage/endpoint/get-usage
+    """
+
+    billing_periods: list[BillingPeriod]
+    bytes_allowed: int
+    bytes_used: int
+    private_dashboards: int
+    private_queries: int
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> UsageResponse:
+        """Constructor from dictionary."""
+        billing_periods_data = data.get("billing_periods", [])
+        return cls(
+            billing_periods=[BillingPeriod.from_dict(bp) for bp in billing_periods_data],
+            bytes_allowed=int(data.get("bytes_allowed", 0)),
+            bytes_used=int(data.get("bytes_used", 0)),
+            private_dashboards=int(data.get("private_dashboards", 0)),
+            private_queries=int(data.get("private_queries", 0)),
+        )
+
+
+@dataclass
+class TableInfo:
+    """Information about a single table"""
+
+    full_name: str
+    is_private: bool
+    created_at: str
+    # Optional fields that may be present
+    table_size_bytes: str | None = None
+    updated_at: str | None = None
+
+    @property
+    def namespace(self) -> str:
+        """Extract namespace from full_name (e.g., 'dune.namespace.table' -> 'namespace')"""
+        parts = self.full_name.split(".")
+        return parts[1] if len(parts) >= 3 else ""
+
+    @property
+    def table_name(self) -> str:
+        """Extract table name from full_name (e.g., 'dune.namespace.table' -> 'table')"""
+        parts = self.full_name.split(".")
+        return parts[2] if len(parts) >= 3 else ""
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TableInfo:
+        """Constructor from dictionary."""
+        return cls(
+            full_name=data["full_name"],
+            is_private=data["is_private"],
+            created_at=data["created_at"],
+            table_size_bytes=data.get("table_size_bytes"),
+            updated_at=data.get("updated_at"),
+        )
+
+
+@dataclass
+class ListTablesResponse:
+    """
+    Representation of Response from Dune's [GET] Tables List endpoint
+    https://docs.dune.com/api-reference/tables/endpoint/list
+    """
+
+    tables: list[TableInfo]
+    next_offset: int | None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ListTablesResponse:
+        """Constructor from dictionary."""
+        tables_data = data.get("tables", [])
+        return cls(
+            tables=[TableInfo.from_dict(table) for table in tables_data],
+            next_offset=data.get("next_offset"),
+        )

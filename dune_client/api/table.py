@@ -14,6 +14,7 @@ from dune_client.models import (
     DeleteTableResult,
     DuneError,
     InsertTableResult,
+    ListTablesResponse,
 )
 
 
@@ -137,3 +138,34 @@ class TableAPI(BaseRouter):
             return DeleteTableResult.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "DeleteTableResult", err) from err
+
+    def list_tables(
+        self,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> ListTablesResponse:
+        """
+        https://docs.dune.com/api-reference/tables/endpoint/list
+        Get a paginated list of tables uploaded to Dune.
+
+        Args:
+            limit: Maximum number of tables to return (optional)
+            offset: Offset for pagination (optional)
+
+        Returns:
+            ListTablesResponse containing list of tables and pagination info
+        """
+        params = {}
+        if limit is not None:
+            params["limit"] = limit
+        if offset is not None:
+            params["offset"] = offset
+
+        response_json = self._get(
+            route="/tables",
+            params=params if params else None,
+        )
+        try:
+            return ListTablesResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "ListTablesResponse", err) from err

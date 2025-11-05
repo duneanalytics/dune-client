@@ -10,14 +10,18 @@ from dateutil.tz import tzutc
 from dune_client.models import (
     CreateTableResult,
     DuneError,
+    ExecutionError,
     ExecutionResponse,
     ExecutionResult,
     ExecutionResultCSV,
     ExecutionState,
     ExecutionStatusResponse,
+    ListTablesResponse,
     ResultMetadata,
     ResultsResponse,
+    TableInfo,
     TimeData,
+    UsageResponse,
 )
 from dune_client.query import DuneQuery, QueryBase, QueryMeta
 from dune_client.types import QueryParameter
@@ -160,6 +164,31 @@ eth_traces,4474223
             error=None,
         ) == ExecutionStatusResponse.from_dict(self.status_response_data_completed)
 
+    def test_parse_status_response_with_error(self):
+        """Test that errors are properly included in status response (new API feature)"""
+        status_response_with_error = {
+            "execution_id": "01GBM4W2N0NMCGPZYW8AYK4YF1",
+            "query_id": 980708,
+            "state": "QUERY_STATE_FAILED",
+            "submitted_at": self.submission_time_str,
+            "execution_started_at": self.execution_start_str,
+            "execution_ended_at": self.execution_end_str,
+            "error": {
+                "type": "FAILED_TYPE_EXECUTION_FAILED",
+                "message": "line 24:13: Binary literal can only contain hexadecimal digits",
+                "metadata": {"line": 24, "column": 13},
+            },
+        }
+        result = ExecutionStatusResponse.from_dict(status_response_with_error)
+        assert result.state == ExecutionState.FAILED
+        assert result.error is not None
+        assert isinstance(result.error, ExecutionError)
+        assert result.error.type == "FAILED_TYPE_EXECUTION_FAILED"
+        assert (
+            result.error.message == "line 24:13: Binary literal can only contain hexadecimal digits"
+        )
+        assert result.error.metadata == {"line": 24, "column": 13}
+
     def test_parse_result_metadata(self):
         expected = ResultMetadata(
             column_names=["ct", "TableName"],
@@ -278,6 +307,101 @@ eth_traces,4474223
         result = CreateTableResult.from_dict(response_data)
         # Verify default value is False
         assert not result.already_existed
+
+    def test_usage_response_parsing(self):
+        """Test UsageResponse parsing from API response"""
+        response_data = {
+            "billing_periods": [
+                {
+                    "credits_included": 100.0,
+                    "credits_used": 50.5,
+                    "start_date": "2025-01-01",
+                    "end_date": "2025-02-01",
+                },
+                {
+                    "credits_included": 100.0,
+                    "credits_used": 75.25,
+                    "start_date": "2025-02-01",
+                    "end_date": "2025-03-01",
+                },
+            ],
+            "bytes_allowed": 1024000,
+            "bytes_used": 512000,
+            "private_dashboards": 5,
+            "private_queries": 10,
+        }
+        result = UsageResponse.from_dict(response_data)
+        assert len(result.billing_periods) == 2
+        assert result.billing_periods[0].credits_included == 100.0
+        assert result.billing_periods[0].credits_used == 50.5
+        assert result.billing_periods[0].start_date == "2025-01-01"
+        assert result.billing_periods[1].credits_used == 75.25
+        assert result.bytes_allowed == 1024000
+        assert result.bytes_used == 512000
+        assert result.private_dashboards == 5
+        assert result.private_queries == 10
+
+    def test_usage_response_parsing_with_missing_fields(self):
+        """Test UsageResponse parsing with missing optional fields defaults to 0"""
+        response_data = {}
+        result = UsageResponse.from_dict(response_data)
+        assert len(result.billing_periods) == 0
+        assert result.bytes_allowed == 0
+        assert result.bytes_used == 0
+        assert result.private_dashboards == 0
+        assert result.private_queries == 0
+
+    def test_table_info_parsing(self):
+        """Test TableInfo parsing from API response"""
+        response_data = {
+            "full_name": "dune.my_namespace.my_table",
+            "created_at": "2024-01-15T10:30:00Z",
+            "is_private": True,
+            "table_size_bytes": "1024",
+            "updated_at": "2024-01-16T10:30:00Z",
+        }
+        result = TableInfo.from_dict(response_data)
+        assert result.full_name == "dune.my_namespace.my_table"
+        assert result.namespace == "my_namespace"
+        assert result.table_name == "my_table"
+        assert result.created_at == "2024-01-15T10:30:00Z"
+        assert result.is_private is True
+        assert result.table_size_bytes == "1024"
+        assert result.updated_at == "2024-01-16T10:30:00Z"
+
+    def test_list_tables_response_parsing(self):
+        """Test ListTablesResponse parsing from API response"""
+        response_data = {
+            "tables": [
+                {
+                    "full_name": "dune.namespace1.table1",
+                    "created_at": "2024-01-15T10:30:00Z",
+                    "is_private": False,
+                },
+                {
+                    "full_name": "dune.namespace2.table2",
+                    "created_at": "2024-01-16T11:30:00Z",
+                    "is_private": True,
+                },
+            ],
+            "next_offset": 100,
+        }
+        result = ListTablesResponse.from_dict(response_data)
+        assert len(result.tables) == 2
+        assert result.tables[0].full_name == "dune.namespace1.table1"
+        assert result.tables[0].namespace == "namespace1"
+        assert result.tables[0].table_name == "table1"
+        assert result.tables[1].full_name == "dune.namespace2.table2"
+        assert result.tables[1].namespace == "namespace2"
+        assert result.tables[1].table_name == "table2"
+        assert result.next_offset == 100
+
+    def test_list_tables_response_parsing_empty(self):
+        """Test ListTablesResponse parsing with no tables"""
+        response_data = {"tables": [], "next_offset": None}
+        result = ListTablesResponse.from_dict(response_data)
+        assert len(result.tables) == 0
+        assert result.next_offset is None
 
 
 if __name__ == "__main__":
