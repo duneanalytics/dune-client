@@ -454,5 +454,3 @@ class UsageResponse:
             private_dashboards=int(data.get("private_dashboards", 0)),
             private_queries=int(data.get("private_queries", 0)),
         )
-
-
