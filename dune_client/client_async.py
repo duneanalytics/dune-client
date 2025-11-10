@@ -681,7 +681,9 @@ class AsyncDuneClient(BaseDuneClient):
             if status.state in terminal_states:
                 if status.state == ExecutionState.FAILED:
                     self.logger.error(status)
-                    raise QueryFailedError(f"Error data: {status.error}")
+                    if status.error:
+                        raise QueryFailedError(status.error.message)
+                    raise QueryFailedError("Query execution failed")
                 return job_id
 
             self.logger.info(f"waiting for query execution {job_id} to complete: {status}")
