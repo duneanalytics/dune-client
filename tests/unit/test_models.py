@@ -16,10 +16,8 @@ from dune_client.models import (
     ExecutionResultCSV,
     ExecutionState,
     ExecutionStatusResponse,
-    ListTablesResponse,
     ResultMetadata,
     ResultsResponse,
-    TableInfo,
     TimeData,
     UsageResponse,
 )
@@ -350,58 +348,6 @@ eth_traces,4474223
         assert result.bytes_used == 0
         assert result.private_dashboards == 0
         assert result.private_queries == 0
-
-    def test_table_info_parsing(self):
-        """Test TableInfo parsing from API response"""
-        response_data = {
-            "full_name": "dune.my_namespace.my_table",
-            "created_at": "2024-01-15T10:30:00Z",
-            "is_private": True,
-            "table_size_bytes": "1024",
-            "updated_at": "2024-01-16T10:30:00Z",
-        }
-        result = TableInfo.from_dict(response_data)
-        assert result.full_name == "dune.my_namespace.my_table"
-        assert result.namespace == "my_namespace"
-        assert result.table_name == "my_table"
-        assert result.created_at == "2024-01-15T10:30:00Z"
-        assert result.is_private is True
-        assert result.table_size_bytes == "1024"
-        assert result.updated_at == "2024-01-16T10:30:00Z"
-
-    def test_list_tables_response_parsing(self):
-        """Test ListTablesResponse parsing from API response"""
-        response_data = {
-            "tables": [
-                {
-                    "full_name": "dune.namespace1.table1",
-                    "created_at": "2024-01-15T10:30:00Z",
-                    "is_private": False,
-                },
-                {
-                    "full_name": "dune.namespace2.table2",
-                    "created_at": "2024-01-16T11:30:00Z",
-                    "is_private": True,
-                },
-            ],
-            "next_offset": 100,
-        }
-        result = ListTablesResponse.from_dict(response_data)
-        assert len(result.tables) == 2
-        assert result.tables[0].full_name == "dune.namespace1.table1"
-        assert result.tables[0].namespace == "namespace1"
-        assert result.tables[0].table_name == "table1"
-        assert result.tables[1].full_name == "dune.namespace2.table2"
-        assert result.tables[1].namespace == "namespace2"
-        assert result.tables[1].table_name == "table2"
-        assert result.next_offset == 100
-
-    def test_list_tables_response_parsing_empty(self):
-        """Test ListTablesResponse parsing with no tables"""
-        response_data = {"tables": [], "next_offset": None}
-        result = ListTablesResponse.from_dict(response_data)
-        assert len(result.tables) == 0
-        assert result.next_offset is None
 
 
 if __name__ == "__main__":

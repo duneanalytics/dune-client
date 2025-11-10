@@ -359,7 +359,9 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, UsageAPI, CustomEndpointAPI)
 
         if status.state == ExecutionState.FAILED:
             self.logger.error(status)
-            raise QueryFailedError(f"Error data: {status.error}")
+            if status.error:
+                raise QueryFailedError(status.error.message)
+            raise QueryFailedError("Query execution failed")
 
         # Fetch and return results
         return self._fetch_entire_result(self.get_execution_results(job_id))
@@ -434,7 +436,9 @@ class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, UsageAPI, CustomEndpointAPI)
             self.logger.warning("Partial result set retrieved.")
         if status.state == ExecutionState.FAILED:
             self.logger.error(status)
-            raise QueryFailedError(f"Error data: {status.error}")
+            if status.error:
+                raise QueryFailedError(status.error.message)
+            raise QueryFailedError("Query execution failed")
         return job_id
 
     def _fetch_entire_result(

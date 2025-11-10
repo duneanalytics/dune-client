@@ -213,7 +213,7 @@ class TestTerminalStateHandling(aiounittest.AsyncTestCase):
         with pytest.raises(QueryFailedError) as exc_info:
             await client._refresh(query)
 
-        assert "Error data:" in str(exc_info.value)
+        assert "Query syntax error" in str(exc_info.value)
 
     async def test_completed_state_returns_job_id(self):
         """Test that COMPLETED state returns job_id successfully"""

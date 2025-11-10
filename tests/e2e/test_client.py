@@ -467,24 +467,6 @@ class TestDuneClient(unittest.TestCase):
         # Should have at least one billing period for this date range
         assert len(usage.billing_periods) > 0
 
-    @unittest.skip("Requires Plus subscription and uploaded tables")
-    def test_list_tables(self):
-        """Test the list_tables endpoint"""
-        dune = DuneClient()
-        tables_response = dune.list_tables(limit=10)
-        # Verify response structure
-        assert hasattr(tables_response, "tables")
-        assert hasattr(tables_response, "next_offset")
-        assert isinstance(tables_response.tables, list)
-        # If there are tables, verify their structure
-        if len(tables_response.tables) > 0:
-            table = tables_response.tables[0]
-            assert hasattr(table, "namespace")
-            assert hasattr(table, "table_name")
-            assert hasattr(table, "full_name")
-            assert hasattr(table, "created_at")
-            assert hasattr(table, "is_private")
-
 
 @unittest.skip("This is an enterprise only endpoint that can no longer be tested.")
 class TestCRUDOps(unittest.TestCase):
