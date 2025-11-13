@@ -476,7 +476,7 @@ class PipelineQueryExecutionStatus:
 
     status: str
     query_id: int
-    execution_id: str
+    execution_id: str | None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PipelineQueryExecutionStatus:
@@ -484,7 +484,7 @@ class PipelineQueryExecutionStatus:
         return cls(
             status=data["status"],
             query_id=int(data["query_id"]),
-            execution_id=data["execution_id"],
+            execution_id=data.get("execution_id"),
         )
 
 
