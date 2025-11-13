@@ -39,6 +39,7 @@ from dune_client.models import (
     ExecutionState,
     ExecutionStatusResponse,
     PipelineExecutionResponse,
+    PipelineStatusResponse,
     QueryFailedError,
     ResultsResponse,
 )
@@ -232,6 +233,18 @@ class AsyncDuneClient(BaseDuneClient):
             return PipelineExecutionResponse.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "PipelineExecutionResponse", err) from err
+
+    async def get_pipeline_status(
+        self, pipeline_execution_id: str
+    ) -> PipelineStatusResponse:
+        """GET pipeline execution status"""
+        response_json = await self._get(
+            route=f"/pipelines/executions/{pipeline_execution_id}/status"
+        )
+        try:
+            return PipelineStatusResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "PipelineStatusResponse", err) from err
 
     async def get_execution_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""

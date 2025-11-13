@@ -468,3 +468,59 @@ class UsageResponse:
             private_dashboards=int(data.get("private_dashboards", 0)),
             private_queries=int(data.get("private_queries", 0)),
         )
+
+
+@dataclass
+class PipelineQueryExecutionStatus:
+    """Query execution status within a pipeline node"""
+
+    status: str
+    query_id: int
+    execution_id: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PipelineQueryExecutionStatus:
+        """Constructor from dictionary."""
+        return cls(
+            status=data["status"],
+            query_id=int(data["query_id"]),
+            execution_id=data["execution_id"],
+        )
+
+
+@dataclass
+class PipelineNodeExecution:
+    """Pipeline node execution information"""
+
+    id: int
+    query_execution_status: PipelineQueryExecutionStatus
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PipelineNodeExecution:
+        """Constructor from dictionary."""
+        return cls(
+            id=int(data["id"]),
+            query_execution_status=PipelineQueryExecutionStatus.from_dict(
+                data["query_execution_status"]
+            ),
+        )
+
+
+@dataclass
+class PipelineStatusResponse:
+    """
+    Representation of Response from Dune's [Get] Pipeline Status endpoint
+    """
+
+    status: str
+    node_executions: list[PipelineNodeExecution]
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PipelineStatusResponse:
+        """Constructor from dictionary."""
+        return cls(
+            status=data["status"],
+            node_executions=[
+                PipelineNodeExecution.from_dict(ne) for ne in data["node_executions"]
+            ],
+        )
