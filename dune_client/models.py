@@ -520,7 +520,5 @@ class PipelineStatusResponse:
         """Constructor from dictionary."""
         return cls(
             status=data["status"],
-            node_executions=[
-                PipelineNodeExecution.from_dict(ne) for ne in data["node_executions"]
-            ],
+            node_executions=[PipelineNodeExecution.from_dict(ne) for ne in data["node_executions"]],
         )

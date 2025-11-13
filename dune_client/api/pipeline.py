@@ -15,11 +15,8 @@ class PipelineAPI(BaseRouter):
 
     def get_pipeline_status(self, pipeline_execution_id: str) -> PipelineStatusResponse:
         """GET pipeline execution status"""
-        response_json = self._get(
-            route=f"/pipelines/executions/{pipeline_execution_id}/status"
-        )
+        response_json = self._get(route=f"/pipelines/executions/{pipeline_execution_id}/status")
         try:
             return PipelineStatusResponse.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "PipelineStatusResponse", err) from err
-

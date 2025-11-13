@@ -234,9 +234,7 @@ class AsyncDuneClient(BaseDuneClient):
         except KeyError as err:
             raise DuneError(response_json, "PipelineExecutionResponse", err) from err
 
-    async def get_pipeline_status(
-        self, pipeline_execution_id: str
-    ) -> PipelineStatusResponse:
+    async def get_pipeline_status(self, pipeline_execution_id: str) -> PipelineStatusResponse:
         """GET pipeline execution status"""
         response_json = await self._get(
             route=f"/pipelines/executions/{pipeline_execution_id}/status"
