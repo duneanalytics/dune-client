@@ -38,6 +38,7 @@ from dune_client.models import (
     ExecutionResultCSV,
     ExecutionState,
     ExecutionStatusResponse,
+    PipelineExecutionResponse,
     QueryFailedError,
     ResultsResponse,
 )
@@ -213,6 +214,24 @@ class AsyncDuneClient(BaseDuneClient):
             return ExecutionResponse.from_dict(response_json)
         except KeyError as err:
             raise DuneError(response_json, "ExecutionResponse", err) from err
+
+    async def execute_query_pipeline(
+        self, query_id: int, performance: str | None = None
+    ) -> PipelineExecutionResponse:
+        """Post's to Dune API for execute query pipeline"""
+        params: dict[str, str] = {}
+        if performance is not None:
+            params["performance"] = performance
+
+        self.logger.info(f"executing pipeline for query {query_id}")
+        response_json = await self._post(
+            route=f"/query/{query_id}/pipeline/execute",
+            params=params,
+        )
+        try:
+            return PipelineExecutionResponse.from_dict(response_json)
+        except KeyError as err:
+            raise DuneError(response_json, "PipelineExecutionResponse", err) from err
 
     async def get_execution_status(self, job_id: str) -> ExecutionStatusResponse:
         """GET status from Dune API for `job_id` (aka `execution_id`)"""

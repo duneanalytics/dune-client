@@ -81,6 +81,20 @@ class ExecutionResponse:
 
 
 @dataclass
+class PipelineExecutionResponse:
+    """
+    Representation of Response from Dune's [Post] Execute Query Pipeline endpoint
+    """
+
+    pipeline_execution_id: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, str]) -> PipelineExecutionResponse:
+        """Constructor from dictionary."""
+        return cls(pipeline_execution_id=data["pipeline_execution_id"])
+
+
+@dataclass
 class TimeData:
     """A collection of all timestamp related values contained within Dune Response"""
 
