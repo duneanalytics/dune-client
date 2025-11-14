@@ -42,7 +42,7 @@ class UploadsAPI(BaseRouter):
             UploadListResponse with list of tables and pagination info
         """
         response_json = self._get(
-            route="/v1/uploads",
+            route="/uploads",
             params={
                 "limit": limit,
                 "offset": offset,
@@ -78,7 +78,7 @@ class UploadsAPI(BaseRouter):
             UploadCreateResponse with table details
         """
         result_json = self._post(
-            route="/v1/uploads",
+            route="/uploads",
             params={
                 "namespace": namespace,
                 "table_name": table_name,
@@ -117,7 +117,7 @@ class UploadsAPI(BaseRouter):
             CSVUploadResponse with the created table name
         """
         response_json = self._post(
-            route="/v1/uploads/csv",
+            route="/uploads/csv",
             params={
                 "table_name": table_name,
                 "data": data,
@@ -155,7 +155,7 @@ class UploadsAPI(BaseRouter):
             InsertDataResponse with rows/bytes written
         """
         result_json = self._post(
-            route=f"/v1/uploads/{namespace}/{table_name}/insert",
+            route=f"/uploads/{namespace}/{table_name}/insert",
             headers={"Content-Type": content_type},
             data=data,
         )
@@ -180,7 +180,7 @@ class UploadsAPI(BaseRouter):
         Returns:
             ClearTableResponse with confirmation message
         """
-        result_json = self._post(route=f"/v1/uploads/{namespace}/{table_name}/clear")
+        result_json = self._post(route=f"/uploads/{namespace}/{table_name}/clear")
         try:
             return ClearTableResponse.from_dict(result_json)
         except KeyError as err:
@@ -202,7 +202,7 @@ class UploadsAPI(BaseRouter):
         Returns:
             DeleteTableResponse with confirmation message
         """
-        response_json = self._delete(route=f"/v1/uploads/{namespace}/{table_name}")
+        response_json = self._delete(route=f"/uploads/{namespace}/{table_name}")
         try:
             return DeleteTableResponse.from_dict(response_json)
         except KeyError as err:

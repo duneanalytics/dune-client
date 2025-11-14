@@ -541,8 +541,8 @@ class DatasetType(Enum):
 class DatasetOwner(DataClassJsonMixin):
     """Owner information for a dataset"""
 
-    id: int
     handle: str
+    type: str
 
 
 @dataclass
@@ -551,17 +551,18 @@ class DatasetColumn(DataClassJsonMixin):
 
     name: str
     type: str
+    nullable: bool
 
 
 @dataclass
 class Dataset(DataClassJsonMixin):
     """Dataset information returned by list datasets endpoint"""
 
-    slug: str
-    name: str
+    full_name: str
     type: str
     owner: DatasetOwner
-    namespace: str
+    columns: list[DatasetColumn]
+    metadata: dict[str, str]
     created_at: str
     updated_at: str
     is_private: bool
@@ -577,15 +578,13 @@ class DatasetListResponse(DataClassJsonMixin):
 
 @dataclass
 class DatasetResponse(DataClassJsonMixin):
-    """Response from GET /v1/datasets/{slug}"""
+    """Response from GET /v1/datasets/{full_name}"""
 
-    slug: str
-    name: str
+    full_name: str
     type: str
     owner: DatasetOwner
-    namespace: str
     columns: list[DatasetColumn]
-    description: str | None
+    metadata: dict[str, str]
     created_at: str
     updated_at: str
     is_private: bool
@@ -595,8 +594,8 @@ class DatasetResponse(DataClassJsonMixin):
 class TableOwner(DataClassJsonMixin):
     """Owner information for an uploaded table"""
 
-    id: int
     handle: str
+    type: str
 
 
 @dataclass
@@ -605,24 +604,20 @@ class TableColumn(DataClassJsonMixin):
 
     name: str
     type: str
+    nullable: bool
 
 
 @dataclass
 class TableElement(DataClassJsonMixin):
     """Individual table metadata in list response"""
 
-    namespace: str
-    table_name: str
     full_name: str
-    example_query: str
-    description: str | None
     is_private: bool
-    columns: list[TableColumn]
-    size_bytes: int
-    row_count: int
-    owner: TableOwner
+    table_size_bytes: str
     created_at: str
     updated_at: str
+    owner: TableOwner
+    columns: list[TableColumn]
 
 
 @dataclass
@@ -677,7 +672,7 @@ class InsertDataResponse(DataClassJsonMixin):
 
     rows_written: int
     bytes_written: int
-    table_name: str
+    name: str
 
 
 @dataclass

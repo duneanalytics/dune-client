@@ -1,3 +1,4 @@
+import os
 import unittest
 from io import BytesIO
 
@@ -23,12 +24,12 @@ class TestUploadsIntegration(unittest.TestCase):
 
     def setUp(self) -> None:
         self.dune = DuneClient()
-        self.test_namespace = "test"
+        self.test_namespace = os.getenv("DUNE_NAMESPACE", "test")
         self.test_table_name = f"test_uploads_api_{int(__import__('time').time())}"
 
     def test_create_and_delete_table(self):
         schema = [
-            {"name": "id", "type": "int"},
+            {"name": "id", "type": "integer"},
             {"name": "name", "type": "varchar"},
             {"name": "value", "type": "double"},
         ]
@@ -70,7 +71,7 @@ class TestUploadsIntegration(unittest.TestCase):
 
         delete_result = self.dune.delete_table(
             namespace=self.test_namespace,
-            table_name=self.test_table_name,
+            table_name=f"dataset_{self.test_table_name}",
         )
         self.assertIsInstance(delete_result, DeleteTableResponse)
 
@@ -82,7 +83,7 @@ class TestUploadsIntegration(unittest.TestCase):
 
     def test_full_table_lifecycle(self):
         schema = [
-            {"name": "id", "type": "int"},
+            {"name": "id", "type": "integer"},
             {"name": "message", "type": "varchar"},
         ]
 

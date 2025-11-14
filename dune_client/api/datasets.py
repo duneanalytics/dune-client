@@ -45,7 +45,7 @@ class DatasetsAPI(BaseRouter):
             params["type"] = type
 
         response_json = self._get(
-            route="/v1/datasets",
+            route="/datasets",
             params=params,
         )
         try:
@@ -53,18 +53,18 @@ class DatasetsAPI(BaseRouter):
         except KeyError as err:
             raise DuneError(response_json, "DatasetListResponse", err) from err
 
-    def get_dataset(self, slug: str) -> DatasetResponse:
+    def get_dataset(self, full_name: str) -> DatasetResponse:
         """
         https://docs.dune.com/api-reference/datasets/endpoint/get
         Retrieve detailed information about a specific dataset.
 
         Args:
-            slug: The dataset slug (e.g., 'dex.trades')
+            full_name: The dataset full name (e.g., 'dune.shozaib_khan.aarna')
 
         Returns:
             DatasetResponse with full dataset details including columns and metadata
         """
-        response_json = self._get(route=f"/v1/datasets/{slug}")
+        response_json = self._get(route=f"/datasets/{full_name}")
         try:
             return DatasetResponse.from_dict(response_json)
         except KeyError as err:
