@@ -24,21 +24,16 @@ class TestUploadsAPI(unittest.TestCase):
         mock_response = {
             "tables": [
                 {
-                    "namespace": "test_namespace",
-                    "table_name": "test_table",
-                    "full_name": "test_namespace.test_table",
-                    "example_query": "SELECT * FROM test_namespace.test_table",
-                    "description": "Test table",
+                    "full_name": "dune.test_namespace.test_table",
                     "is_private": False,
-                    "columns": [
-                        {"name": "col1", "type": "varchar"},
-                        {"name": "col2", "type": "int"},
-                    ],
-                    "size_bytes": 1024,
-                    "row_count": 100,
-                    "owner": {"id": 1, "handle": "test_user"},
+                    "table_size_bytes": "1024",
                     "created_at": "2024-01-01T00:00:00Z",
                     "updated_at": "2024-01-02T00:00:00Z",
+                    "owner": {"handle": "test_user", "type": "user"},
+                    "columns": [
+                        {"name": "col1", "type": "varchar", "nullable": False},
+                        {"name": "col2", "type": "integer", "nullable": False},
+                    ],
                 }
             ],
             "next_offset": 50,
@@ -48,12 +43,12 @@ class TestUploadsAPI(unittest.TestCase):
         result = self.api.list_uploads(limit=50, offset=0)
 
         self.api._get.assert_called_once_with(
-            route="/v1/uploads",
+            route="/uploads",
             params={"limit": 50, "offset": 0},
         )
         self.assertIsInstance(result, UploadListResponse)
         self.assertEqual(len(result.tables), 1)
-        self.assertEqual(result.tables[0].table_name, "test_table")
+        self.assertEqual(result.tables[0].full_name, "dune.test_namespace.test_table")
         self.assertEqual(result.next_offset, 50)
 
     def test_create_table(self):
@@ -75,7 +70,7 @@ class TestUploadsAPI(unittest.TestCase):
         )
 
         self.api._post.assert_called_once_with(
-            route="/v1/uploads",
+            route="/uploads",
             params={
                 "namespace": "test_namespace",
                 "table_name": "test_table",
@@ -103,7 +98,7 @@ class TestUploadsAPI(unittest.TestCase):
         )
 
         self.api._post.assert_called_once_with(
-            route="/v1/uploads/csv",
+            route="/uploads/csv",
             params={
                 "table_name": "test_table",
                 "data": csv_data,
@@ -118,7 +113,7 @@ class TestUploadsAPI(unittest.TestCase):
         mock_response = {
             "rows_written": 100,
             "bytes_written": 2048,
-            "table_name": "test_table",
+            "name": "dune.test_namespace.test_table",
         }
         self.api._post.return_value = mock_response
 
@@ -131,14 +126,14 @@ class TestUploadsAPI(unittest.TestCase):
         )
 
         self.api._post.assert_called_once_with(
-            route="/v1/uploads/test_namespace/test_table/insert",
+            route="/uploads/test_namespace/test_table/insert",
             headers={"Content-Type": "text/csv"},
             data=data,
         )
         self.assertIsInstance(result, InsertDataResponse)
         self.assertEqual(result.rows_written, 100)
         self.assertEqual(result.bytes_written, 2048)
-        self.assertEqual(result.table_name, "test_table")
+        self.assertEqual(result.name, "dune.test_namespace.test_table")
 
     def test_clear_table(self):
         mock_response = {
@@ -151,7 +146,7 @@ class TestUploadsAPI(unittest.TestCase):
             table_name="test_table",
         )
 
-        self.api._post.assert_called_once_with(route="/v1/uploads/test_namespace/test_table/clear")
+        self.api._post.assert_called_once_with(route="/uploads/test_namespace/test_table/clear")
         self.assertIsInstance(result, ClearTableResponse)
         self.assertEqual(result.message, "Table cleared successfully")
 
@@ -166,7 +161,7 @@ class TestUploadsAPI(unittest.TestCase):
             table_name="test_table",
         )
 
-        self.api._delete.assert_called_once_with(route="/v1/uploads/test_namespace/test_table")
+        self.api._delete.assert_called_once_with(route="/uploads/test_namespace/test_table")
         self.assertIsInstance(result, DeleteTableResponse)
         self.assertEqual(result.message, "Table deleted successfully")
 
