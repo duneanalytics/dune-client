@@ -625,7 +625,7 @@ class UploadListResponse(DataClassJsonMixin):
     """Response from GET /v1/uploads"""
 
     tables: list[TableElement]
-    next_offset: int | None
+    next_offset: int | None = None
 
 
 @dataclass
