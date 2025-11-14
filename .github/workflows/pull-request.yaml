@@ -45,5 +45,5 @@ jobs:
       - name: Run E2E tests (Python 3.13)
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
+          DUNE_API_KEY_OWNER_HANDLE: ${{ secrets.DUNE_API_KEY_OWNER_HANDLE }}
         run: uv run --python 3.13 --dev python -m pytest tests/e2e -v
-

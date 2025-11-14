@@ -20,9 +20,7 @@ class TestDatasetsAPI(unittest.TestCase):
                     "full_name": "dune.dex.trades",
                     "type": "transformation_view",
                     "owner": {"handle": "dune", "type": "team"},
-                    "columns": [
-                        {"name": "block_time", "type": "timestamp", "nullable": False}
-                    ],
+                    "columns": [{"name": "block_time", "type": "timestamp", "nullable": False}],
                     "metadata": {},
                     "created_at": "2024-01-01T00:00:00Z",
                     "updated_at": "2024-01-02T00:00:00Z",
@@ -108,7 +106,9 @@ class TestDatasetsAPI(unittest.TestCase):
         self.assertEqual(len(result.columns), 4)
         self.assertEqual(result.columns[0].name, "block_time")
         self.assertEqual(result.columns[0].type, "timestamp")
-        self.assertEqual(result.metadata.get("description"), "All DEX trades across multiple chains")
+        self.assertEqual(
+            result.metadata.get("description"), "All DEX trades across multiple chains"
+        )
 
     def test_get_dataset_no_description(self):
         mock_response = {

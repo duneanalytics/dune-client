@@ -24,7 +24,7 @@ class TestUploadsIntegration(unittest.TestCase):
 
     def setUp(self) -> None:
         self.dune = DuneClient()
-        self.test_namespace = os.getenv("DUNE_NAMESPACE", "test")
+        self.test_namespace = os.getenv("DUNE_API_KEY_OWNER_HANDLE", "test")
         self.test_table_name = f"test_uploads_api_{int(__import__('time').time())}"
 
     def test_create_and_delete_table(self):
