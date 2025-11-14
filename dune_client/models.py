@@ -522,3 +522,168 @@ class PipelineStatusResponse:
             status=data["status"],
             node_executions=[PipelineNodeExecution.from_dict(ne) for ne in data["node_executions"]],
         )
+
+
+class DatasetType(Enum):
+    """
+    Enum for possible dataset types
+    """
+
+    TRANSFORMATION_VIEW = "transformation_view"
+    TRANSFORMATION_TABLE = "transformation_table"
+    UPLOADED_TABLE = "uploaded_table"
+    DECODED_TABLE = "decoded_table"
+    SPELL = "spell"
+    DUNE_TABLE = "dune_table"
+
+
+@dataclass
+class DatasetOwner(DataClassJsonMixin):
+    """Owner information for a dataset"""
+
+    handle: str
+    type: str
+
+
+@dataclass
+class DatasetColumn(DataClassJsonMixin):
+    """Column information for a dataset"""
+
+    name: str
+    type: str
+    nullable: bool
+
+
+@dataclass
+class Dataset(DataClassJsonMixin):
+    """Dataset information returned by list datasets endpoint"""
+
+    full_name: str
+    type: str
+    owner: DatasetOwner
+    columns: list[DatasetColumn]
+    metadata: dict[str, str]
+    created_at: str
+    updated_at: str
+    is_private: bool
+
+
+@dataclass
+class DatasetListResponse(DataClassJsonMixin):
+    """Response from GET /v1/datasets"""
+
+    datasets: list[Dataset]
+    total: int
+
+
+@dataclass
+class DatasetResponse(DataClassJsonMixin):
+    """Response from GET /v1/datasets/{full_name}"""
+
+    full_name: str
+    type: str
+    owner: DatasetOwner
+    columns: list[DatasetColumn]
+    metadata: dict[str, str]
+    created_at: str
+    updated_at: str
+    is_private: bool
+
+
+@dataclass
+class TableOwner(DataClassJsonMixin):
+    """Owner information for an uploaded table"""
+
+    handle: str
+    type: str
+
+
+@dataclass
+class TableColumn(DataClassJsonMixin):
+    """Column information for an uploaded table"""
+
+    name: str
+    type: str
+    nullable: bool
+
+
+@dataclass
+class TableElement(DataClassJsonMixin):
+    """Individual table metadata in list response"""
+
+    full_name: str
+    is_private: bool
+    table_size_bytes: str
+    created_at: str
+    updated_at: str
+    owner: TableOwner
+    columns: list[TableColumn]
+
+
+@dataclass
+class UploadListResponse(DataClassJsonMixin):
+    """Response from GET /v1/uploads"""
+
+    tables: list[TableElement]
+    next_offset: int | None = None
+
+
+@dataclass
+class UploadCreateRequest:
+    """Request for POST /v1/uploads"""
+
+    namespace: str
+    table_name: str
+    schema: list[dict[str, str]]
+    description: str = ""
+    is_private: bool = False
+
+
+@dataclass
+class UploadCreateResponse(DataClassJsonMixin):
+    """Response from POST /v1/uploads"""
+
+    namespace: str
+    table_name: str
+    full_name: str
+    example_query: str
+
+
+@dataclass
+class CSVUploadRequest:
+    """Request for POST /v1/uploads/csv"""
+
+    table_name: str
+    data: str
+    description: str = ""
+    is_private: bool = False
+
+
+@dataclass
+class CSVUploadResponse(DataClassJsonMixin):
+    """Response from POST /v1/uploads/csv"""
+
+    table_name: str
+
+
+@dataclass
+class InsertDataResponse(DataClassJsonMixin):
+    """Response from POST /v1/uploads/{namespace}/{table_name}/insert"""
+
+    rows_written: int
+    bytes_written: int
+    name: str
+
+
+@dataclass
+class ClearTableResponse(DataClassJsonMixin):
+    """Response from POST /v1/uploads/{namespace}/{table_name}/clear"""
+
+    message: str
+
+
+@dataclass
+class DeleteTableResponse(DataClassJsonMixin):
+    """Response from DELETE /v1/uploads/{namespace}/{table_name}"""
+
+    message: str

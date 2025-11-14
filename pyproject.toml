@@ -130,7 +130,7 @@ section-order = ["future", "standard-library", "third-party", "first-party", "lo
 known-first-party = ["dune_client"]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests can use magic values, assertions, and print statements
-"tests/**/*.py" = ["PLR2004", "S101", "T201"]
+# Tests can use magic values, assertions, print statements, and unittest-style assertions
+"tests/**/*.py" = ["PLR2004", "S101", "T201", "PT009"]
 # Type stubs can use unused imports
 "*.pyi" = ["F401"]

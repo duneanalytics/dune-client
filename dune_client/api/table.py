@@ -1,11 +1,16 @@
 """
 Table API endpoints enables users to
 create and insert data into Dune.
+
+DEPRECATED: This API uses legacy /table/* routes.
+Please use UploadsAPI for the modern /v1/uploads/* endpoints instead.
 """
 
 from __future__ import annotations
 
 from typing import IO
+
+from deprecated import deprecated
 
 from dune_client.api.base import BaseRouter
 from dune_client.models import (
@@ -21,8 +26,15 @@ class TableAPI(BaseRouter):
     """
     Implementation of Table endpoints - Plus subscription only
     https://docs.dune.com/api-reference/tables/
+
+    DEPRECATED: This API uses legacy /table/* routes.
+    Please use UploadsAPI for the modern /v1/uploads/* endpoints instead.
     """
 
+    @deprecated(
+        version="1.9.0",
+        reason="Use UploadsAPI.upload_csv() instead. This method uses legacy /table/* routes.",
+    )
     def upload_csv(
         self,
         table_name: str,
@@ -54,6 +66,10 @@ class TableAPI(BaseRouter):
         except KeyError as err:
             raise DuneError(response_json, "UploadCsvResponse", err) from err
 
+    @deprecated(
+        version="1.9.0",
+        reason="Use UploadsAPI.create_table() instead. This method uses legacy /table/* routes.",
+    )
     def create_table(
         self,
         namespace: str,
@@ -87,6 +103,10 @@ class TableAPI(BaseRouter):
         except KeyError as err:
             raise DuneError(result_json, "CreateTableResult", err) from err
 
+    @deprecated(
+        version="1.9.0",
+        reason="Use UploadsAPI.insert_data() instead. This method uses legacy /table/* routes.",
+    )
     def insert_table(
         self,
         namespace: str,
@@ -113,6 +133,10 @@ class TableAPI(BaseRouter):
         except KeyError as err:
             raise DuneError(result_json, "InsertTableResult", err) from err
 
+    @deprecated(
+        version="1.9.0",
+        reason="Use UploadsAPI.clear_table() instead. This method uses legacy /table/* routes.",
+    )
     def clear_data(self, namespace: str, table_name: str) -> ClearTableResult:
         """
         https://docs.dune.com/api-reference/tables/endpoint/clear
@@ -126,6 +150,10 @@ class TableAPI(BaseRouter):
         except KeyError as err:
             raise DuneError(result_json, "ClearTableResult", err) from err
 
+    @deprecated(
+        version="1.9.0",
+        reason="Use UploadsAPI.delete_table() instead. This method uses legacy /table/* routes.",
+    )
     def delete_table(self, namespace: str, table_name: str) -> DeleteTableResult:
         """
         https://docs.dune.com/api-reference/tables/endpoint/delete

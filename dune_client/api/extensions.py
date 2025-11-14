@@ -16,10 +16,12 @@ from dune_client.api.base import (
     MAX_NUM_ROWS_PER_BATCH,
 )
 from dune_client.api.custom import CustomEndpointAPI
+from dune_client.api.datasets import DatasetsAPI
 from dune_client.api.execution import ExecutionAPI
 from dune_client.api.pipeline import PipelineAPI
 from dune_client.api.query import QueryAPI
 from dune_client.api.table import TableAPI
+from dune_client.api.uploads import UploadsAPI
 from dune_client.api.usage import UsageAPI
 from dune_client.models import (
     DuneError,
@@ -40,10 +42,26 @@ THREE_MONTHS_IN_HOURS = 2191
 POLL_FREQUENCY_SECONDS = 1
 
 
-class ExtendedAPI(ExecutionAPI, QueryAPI, TableAPI, UsageAPI, CustomEndpointAPI, PipelineAPI):
+class ExtendedAPI(  # type: ignore[misc]
+    ExecutionAPI,
+    QueryAPI,
+    UploadsAPI,
+    DatasetsAPI,
+    TableAPI,
+    UsageAPI,
+    CustomEndpointAPI,
+    PipelineAPI,
+):
     """
     Provides higher level helper methods for faster
     and easier development on top of the base ExecutionAPI.
+
+    Includes both legacy TableAPI (deprecated) and modern UploadsAPI/DatasetsAPI.
+    UploadsAPI is listed before TableAPI in the MRO to ensure modern methods
+    take precedence over deprecated ones with the same name.
+
+    Note: TableAPI has incompatible method signatures with UploadsAPI but is
+    kept for backward compatibility. The UploadsAPI methods take precedence.
     """
 
     def run_query(
