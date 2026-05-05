@@ -67,7 +67,7 @@ class TestUploadsIntegration(unittest.TestCase):
         )
 
         self.assertIsInstance(result, CSVUploadResponse)
-        self.assertEqual(result.table_name, self.test_table_name)
+        self.assertEqual(result.table_name, f"dataset_{self.test_table_name}")
 
         delete_result = self.dune.delete_table(
             namespace=self.test_namespace,
