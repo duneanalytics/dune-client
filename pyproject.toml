@@ -21,7 +21,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "aiohttp~=3.13.4",
+    "aiohttp~=3.14.0",
     "dataclasses-json~=0.6.4",
     "python-dateutil~=2.9.0",
     "requests~=2.33.0",
