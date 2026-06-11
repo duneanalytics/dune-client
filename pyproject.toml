@@ -54,6 +54,8 @@ dev = [
 
 [tool.uv]
 exclude-newer = "3 days"
+no-build = true
+no-build-package = { dune-client = false }
 
 [tool.hatch.version]
 source = "vcs"
