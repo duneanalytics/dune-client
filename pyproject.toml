@@ -52,6 +52,9 @@ dev = [
     "aiounittest>=1.4.2",
 ]
 
+[tool.uv]
+exclude-newer = "3 days"
+
 [tool.hatch.version]
 source = "vcs"
 
