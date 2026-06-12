@@ -55,7 +55,9 @@ dev = [
 [tool.uv]
 exclude-newer = "3 days"
 no-build = true
-no-build-package = { dune-client = false }
+# binary-only, except allow this package to build from source (dynamic hatch-vcs
+# version requires a build to resolve metadata); third-party stays wheels-only
+no-binary-package = ["dune-client"]
 
 [tool.hatch.version]
 source = "vcs"
