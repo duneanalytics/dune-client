@@ -33,6 +33,6 @@ jobs:
     - name: Set up Python
       run: uv python install 3.13
     - name: Build package
-      run: uv build
+      run: uv build --no-config
     - name: Publish a Python distribution to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
