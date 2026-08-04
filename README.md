@@ -114,7 +114,7 @@ query = dune.create_query(
     query_sql=sql,
     # Optional fields
     params=[QueryParameter.number_type(name="N", value=10)],
-    is_private=False  # default
+    is_private=False,  # default
 )
 query_id = query.base.query_id
 print(f"Created query with id {query.base.query_id}")
@@ -128,7 +128,7 @@ dune.update_query(
     query_sql=sql.replace("ethereum", "{{Blockchain}}"),
     params=query.base.parameters() + [QueryParameter.text_type("Blockchain", "ethereum")],
     description="Shows time and hash of the most expensive transactions",
-    tags=["XP€N$IV $H1T"]
+    tags=["XP€N$IV $H1T"],
 )
 
 dune.archive_query(query_id)
