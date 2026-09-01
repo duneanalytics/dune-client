@@ -181,7 +181,7 @@ class TestDuneClient(unittest.TestCase):
             dune.execute_query(query)
         assert err.value.response.status_code == 404
 
-    def test_internal_error(self):
+    def test_invalid_query_id_error(self):
         dune = DuneClient()
         query = copy.copy(self.query)
         # This query ID is too large!
@@ -189,7 +189,7 @@ class TestDuneClient(unittest.TestCase):
 
         with pytest.raises(HTTPError) as err:
             dune.execute_query(query)
-        assert err.value.response.status_code == 500
+        assert err.value.response.status_code == 400
 
     def test_invalid_job_id_error(self):
         dune = DuneClient()
