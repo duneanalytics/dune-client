@@ -687,3 +687,85 @@ class DeleteTableResponse(DataClassJsonMixin):
     """Response from DELETE /v1/uploads/{namespace}/{table_name}"""
 
     message: str
+
+
+@dataclass
+class ContractSubmissionInput(DataClassJsonMixin):
+    """One contract to submit for decoding via POST /v1/contracts/decode.
+
+    The fields mirror the submission form at https://dune.com/contracts/new.
+    `abi` may be the ABI as a list of fragments or as a JSON string containing it.
+    `submission_type` is one of new (default), upgrade, rename, delete, other;
+    rename requires `old_project_name` and `old_contract_name`, and delete and
+    other require `resubmission_reason`. `idempotency_key` makes the item safe
+    to retry: resubmitting a key already used by this account returns the
+    existing submission instead of creating a new one.
+    """
+
+    blockchain_name: str
+    address: str
+    project_name: str
+    contract_name: str
+    abi: Any
+    has_multiple_instances: bool = False
+    is_created_by_factory: bool = False
+    is_manual_abi: bool = False
+    is_proxy: bool = False
+    submission_type: str | None = None
+    resubmission_reason: str | None = None
+    old_project_name: str | None = None
+    old_contract_name: str | None = None
+    idempotency_key: str | None = None
+
+    def to_request(self) -> dict[str, Any]:
+        """Serialize for the request body, omitting unset optional fields."""
+        return {key: value for key, value in self.to_dict().items() if value is not None}
+
+
+@dataclass
+class ContractSubmissionResult(DataClassJsonMixin):
+    """Per-item outcome of POST /v1/contracts/decode, matched to the request by index.
+
+    On success `submission_id` and `status` ("pending") are set; `replayed` is
+    True when the idempotency key matched an earlier submission. On failure
+    `error` describes what to fix and the other fields are None.
+    """
+
+    index: int
+    submission_id: str | None = None
+    status: str | None = None
+    error: str | None = None
+    replayed: bool = False
+
+
+@dataclass
+class SubmitContractsResponse(DataClassJsonMixin):
+    """Response from POST /v1/contracts/decode"""
+
+    results: list[ContractSubmissionResult]
+
+
+@dataclass
+class ContractSubmission(DataClassJsonMixin):
+    """A contract decoding submission as returned by GET /v1/contracts/submissions"""
+
+    id: str
+    blockchain_name: str
+    address: str
+    project_name: str
+    contract_name: str
+    status: str
+    submission_type: str
+    created_at: str
+    updated_at: str
+    comment: str | None = None
+    idempotency_key: str | None = None
+
+
+@dataclass
+class ContractSubmissionListResponse(DataClassJsonMixin):
+    """Response from GET /v1/contracts/submissions"""
+
+    submissions: list[ContractSubmission]
+    total: int
+    next_cursor: str | None = None

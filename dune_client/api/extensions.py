@@ -15,6 +15,7 @@ from dune_client.api.base import (
     DUNE_CSV_NEXT_URI_HEADER,
     MAX_NUM_ROWS_PER_BATCH,
 )
+from dune_client.api.contracts import ContractsAPI
 from dune_client.api.custom import CustomEndpointAPI
 from dune_client.api.datasets import DatasetsAPI
 from dune_client.api.execution import ExecutionAPI
@@ -51,6 +52,7 @@ class ExtendedAPI(  # type: ignore[misc]
     UsageAPI,
     CustomEndpointAPI,
     PipelineAPI,
+    ContractsAPI,
 ):
     """
     Provides higher level helper methods for faster
