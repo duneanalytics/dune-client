@@ -357,11 +357,11 @@ class ResultsResponse:
 
     def get_rows(self) -> list[DuneRecord]:
         """
-        Absorbs the Optional check and returns the result rows.
-        When execution is a non-complete terminal state, returns empty list.
+        Returns rows from completed or partially completed executions.
+        Other states return an empty list.
         """
 
-        if self.state == ExecutionState.COMPLETED:
+        if self.state in (ExecutionState.COMPLETED, ExecutionState.PARTIAL):
             assert self.result is not None, f"No Results on completed execution {self}"
             return self.result.rows
 
