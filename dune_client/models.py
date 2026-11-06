@@ -226,10 +226,12 @@ class ResultMetadata:
         return cls(
             column_names=data["column_names"],
             column_types=data["column_types"],
-            row_count=int(data["total_row_count"]),
+            row_count=int(data.get("row_count", data["total_row_count"])),
             result_set_bytes=int(data["result_set_bytes"]),
             total_row_count=int(data["total_row_count"]),
-            total_result_set_bytes=int(data["result_set_bytes"]),
+            total_result_set_bytes=int(
+                data.get("total_result_set_bytes", data["result_set_bytes"])
+            ),
             datapoint_count=int(data["datapoint_count"]),
             pending_time_millis=int(pending_time) if pending_time else None,
             execution_time_millis=int(data["execution_time_millis"]),
