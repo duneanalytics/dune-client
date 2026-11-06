@@ -2,7 +2,7 @@ import csv
 import json
 import unittest
 from datetime import datetime
-from io import BytesIO, TextIOWrapper
+from io import BytesIO, StringIO, TextIOWrapper
 
 from dateutil.parser import parse
 from dateutil.tz import tzutc
@@ -243,6 +243,29 @@ eth_traces,4474223
             ["eth_blocks", "6296"],
             ["eth_traces", "4474223"],
         ]
+
+    def test_execution_result_csv_pagination(self):
+        def page(column_name, row, next_uri=None, next_offset=None):
+            data = StringIO(newline="")
+            csv.writer(data).writerows([["id", column_name], row])
+            return ExecutionResultCSV(
+                data=BytesIO(data.getvalue().encode()),
+                next_uri=next_uri,
+                next_offset=next_offset,
+            )
+
+        for column_name in ("name", 'quoted "na\nme"', "na\r\nme"):
+            with self.subTest(column_name=column_name):
+                result = page(column_name, [1, "first"], "page2", 1) + page(
+                    column_name, [2, "second"]
+                )
+                assert list(csv.reader(TextIOWrapper(result.data, newline=""))) == [
+                    ["id", column_name],
+                    ["1", "first"],
+                    ["2", "second"],
+                ]
+                assert result.next_uri is None
+                assert result.next_offset is None
 
     def test_dune_query_from_dict(self):
         example_response = """{
