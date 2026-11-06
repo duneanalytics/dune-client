@@ -54,10 +54,9 @@ class QueryBase:
                 serialized_value = json.dumps(value, separators=(",", ":"))
             else:
                 serialized_value = value
-            params.append(f"{parameter.key}={serialized_value}")
-        param_string = "&".join(params)
-        if param_string:
-            return "?".join([self.base_url(), urllib.parse.quote_plus(param_string, safe="=&?")])
+            params.append((parameter.key, serialized_value))
+        if params:
+            return "?".join([self.base_url(), urllib.parse.urlencode(params)])
         return self.base_url()
 
     def __hash__(self) -> int:
