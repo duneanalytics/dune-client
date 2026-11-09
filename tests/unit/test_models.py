@@ -48,9 +48,9 @@ class MyTestCase(unittest.TestCase):
         self.result_metadata_data = {
             "column_names": ["ct", "TableName"],
             "column_types": ["x", "y"],
-            "row_count": 8,
+            "row_count": 2,
             "result_set_bytes": 194,
-            "total_result_set_bytes": 194,
+            "total_result_set_bytes": 776,
             "total_row_count": 8,
             "datapoint_count": 2,
             "pending_time_millis": 54,
@@ -147,9 +147,12 @@ eth_traces,4474223
             },
         }
         try:
-            ExecutionStatusResponse.from_dict(response)
+            result = ExecutionStatusResponse.from_dict(response)
         except DuneError as err:
             self.fail(f"Unexpected error {err}")
+        assert result.result_metadata is not None
+        assert result.result_metadata.row_count == 18
+        assert result.result_metadata.total_result_set_bytes == 815
 
     def test_parse_status_response_completed(self):
         assert ExecutionStatusResponse(
@@ -191,10 +194,10 @@ eth_traces,4474223
         expected = ResultMetadata(
             column_names=["ct", "TableName"],
             column_types=["x", "y"],
-            row_count=8,
+            row_count=2,
             result_set_bytes=194,
             total_row_count=8,
-            total_result_set_bytes=194,
+            total_result_set_bytes=776,
             datapoint_count=2,
             pending_time_millis=54,
             execution_time_millis=900,
@@ -205,6 +208,14 @@ eth_traces,4474223
         assert expected == ResultMetadata.from_dict(
             self.status_response_data_completed["result_metadata"]
         )
+
+        combined = ResultMetadata.from_dict(self.result_metadata_data) + ResultMetadata.from_dict(
+            dict(self.result_metadata_data, row_count=1, result_set_bytes=80)
+        )
+        assert combined.row_count == 3
+        assert combined.result_set_bytes == 274
+        assert combined.total_row_count == 8
+        assert combined.total_result_set_bytes == 776
 
     def test_parse_execution_result(self):
         expected = ExecutionResult(
