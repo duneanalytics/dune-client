@@ -4,6 +4,7 @@ Dataclasses encoding response data from Dune API.
 
 from __future__ import annotations
 
+import csv
 import logging.config
 from dataclasses import dataclass
 from enum import Enum
@@ -277,8 +278,8 @@ class ExecutionResultCSV:
         # Get to the end of the current CSV
         self.data.seek(0, SEEK_END)
 
-        # Skip the first line of the new CSV, which contains the header
-        other.data.readline()
+        # Skip the header record, which can span multiple lines.
+        next(csv.reader(line.decode("utf-8") for line in other.data), None)
 
         # Append the rest of the content from `other` into current one
         self.data.write(other.data.read())
