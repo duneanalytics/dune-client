@@ -1,3 +1,4 @@
+import json
 import unittest
 import urllib.parse
 from datetime import datetime
@@ -36,6 +37,40 @@ class TestQueryBase(unittest.TestCase):
 
     def test_parameters(self):
         assert self.query.parameters() == self.query_params
+
+    def test_url_round_trips_text_values(self):
+        for value in ("cats & dogs", "left=right?yes#section", "100% + value", "café / Δ", ""):
+            with self.subTest(value=value):
+                query = QueryBase(
+                    query_id=123,
+                    params=[
+                        QueryParameter.text_type("Text", value),
+                        QueryParameter.number_type("Number", 12),
+                    ],
+                )
+                parsed = urllib.parse.urlsplit(query.url())
+                assert parsed.path == "/queries/123"
+                assert not parsed.fragment
+                assert urllib.parse.parse_qsl(parsed.query, keep_blank_values=True) == [
+                    ("Text", value),
+                    ("Number", "12"),
+                ]
+
+    def test_url_round_trips_parameter_names(self):
+        for name in ("a&b", "a=b", "space key", "κλειδί?"):
+            with self.subTest(name=name):
+                query = QueryBase(query_id=123, params=[QueryParameter.text_type(name, "value")])
+                assert urllib.parse.parse_qsl(urllib.parse.urlsplit(query.url()).query) == [
+                    (name, "value")
+                ]
+
+    def test_url_round_trips_multiselect_values(self):
+        values = ["a&b", "c=d", "question?mark", "space + percent%", "Δ"]
+        query = QueryBase(query_id=123, params=[QueryParameter.enum_type("Multi", values)])
+        parsed = urllib.parse.parse_qsl(urllib.parse.urlsplit(query.url()).query)
+        assert len(parsed) == 1
+        assert parsed[0][0] == "Multi"
+        assert json.loads(parsed[0][1]) == values
 
     def test_request_format(self):
         expected_answer = {
