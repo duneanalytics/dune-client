@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 import unittest
 
 from dune_client.util import age_in_hours, get_package_version
@@ -15,5 +15,5 @@ class TestUtils(unittest.TestCase):
         assert get_package_version("unittest") is None
 
     def test_age_in_hours(self):
-        march_ten_eighty_five = datetime.datetime(1985, 3, 10, tzinfo=datetime.UTC)
+        march_ten_eighty_five = dt.datetime(1985, 3, 10, tzinfo=dt.UTC)
         assert age_in_hours(march_ten_eighty_five) >= 314159

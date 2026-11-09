@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 import unittest
 
 import pytest
@@ -51,7 +51,7 @@ class TestQueryParameter(unittest.TestCase):
     def setUp(self) -> None:
         self.number_type = QueryParameter.number_type("Number", 1)
         self.text_type = QueryParameter.text_type("Text", "hello")
-        self.date_type = QueryParameter.date_type("Date", datetime.datetime(2022, 3, 10))
+        self.date_type = QueryParameter.date_type("Date", dt.datetime(2022, 3, 10))
 
     def test_constructors_and_to_dict(self):
         assert self.number_type.to_dict() == {"key": "Number", "type": "number", "value": "1"}

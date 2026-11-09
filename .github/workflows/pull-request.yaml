@@ -45,6 +45,8 @@ jobs:
       - name: Run tests with tox
         run: uv run tox
       - name: Run E2E tests (Python 3.13)
+        # Dependabot runs cannot access Actions secrets.
+        if: github.actor != 'dependabot[bot]'
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
           DUNE_API_KEY_OWNER_HANDLE: ${{ secrets.DUNE_API_KEY_OWNER_HANDLE }}
