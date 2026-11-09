@@ -244,6 +244,19 @@ eth_traces,4474223
         )
         assert expected == ResultsResponse.from_dict(self.results_response_data)
 
+    def test_partial_result_rows(self):
+        response = dict(
+            self.results_response_data,
+            state="QUERY_STATE_COMPLETED_PARTIAL",
+        )
+        result = ResultsResponse.from_dict(response)
+
+        assert result.get_rows() == [
+            {"TableName": "eth_blocks", "ct": 6296},
+            {"TableName": "eth_traces", "ct": 4474223},
+        ]
+        assert result.state == ExecutionState.PARTIAL
+
     def test_execution_result_csv(self):
         # document the expected output data from DuneAPI result/csv endpoint
         csv_response = ExecutionResultCSV(data=self.execution_result_csv_data)
