@@ -326,8 +326,7 @@ class TestCSVHeaderParsing(aiounittest.AsyncTestCase):
             response.headers["x-dune-next-uri"] = next_uri
         if next_offset is not None:
             response.headers["x-dune-next-offset"] = str(next_offset)
-        response.content = MagicMock()
-        response.content.read = AsyncMock(return_value=csv_data)
+        response.read = AsyncMock(return_value=csv_data)
         response.raise_for_status = MagicMock()
         response.release = MagicMock()
         return response
