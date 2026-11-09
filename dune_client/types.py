@@ -198,7 +198,7 @@ class QueryParameter:
             return cls.text_type(name, value)
         if p_type == ParameterType.NUMBER:
             if isinstance(value, str):
-                value = float(value) if "." in value else int(value)
+                value = float(value) if "." in value or "e" in value.lower() else int(value)
             return cls.number_type(name, value)
         if p_type == ParameterType.ENUM:
             return cls.enum_type(name, value)

@@ -78,5 +78,24 @@ class TestQueryParameter(unittest.TestCase):
         )
 
 
+@pytest.mark.parametrize("value", [0, -12, 10**40 + 1, 1.25, 1e-6, -1e-7, 1e20])
+def test_number_parameter_roundtrip(value):
+    parameter = QueryParameter.number_type("minimum_usd", value)
+    decoded = QueryParameter.from_dict(parameter.to_dict())
+    assert decoded == parameter
+    assert type(decoded.value) is type(value)
+
+
+def test_number_parameter_uppercase_exponent():
+    parameter = QueryParameter.from_dict({"key": "minimum_usd", "type": "number", "value": "1E-6"})
+    assert parameter == QueryParameter.number_type("minimum_usd", 1e-6)
+
+
+@pytest.mark.parametrize("value", ["", "not a number", "NaN", "Infinity", "1e", "1e+", "1e2e3"])
+def test_invalid_number_parameter(value):
+    with pytest.raises(ValueError):
+        QueryParameter.from_dict({"key": "minimum_usd", "type": "number", "value": value})
+
+
 if __name__ == "__main__":
     unittest.main()
