@@ -670,7 +670,7 @@ class AsyncDuneClient(BaseDuneClient):
         next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
         next_offset_header = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
         next_offset = self._parse_next_offset(next_offset_header)
-        data = BytesIO(await response.content.read(-1))
+        data = BytesIO(await response.read())
         response.release()
         return ExecutionResultCSV(
             data=data,
@@ -689,7 +689,7 @@ class AsyncDuneClient(BaseDuneClient):
         next_uri = response.headers.get(DUNE_CSV_NEXT_URI_HEADER)
         next_offset_header = response.headers.get(DUNE_CSV_NEXT_OFFSET_HEADER)
         next_offset = self._parse_next_offset(next_offset_header)
-        data = BytesIO(await response.content.read(-1))
+        data = BytesIO(await response.read())
         response.release()
         return ExecutionResultCSV(
             data=data,
