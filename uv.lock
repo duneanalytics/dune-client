@@ -434,7 +434,7 @@ requires-dist = [
     { name = "dataclasses-json", specifier = "~=0.6.4" },
     { name = "deprecated", specifier = "~=1.2.18" },
     { name = "ndjson", specifier = "~=0.3.1" },
-    { name = "python-dateutil", specifier = ">=2.9,<3.1" },
+    { name = "python-dateutil", specifier = ">=2.9,<5" },
     { name = "requests", specifier = ">=2.33,<2.35" },
 ]
 
