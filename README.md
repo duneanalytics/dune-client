@@ -101,10 +101,12 @@ import asyncio
 from dune_client.client_async import AsyncDuneClient
 from dune_client.query import QueryBase
 
+
 async def main():
     async with AsyncDuneClient() as dune:
         results = await dune.run_query(QueryBase(query_id=1215383))
         print(results.get_rows())
+
 
 asyncio.run(main())
 ```
