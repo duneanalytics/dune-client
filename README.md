@@ -40,8 +40,7 @@ pip install dune-client
 
 ## Quickstart: run_query
 
-Export your `DUNE_API_KEY` (or place it in a `.env` file - as in
-here [.env.sample](./.env.sample) and `source .env`).
+Export your `DUNE_API_KEY` before running these examples. The client reads it from the environment.
 
 > 💡 **Tip**: If using uv, you can run examples directly without activating a virtual environment:
 > ```shell
@@ -67,6 +66,7 @@ print("Results available at", query.url())
 
 dune = DuneClient()
 results = dune.run_query(query)
+print(results.get_rows())
 
 # or as CSV
 # results_csv = dune.run_query_csv(query)
@@ -78,14 +78,81 @@ results = dune.run_query(query)
 ## Further Examples
 
 ### Get Latest Results
-Use `get_latest_results` to get the most recent query results without using execution credits.
-You can specify a `max_age_hours` to re-run the query if the data is too outdated.
+`get_latest_result` fetches the most recent result, but re-executes the query if it is older
+than `max_age_hours`. The default threshold is about three months. A re-execution uses
+execution credits; fetching a result that is still fresh does not. Use `download_csv(query_id)`
+instead if you need the latest existing CSV result without triggering a new execution.
 
 ```python
 from dune_client.client import DuneClient
 
 dune = DuneClient()
 results = dune.get_latest_result(1215383, max_age_hours=8)
+print(results.get_rows())
+```
+
+### Async Query Execution
+
+Use the async client as a context manager so it closes its HTTP session when finished:
+
+```python
+import asyncio
+
+from dune_client.client_async import AsyncDuneClient
+from dune_client.query import QueryBase
+
+async def main():
+    async with AsyncDuneClient() as dune:
+        results = await dune.run_query(QueryBase(query_id=1215383))
+        print(results.get_rows())
+
+asyncio.run(main())
+```
+
+### Discover Datasets
+
+List datasets by owner, then inspect the columns of one dataset:
+
+```python
+from dune_client.client import DuneClient
+
+dune = DuneClient()
+page = dune.list_datasets(owner_handle="dune", limit=50)
+for dataset in page.datasets:
+    details = dune.get_dataset(dataset.full_name)
+    print(details.full_name, [column.name for column in details.columns])
+```
+
+Use `offset` with `list_datasets` to fetch later pages.
+
+### Submit and Track Contracts
+
+Submitting a contract requires a Read/Write API key. Replace the address and ABI with your
+contract's details. The idempotency key makes retries safe:
+
+```python
+import json
+
+from dune_client.client import DuneClient
+from dune_client.models import ContractSubmissionInput
+
+with open("my_contract.abi.json", encoding="utf-8") as file:
+    abi = json.load(file)
+
+dune = DuneClient()
+submission = ContractSubmissionInput(
+    blockchain_name="ethereum",
+    address="0xYOUR_CONTRACT_ADDRESS",
+    project_name="my_project",
+    contract_name="MyContract",
+    abi=abi,
+    idempotency_key="my-project/my-contract/v1",
+)
+for result in dune.submit_contracts([submission]).results:
+    print(result.index, result.submission_id, result.error)
+
+pending = dune.list_contract_submissions(status="pending")
+print([item.id for item in pending.submissions])
 ```
 
 ## Paid Subscription Features
@@ -102,7 +169,7 @@ from dune_client.types import QueryParameter
 from dune_client.client import DuneClient
 
 sql = """
-    SELECT block_time, hash,
+    SELECT block_time, hash
     FROM ethereum.transactions
     ORDER BY CAST(gas_used as uint256) * CAST(gas_price AS uint256) DESC
     LIMIT {{N}}
@@ -191,7 +258,7 @@ uv run tox -e py313
 make install        # Uses uv sync
 # or
 make install-dev    # Uses uv sync --dev
-````
+```
 
 ### Format, Lint & Types
 ```shell
